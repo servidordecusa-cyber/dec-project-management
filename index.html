@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEC Group USA - Project Management System</title>
+    <style>
+        :root {
+            --dec-primary: #0b2545;
+            --dec-secondary: #1a3d6b;
+            --dec-accent: #f4c542;
+            --dec-success: #28a745;
+            --dec-warning: #ffc107;
+            --dec-danger: #dc3545;
+            --dec-light: #f8f9fa;
+            --dec-dark: #343a40;
+            --shadow-soft: 0 4px 20px rgba(0,0,0,0.1);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dec-light) 0%, #e3f2fd 100%);
+            color: var(--dec-dark);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--dec-primary), var(--dec-secondary));
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--dec-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6c757d;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--dec-primary);
+            border-bottom-color: var(--dec-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Enhanced Cost Calculator Styles */
+        .cost-calculator {
+            background: #f8f9fc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .cost-items-container {
+            margin: 1rem 0;
+        }
+
+        .item-labels {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1.5fr 1.5fr auto;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: #666;
+            padding: 0 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .cost-item {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1.5fr 1.5fr auto;
+            gap: 1rem;
+            align-items: center;
+            background: white;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+            transition: all 0.3s ease;
+        }
+
+        .cost-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .cost-item input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .cost-item input[type="number"] {
+            text-align: right;
+        }
+
+        .cost-item input:focus {
+            outline: none;
+            border-color: var(--dec-primary);
+            box-shadow: 0 0 0 2px rgba(11, 37, 69, 0.1);
+        }
+
+        .total-display {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            color: var(--dec-success);
+            font-weight: bold;
+            text-align: center;
+            border-radius: 6px;
+            padding: 0.5rem;
+            border: 1px solid #d4edda;
+        }
+
+        .remove-btn {
+            background: var(--dec-danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: #c82333;
+            transform: scale(1.1);
+        }
+
+        .add-item-btn {
+            background: var(--dec-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 1rem 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-item-btn:hover {
+            background: var(--dec-secondary);
+            transform: translateY(-2px);
+        }
+
+        .total-summary {
+            background: linear-gradient(135deg, var(--dec-primary), var(--dec-secondary));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .variance-positive {
+            color: #ffeb3b;
+        }
+
+        .variance-negative {
+            color: #4caf50;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+            border-left: 4px solid var(--dec-primary);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--dec-primary);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+
+        /* Project Info Styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dec-dark);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--dec-primary);
+            box-shadow: 0 0 0 3px rgba(11, 37, 69, 0.1);
+        }
+
+        /* Phase Progress */
+        .phases-container {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .phase-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .phase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .phase-title {
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--dec-primary);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 0.5rem;
+                margin: 1rem auto;
+            }
+
+            .project-card {
+                padding: 1rem;
+            }
+
+            .item-labels,
+            .cost-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .cost-item {
+                border: 1px solid #dee2e6;
+                padding: 1rem;
+            }
+
+            .item-labels {
+                display: none;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .export-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+        }
+
+        .export-btn {
+            background: var(--dec-secondary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: var(--dec-primary);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🏗️ DEC Group USA</h1>
+        <p>Construction Project Management System</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Dashboard Overview -->
+        <div class="project-card">
+            <h2 class="section-title">📊 Project Dashboard</h2>
+            
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="totalProjectsCount">1</div>
+                    <div class="metric-label">Active Projects</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="totalBudgetDisplay">$0</div>
+                    <div class="metric-label">Total Budget</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="totalSpentDisplay">$0</div>
+                    <div class="metric-label">Total Spent</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="overallProgress">0%</div>
+                    <div class="metric-label">Overall Progress</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Navigation -->
+        <div class="project-card">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('overview')">📈 Overview</button>
+                <button class="tab" onclick="showTab('budget')">💰 Budget</button>
+                <button class="tab" onclick="showTab('schedule')">📅 Schedule</button>
+                <button class="tab" onclick="showTab('project-info')">⚙️ Project Info</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <h3 class="section-title">📋 Project Overview</h3>
+                <div class="form-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">Sample Project</div>
+                        <div class="metric-label">Current Project</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">12 weeks</div>
+                        <div class="metric-label">Timeline</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Tab -->
+            <div id="budget" class="tab-content">
+                <div class="tabs" style="margin-bottom: 1rem;">
+                    <button class="tab active" onclick="showBudgetSection('estimate')">📋 Estimate</button>
+                    <button class="tab" onclick="showBudgetSection('actual')">💰 Actual Costs</button>
+                    <button class="tab" onclick="showBudgetSection('comparison')">⚖️ Budget vs. Actual</button>
+                </div>
+
+                <!-- Estimate Section -->
+                <div id="estimate-section" class="budget-section">
+                    <div class="cost-calculator">
+                        <h3 class="section-title">📋 Estimate (Budget) - Detailed Calculation</h3>
+                        
+                        <div class="cost-items-container" id="estimateItems">
+                            <div class="item-labels">
+                                <span>📝 Description</span>
+                                <span>📦 Qty</span>
+                                <span>💲 Unit Price</span>
+                                <span>💰 Total</span>
+                                <span></span>
+                            </div>
+                        </div>
+                        
+                        <button class="add-item-btn" onclick="addEstimateItem()">
+                            ➕ Add New Item
+                        </button>
+                        
+                        <div class="total-summary">
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <div class="summary-label">📋 Total Estimated</div>
+                                    <div class="summary-value">$<span id="totalEstimated">0.00</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actual Costs Section -->
+                <div id="actual-section" class="budget-section" style="display: none;">
+                    <div class="cost-calculator">
+                        <h3 class="section-title">💰 Actual Costs - Detailed Tracking</h3>
+                        
+                        <div class="cost-items-container" id="actualItems">
+                            <div class="item-labels">
+                                <span>📝 Description</span>
+                                <span>📦 Qty</span>
+                                <span>💲 Unit Price</span>
+                                <span>💰 Total</span>
+                                <span></span>
+                            </div>
+                        </div>
+                        
+                        <button class="add-item-btn" onclick="addActualItem()">
+                            ➕ Add New Item
+                        </button>
+                        
+                        <div class="total-summary">
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <div class="summary-label">💰 Total Actual</div>
+                                    <div class="summary-value">$<span id="totalActual">0.00</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Section -->
+                <div id="comparison-section" class="budget-section" style="display: none;">
+                    <div class="cost-calculator">
+                        <h3 class="section-title">⚖️ Budget vs. Actual Comparison</h3>
+                        
+                        <div class="total-summary">
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <div class="summary-label">📋 Estimated</div>
+                                    <div class="summary-value">$<span id="comparisonEstimated">0.00</span></div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="summary-label">💰 Actual</div>
+                                    <div class="summary-value">$<span id="comparisonActual">0.00</span></div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="summary-label">📊 Variance</div>
+                                    <div class="summary-value" id="varianceDisplay">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Tab -->
+            <div id="schedule" class="tab-content">
+                <h3 class="section-title">📅 Project Schedule</h3>
+                
+                <div class="phases-container">
+                    <div class="phase-item">
+                        <div class="phase-header">
+                            <span class="phase-title">🔴 Phase 1 — Demolition</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="phase-item">
+                        <div class="phase-header">
+                            <span class="phase-title">🟠 Phase 2 — Preparation</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="phase-item">
+                        <div class="phase-header">
+                            <span class="phase-title">🟢 Phase 3 — Installation</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="phase-item">
+                        <div class="phase-header">
+                            <span class="phase-title">🟣 Phase 4 — Finishing</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Info Tab -->
+            <div id="project-info" class="tab-content">
+                <h3 class="section-title">⚙️ Project Information</h3>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Project Name *</label>
+                        <input type="text" class="form-input" placeholder="Enter project name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Customer</label>
+                        <input type="text" class="form-input" placeholder="Customer name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Project Manager</label>
+                        <input type="text" class="form-input" placeholder="Project manager name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-input" placeholder="Project address">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-input" rows="4" placeholder="Project notes and additional information"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="export-section">
+            <h3>📄 Export Project Data</h3>
+            <button class="export-btn" onclick="exportToJSON()">📊 Export JSON</button>
+            <button class="export-btn" onclick="exportToPDF()">📄 Export PDF</button>
+            <button class="export-btn" onclick="printReport()">🖨️ Print Report</button>
+        </div>
+    </div>
+
+    <script>
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to selected tab
+            event.target.classList.add('active');
+        }
+
+        function showBudgetSection(sectionName) {
+            // Hide all budget sections
+            const sections = document.querySelectorAll('.budget-section');
+            sections.forEach(section => section.style.display = 'none');
+            
+            // Remove active class from budget tabs
+            const budgetTabs = document.querySelectorAll('#budget .tab');
+            budgetTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Add active class to selected tab
+            event.target.classList.add('active');
+        }
+
+        // Enhanced Cost Calculator Functions
+        function addEstimateItem() {
+            const container = document.getElementById('estimateItems');
+            const itemId = 'estimate-' + Date.now();
+            
+            const itemHTML = `
+                <div class="cost-item" id="${itemId}">
+                    <input type="text" placeholder="Ex: Materials, Labor, Equipment..." class="description-input">
+                    <input type="number" step="0.01" placeholder="1.00" class="quantity-input" 
+                           oninput="calculateItemTotal('${itemId}')">
+                    <input type="number" step="0.01" placeholder="0.00" class="unit-price-input" 
+                           oninput="calculateItemTotal('${itemId}')">
+                    <div class="total-display">$0.00</div>
+                    <button class="remove-btn" onclick="removeItem('${itemId}', 'estimate')" title="Remove item">×</button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', itemHTML);
+        }
+
+        function addActualItem() {
+            const container = document.getElementById('actualItems');
+            const itemId = 'actual-' + Date.now();
+            
+            const itemHTML = `
+                <div class="cost-item" id="${itemId}">
+                    <input type="text" placeholder="Ex: Materials, Labor, Equipment..." class="description-input">
+                    <input type="number" step="0.01" placeholder="1.00" class="quantity-input" 
+                           oninput="calculateItemTotal('${itemId}')">
+                    <input type="number" step="0.01" placeholder="0.00" class="unit-price-input" 
+                           oninput="calculateItemTotal('${itemId}')">
+                    <div class="total-display">$0.00</div>
+                    <button class="remove-btn" onclick="removeItem('${itemId}', 'actual')" title="Remove item">×</button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', itemHTML);
+        }
+
+        function calculateItemTotal(itemId) {
+            const item = document.getElementById(itemId);
+            if (!item) return;
+            
+            const quantity = parseFloat(item.querySelector('.quantity-input').value) || 0;
+            const unitPrice = parseFloat(item.querySelector('.unit-price-input').value) || 0;
+            const total = quantity * unitPrice;
+            
+            item.querySelector('.total-display').textContent = formatCurrency(total);
+            
+            // Update totals
+            if (itemId.startsWith('estimate-')) {
+                updateEstimateTotal();
+            } else {
+                updateActualTotal();
+            }
+        }
+
+        function updateEstimateTotal() {
+            const items = document.querySelectorAll('#estimateItems .cost-item');
+            let total = 0;
+            
+            items.forEach(item => {
+                const quantity = parseFloat(item.querySelector('.quantity-input')?.value) || 0;
+                const unitPrice = parseFloat(item.querySelector('.unit-price-input')?.value) || 0;
+                total += quantity * unitPrice;
+            });
+            
+            document.getElementById('totalEstimated').textContent = formatCurrency(total);
+            document.getElementById('comparisonEstimated').textContent = formatCurrency(total);
+            document.getElementById('totalBudgetDisplay').textContent = '$' + formatCurrency(total);
+            
+            updateVariance();
+        }
+
+        function updateActualTotal() {
+            const items = document.querySelectorAll('#actualItems .cost-item');
+            let total = 0;
+            
+            items.forEach(item => {
+                const quantity = parseFloat(item.querySelector('.quantity-input')?.value) || 0;
+                const unitPrice = parseFloat(item.querySelector('.unit-price-input')?.value) || 0;
+                total += quantity * unitPrice;
+            });
+            
+            document.getElementById('totalActual').textContent = formatCurrency(total);
+            document.getElementById('comparisonActual').textContent = formatCurrency(total);
+            document.getElementById('totalSpentDisplay').textContent = '$' + formatCurrency(total);
+            
+            updateVariance();
+        }
+
+        function updateVariance() {
+            const estimated = parseFloat(document.getElementById('totalEstimated')?.textContent) || 0;
+            const actual = parseFloat(document.getElementById('totalActual')?.textContent) || 0;
+            const variance = actual - estimated;
+            
+            const varianceElement = document.getElementById('varianceDisplay');
+            if (varianceElement) {
+                varianceElement.textContent = (variance >= 0 ? '+' : '') + '$' + formatCurrency(Math.abs(variance));
+                varianceElement.className = 'summary-value ' + (variance >= 0 ? 'variance-positive' : 'variance-negative');
+            }
+        }
+
+        function removeItem(itemId, type) {
+            const item = document.getElementById(itemId);
+            if (item && confirm('Remove this item?')) {
+                item.remove();
+                
+                if (type === 'estimate') {
+                    updateEstimateTotal();
+                } else {
+                    updateActualTotal();
+                }
+            }
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Export Functions
+        function exportToJSON() {
+            const data = {
+                project: {
+                    name: document.querySelector('#project-info input[placeholder="Enter project name"]')?.value || 'Unnamed Project',
+                    customer: document.querySelector('#project-info input[placeholder="Customer name"]')?.value || '',
+                    manager: document.querySelector('#project-info input[placeholder="Project manager name"]')?.value || '',
+                    address: document.querySelector('#project-info input[placeholder="Project address"]')?.value || ''
+                },
+                budget: collectCostData(),
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dec_project_data.json';
+            a.click();
+        }
+
+        function collectCostData() {
+            const estimateData = [];
+            const actualData = [];
+            
+            document.querySelectorAll('#estimateItems .cost-item').forEach(item => {
+                const description = item.querySelector('.description-input')?.value || '';
+                const quantity = parseFloat(item.querySelector('.quantity-input')?.value) || 0;
+                const unitPrice = parseFloat(item.querySelector('.unit-price-input')?.value) || 0;
+                const total = quantity * unitPrice;
+                
+                if (description || quantity || unitPrice) {
+                    estimateData.push({ description, quantity, unitPrice, total });
+                }
+            });
+            
+            document.querySelectorAll('#actualItems .cost-item').forEach(item => {
+                const description = item.querySelector('.description-input')?.value || '';
+                const quantity = parseFloat(item.querySelector('.quantity-input')?.value) || 0;
+                const unitPrice = parseFloat(item.querySelector('.unit-price-input')?.value) || 0;
+                const total = quantity * unitPrice;
+                
+                if (description || quantity || unitPrice) {
+                    actualData.push({ description, quantity, unitPrice, total });
+                }
+            });
+            
+            return { estimate: estimateData, actual: actualData };
+        }
+
+        function exportToPDF() {
+            window.print();
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add initial items
+            addEstimateItem();
+            addActualItem();
+        });
+    </script>
+</body>
+</html>
