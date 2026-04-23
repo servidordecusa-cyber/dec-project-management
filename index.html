@@ -330,7 +330,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div class="card"><div class="card-title">Budget Overview</div><div class="chart-wrap"><canvas id="d-chart"></canvas></div></div>
         </div>
         <div class="two-col">
-          <div class="card"><div class="card-title">Over-Budget Rooms</div><div id="d-over"></div></div>
+          <div class="card"><div class="card-title">Over-Budget Phases</div><div id="d-over"></div></div>
           <div class="card"><div class="card-title">Timeline</div><div id="d-timeline"></div></div>
         </div>
       </div>
@@ -358,7 +358,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div class="kpi" id="cmp-var-kpi"><label>📊 Variance</label><div class="val" id="cmp-var">$0</div><small id="cmp-var-lbl"></small></div>
         </div>
         <div class="two-col">
-          <div class="card"><div class="card-title">By Room</div><div class="chart-wrap"><canvas id="cmp-cr"></canvas></div></div>
+          <div class="card"><div class="card-title">By Phase</div><div class="chart-wrap"><canvas id="cmp-cr"></canvas></div></div>
           <div class="card"><div class="card-title">Distribution</div><div class="chart-wrap"><canvas id="cmp-cd"></canvas></div></div>
         </div>
         <div class="card" style="padding:0;overflow:hidden"><table class="cmp-tbl" id="cmp-tbl"></table></div>
@@ -396,6 +396,34 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
   </div>
 </div>
 
+<!-- ADD ITEM MODAL -->
+<div class="modal-overlay" id="modal-add-item">
+  <div class="modal" style="max-width:440px">
+    <h2>➕ Add Item</h2>
+    <div id="add-item-phase-label" style="color:var(--gray3);font-size:13px;margin-bottom:16px"></div>
+    <div class="fg"><label>Item name</label>
+      <input id="add-item-name" placeholder="e.g. Drywall, Paint, Door frames..." autocomplete="off">
+    </div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="closeAddItemModal()">Cancel</button><button class="btn btn-primary" onclick="confirmAddItem()">Add →</button></div>
+  </div>
+</div>
+
+<!-- ATTACHMENTS MODAL -->
+<div class="modal-overlay" id="modal-att">
+  <div class="modal" style="max-width:620px">
+    <h2 style="margin-bottom:4px">📎 Attachments</h2>
+    <div id="att-item-label" style="color:var(--gray3);font-size:13px;margin-bottom:16px"></div>
+    <div id="att-list" style="margin-bottom:16px"></div>
+    <div style="border:2px dashed var(--gray2);border-radius:10px;padding:20px;text-align:center;background:#F9FAFB">
+      <input type="file" id="att-file-input" multiple style="display:none" onchange="uploadAttach()">
+      <div style="font-size:13px;color:var(--gray3);margin-bottom:10px">Upload receipts, invoices, photos, PDFs — any file type</div>
+      <button class="btn btn-primary" onclick="document.getElementById('att-file-input').click()">📁 Choose Files</button>
+      <div id="att-upload-progress" style="margin-top:10px;font-size:12px;color:var(--gray3);display:none"></div>
+    </div>
+    <div class="mactions" style="margin-top:20px"><button class="btn btn-ghost" onclick="closeAttachModal()">Close</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast-el"></div>
 
 <script>
@@ -411,24 +439,14 @@ const PHASES=[
   {id:'ph3',n:3,label:'Phase 3 — Installation',color:'#2E7D32',colorL:'#E8F5E9',tasks:['Cabinets','Granite','Vinyl Flooring','HVAC']},
   {id:'ph4',n:4,label:'Phase 4 — Finishing',   color:'#6A1B9A',colorL:'#F3E5F5',tasks:['Baseboard','Door Handles / Knobs / Doorstop','Faucets / Water Heater','Toilet','Bathroom Finishing','Shower Enclosure','Exterior Painting','Decoration','Landscaping']},
 ];
-const ROOMS=[
-  {id:'general', name:'General',     items:['Drainage','Circuit Breakers','Chimney / Fireplace','Moisture Control','Hot Water Heater','Water Pressure','Main Electrical Panel','Earthquake Damage','Stairs Floors','Abestos','Stairs Railing','Hallways','Smoke Detector','HVAC','Furnace','Wiring','Insulation']},
-  {id:'living',  name:'Living Room', items:['Baseboards','Ceiling','Ceiling Fan','Doors','Flooring','Lights','Outlets and Switches','Trim','Walls','Windows','Electrical','Paint']},
-  {id:'kitchen', name:'Kitchen',     items:['Baseboards','Ceiling','Cabinets','Drawers','Countertops','Smoke Detector','Flooring','Walls','Plumbing','Outlets and Switches','Electrical','Lights','Paint','Refrigerator','Sink / Faucet','Dishwasher','Stove','Oven','Range Hood','Garbage Disposal','Doors','Windows','Trim','Tiles']},
-  {id:'dining',  name:'Dining Room', items:['Baseboards','Ceiling','Lights','Trim','Windows','Paint','Flooring','Walls','Doors','Outlets and Switches','Electrical']},
-  {id:'bed1',    name:'Bedroom #1',  items:['Baseboards','Ceiling','Lighting / Fans','Trim','Windows','Paint','Flooring','Walls','Doors','Outlets and Switches','Electrical','Closet']},
-  {id:'bed2',    name:'Bedroom #2',  items:['Baseboards','Ceiling','Lighting / Fans','Trim','Windows','Paint','Flooring','Walls','Doors','Outlets and Switches','Electrical','Closet']},
-  {id:'bed3',    name:'Bedroom #3',  items:['Baseboards','Ceiling','Lighting / Fans','Trim','Windows','Paint','Flooring','Walls','Doors','Outlets and Switches','Electrical','Closet']},
-  {id:'bed4',    name:'Bedroom #4',  items:['Baseboards','Ceiling','Lighting / Fans','Trim','Windows','Paint','Flooring','Walls','Doors','Outlets and Switches','Electrical','Closet']},
-  {id:'bath1',   name:'Bathroom #1', items:['Baseboards','Cabinets','Shelves','Countertop','Doors','Flooring','Sink','Lights','Mirror(s)','Toilet','Plumbing','Paint','Walls','Tub','Shower','Windows','Ceiling','Drawers','Outlets and Switches','Ceiling Vent','Trim','Towel Hook']},
-  {id:'bath2',   name:'Bathroom #2', items:['Baseboards','Cabinets','Shelves','Countertop','Doors','Flooring','Sink','Lights','Mirror(s)','Toilet','Plumbing','Paint','Walls','Tub','Shower','Windows','Ceiling','Drawers','Outlets and Switches','Ceiling Vent','Trim','Towel Hook']},
-  {id:'bath3',   name:'Bathroom #3', items:['Baseboards','Cabinets','Shelves','Countertop','Doors','Flooring','Sink','Lights','Mirror(s)','Toilet','Plumbing','Paint','Walls','Tub','Shower','Windows','Ceiling','Drawers','Outlets and Switches','Ceiling Vent','Trim','Towel Hook']},
-  {id:'basement',name:'Basement',    items:['Baseboards','Ceiling','Flooring','Lights','Stairs','Sump Pump','Walls','Windows','Doors','Foundation','Outlets and Switches','Storage','Trim']},
-  {id:'exterior',name:'Exterior',    items:['Deck / Porch','Eaves','Outdoor Lighting','Downspouts','Paint','Chimney','Parking','Roof / Shingles','Sidewalks','Septic Field','Siding and Trim','Front and Back Doors','Windows','Doorbell','Landscaping','Driveway','Sod','Mailbox','Soffits and Fascia','Drainage','Gutters']},
-  {id:'attic',   name:'Attic',       items:['Insulation','Ladder','Ventilation','Flooring','Windows','Door']},
-  {id:'backyard',name:'Backyard',    items:['Drainage','Fences / Gates','Retaining Wall','Shed','Sprinklers','Swimming Pool','Grass','Bushes','Trees','Other Landscaping','Outlets','Lights']},
-  {id:'garage',  name:'Garage',      items:['Garage Doors','Ceiling','Flooring','Lights','Walls','Windows','Insulation','Storage']},
+const GROUPS=[
+  {id:'ph1', name:'🔴 Phase 1 — Demolition',  color:'#E53935'},
+  {id:'ph2', name:'🟠 Phase 2 — Preparation', color:'#F57C00'},
+  {id:'ph3', name:'🟢 Phase 3 — Installation',color:'#2E7D32'},
+  {id:'ph4', name:'🟣 Phase 4 — Finishing',   color:'#6A1B9A'},
 ];
+// ROOMS kept as alias for backward-compat with any leftover references
+const ROOMS=GROUPS;
 
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'_');}
 function fmt(n){return '$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -439,7 +457,9 @@ function dChart(id){if(charts_[id]){charts_[id].destroy();delete charts_[id];}}
 // ═══ IN-MEMORY STATE ══════════════════════════════════════════════════
 let projects=[];     // [{id, name, customer, pm, address, start_date, end_date, notes}]
 let schedMap={};     // {project_id: {task_key: {pct,owner,start_date,end_date,duration,done}}}
-let budgetMap={};    // {project_id: {room_id: {item_slug: {est,actual,est_note,actual_note}}}}
+let budgetMap={};    // {project_id: {group_id: {item_slug: {est,actual,est_note,actual_note,...}}}}
+let itemsMap={};     // {project_id: {group_id: [{slug, name}]}} — dynamic items per phase
+let attachMap={};    // {project_id: {group_id: {item_slug: [{id, name, url, size}]}}}
 let CID=null;
 
 // ═══ AUTH ════════════════════════════════════════════════════════════
@@ -503,10 +523,11 @@ function setLoading(show,msg='Loading...'){
 
 // ═══ LOAD DATA ════════════════════════════════════════════════════════
 async function loadAllData(){
-  const [{data:ps},{data:ts},{data:bs}]=await Promise.all([
+  const [{data:ps},{data:ts},{data:bs},{data:atts}]=await Promise.all([
     sb.from('projects').select('*').order('created_at'),
     sb.from('schedule_tasks').select('*'),
     sb.from('budget_items').select('*'),
+    sb.from('budget_attachments').select('*'),
   ]);
   projects=ps||[];
   // Build maps
@@ -516,10 +537,24 @@ async function loadAllData(){
     schedMap[t.project_id][t.task_key]=t;
   });
   budgetMap={};
+  itemsMap={};
   (bs||[]).forEach(b=>{
     if(!budgetMap[b.project_id]) budgetMap[b.project_id]={};
     if(!budgetMap[b.project_id][b.room_id]) budgetMap[b.project_id][b.room_id]={};
     budgetMap[b.project_id][b.room_id][b.item_slug]=b;
+    // Reconstruct itemsMap from existing budget rows (survives page reload)
+    if(!itemsMap[b.project_id]) itemsMap[b.project_id]={};
+    if(!itemsMap[b.project_id][b.room_id]) itemsMap[b.project_id][b.room_id]=[];
+    if(!itemsMap[b.project_id][b.room_id].find(x=>x.slug===b.item_slug)){
+      itemsMap[b.project_id][b.room_id].push({slug:b.item_slug, name:b.item_name||b.item_slug});
+    }
+  });
+  attachMap={};
+  (atts||[]).forEach(a=>{
+    if(!attachMap[a.project_id]) attachMap[a.project_id]={};
+    if(!attachMap[a.project_id][a.room_id]) attachMap[a.project_id][a.room_id]={};
+    if(!attachMap[a.project_id][a.room_id][a.item_slug]) attachMap[a.project_id][a.room_id][a.item_slug]=[];
+    attachMap[a.project_id][a.room_id][a.item_slug].push(a);
   });
 }
 
@@ -630,29 +665,159 @@ function buildBudgetRooms(){
   ['est','act'].forEach(type=>{
     const container=document.getElementById(type+'-rooms');
     container.innerHTML='';
-    ROOMS.forEach(r=>{
+    GROUPS.forEach(g=>{
       const lbl=type==='est'?'Estimated Amount ($)':'Actual Spent ($)';
       const card=document.createElement('div');
       card.className='broom-card';
-      card.innerHTML=`<div class="brc-hdr"><span>${r.name}</span><span class="brc-tot" id="brt-${type}-${r.id}">$0</span></div>
-        <table class="bitbl"><thead><tr><th style="width:160px">Item</th><th style="width:130px">Supplier</th><th style="width:70px">Qty</th><th style="width:100px">Unit Cost ($)</th><th style="width:120px">${lbl}</th><th>Notes</th></tr></thead>
-        <tbody>${r.items.map(item=>`<tr>
-          <td style="font-size:13px;font-weight:600">${item}</td>
-          <td><input class="ci" type="text" id="bsup-${type}-${r.id}-${slug(item)}"
-            oninput="onBSup('${type}','${r.id}','${item}','${slug(item)}',this)" placeholder="Supplier..."></td>
-          <td><input class="ni" type="number" min="0" step="1" id="bq-${type}-${r.id}-${slug(item)}"
-            oninput="onBQ('${type}','${r.id}','${item}','${slug(item)}',this)" placeholder="0"></td>
-          <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
-            <input class="ni" type="number" min="0" step="0.01" id="bu-${type}-${r.id}-${slug(item)}"
-              oninput="onBU('${type}','${r.id}','${item}','${slug(item)}',this)" placeholder="0"></div></td>
-          <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
-            <input class="ni" type="number" min="0" step="100" id="bi-${type}-${r.id}-${slug(item)}"
-              oninput="onBI('${type}','${r.id}','${item}','${slug(item)}',this)" placeholder="0"></div></td>
-          <td><input class="ci" type="text" id="bc-${type}-${r.id}-${slug(item)}"
-            oninput="onBC('${type}','${r.id}','${item}','${slug(item)}',this)" placeholder="Notes..."></td>
-        </tr>`).join('')}</tbody></table>`;
+      // Header
+      const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-${type}-${g.id}">$0</span></div>`;
+      // Table header — Actual has extra 📎 column
+      const thead=type==='act'
+        ? `<thead><tr><th style="width:150px">Item</th><th style="width:120px">Supplier</th><th style="width:60px">Qty</th><th style="width:95px">Unit Cost ($)</th><th style="width:110px">${lbl}</th><th>Notes</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
+        : `<thead><tr><th style="width:160px">Item</th><th style="width:130px">Supplier</th><th style="width:70px">Qty</th><th style="width:100px">Unit Cost ($)</th><th style="width:120px">${lbl}</th><th>Notes</th><th style="width:40px"></th></tr></thead>`;
+      card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-${type}-${g.id}"></tbody></table>
+        <div style="padding:10px 15px;background:#F7FBFF;border-top:1px solid #EEF2F7">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('${type}','${g.id}')">+ Add Item</button>
+        </div>`;
       container.appendChild(card);
+      // Render current items
+      renderItems(type,g.id);
     });
+  });
+}
+
+function renderItems(type,gid){
+  const tb=document.getElementById('tb-'+type+'-'+gid);
+  if(!tb) return;
+  const items=(itemsMap[CID]||{})[gid]||[];
+  if(items.length===0){
+    const colspan=type==='act'?8:7;
+    tb.innerHTML=`<tr><td colspan="${colspan}" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
+    return;
+  }
+  tb.innerHTML=items.map(it=>rowHTML(type,gid,it.name,it.slug)).join('');
+  // Hydrate values
+  items.forEach(it=>hydrateRow(type,gid,it.slug));
+}
+
+function rowHTML(type,gid,item,islug){
+  const attachCell=type==='act'
+    ? `<td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="openAttach('${gid}','${encodeURIComponent(item)}','${islug}')" id="att-btn-${gid}-${islug}">📎 <span id="att-count-${gid}-${islug}">0</span></button></td>`
+    : '';
+  return `<tr id="row-${type}-${gid}-${islug}">
+    <td style="font-size:13px;font-weight:600">${item}</td>
+    <td><input class="ci" type="text" id="bsup-${type}-${gid}-${islug}"
+      oninput="onBSup('${type}','${gid}','${item}','${islug}',this)" placeholder="Supplier..."></td>
+    <td><input class="ni" type="number" min="0" step="1" id="bq-${type}-${gid}-${islug}"
+      oninput="onBQ('${type}','${gid}','${item}','${islug}',this)" placeholder="0"></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
+      <input class="ni" type="number" min="0" step="0.01" id="bu-${type}-${gid}-${islug}"
+        oninput="onBU('${type}','${gid}','${item}','${islug}',this)" placeholder="0"></div></td>
+    <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
+      <input class="ni" type="number" min="0" step="100" id="bi-${type}-${gid}-${islug}"
+        oninput="onBI('${type}','${gid}','${item}','${islug}',this)" placeholder="0"></div></td>
+    <td><input class="ci" type="text" id="bc-${type}-${gid}-${islug}"
+      oninput="onBC('${type}','${gid}','${item}','${islug}',this)" placeholder="Notes..."></td>
+    ${attachCell}
+    <td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 6px;font-size:14px;color:var(--red)" title="Remove item" onclick="removeItem('${gid}','${encodeURIComponent(item)}','${islug}')">🗑</button></td>
+  </tr>`;
+}
+
+function hydrateRow(type,gid,islug){
+  const d=((budgetMap[CID]||{})[gid]||{})[islug];
+  if(!d) return;
+  const val=type==='est'?d.est:d.actual;
+  const note=type==='est'?d.est_note:d.actual_note;
+  const sup=type==='est'?d.est_supplier:d.actual_supplier;
+  const qty=type==='est'?d.est_qty:d.actual_qty;
+  const uc=type==='est'?d.est_unit_cost:d.actual_unit_cost;
+  const inp=document.getElementById('bi-'+type+'-'+gid+'-'+islug);
+  const cmt=document.getElementById('bc-'+type+'-'+gid+'-'+islug);
+  const sEl=document.getElementById('bsup-'+type+'-'+gid+'-'+islug);
+  const qEl=document.getElementById('bq-'+type+'-'+gid+'-'+islug);
+  const uEl=document.getElementById('bu-'+type+'-'+gid+'-'+islug);
+  if(inp&&val){inp.value=val;inp.style.borderColor=type==='est'?'#81C784':'#FFB74D';}
+  if(cmt&&note) cmt.value=note;
+  if(sEl&&sup) sEl.value=sup;
+  if(qEl&&qty) qEl.value=qty;
+  if(uEl&&uc) uEl.value=uc;
+  if(type==='act'){
+    const cnt=((attachMap[CID]||{})[gid]||{})[islug];
+    const cntEl=document.getElementById('att-count-'+gid+'-'+islug);
+    if(cntEl) cntEl.textContent=(cnt||[]).length;
+  }
+}
+
+// ═══ DYNAMIC ITEMS — Add / Remove ═══════════════════════════════════════
+let _addItemCtx={gid:null};
+function addItem(type,gid){
+  _addItemCtx={gid};
+  document.getElementById('add-item-phase-label').textContent=GROUPS.find(g=>g.id===gid)?.name||'';
+  const inp=document.getElementById('add-item-name');
+  inp.value='';
+  document.getElementById('modal-add-item').classList.add('open');
+  setTimeout(()=>inp.focus(),50);
+}
+function closeAddItemModal(){
+  document.getElementById('modal-add-item').classList.remove('open');
+}
+async function confirmAddItem(){
+  const name=document.getElementById('add-item-name').value.trim();
+  if(!name){toast('Item name required',false); return;}
+  const {gid}=_addItemCtx;
+  const clean=name;
+  const islug=slug(clean);
+  if(!itemsMap[CID]) itemsMap[CID]={};
+  if(!itemsMap[CID][gid]) itemsMap[CID][gid]=[];
+  if(itemsMap[CID][gid].find(x=>x.slug===islug)){
+    toast('⚠ Item already exists in this phase',false);
+    return;
+  }
+  itemsMap[CID][gid].push({slug:islug, name:clean});
+  // Also create empty row in DB so it persists even before filling in values
+  if(!budgetMap[CID]) budgetMap[CID]={};
+  if(!budgetMap[CID][gid]) budgetMap[CID][gid]={};
+  if(!budgetMap[CID][gid][islug]) budgetMap[CID][gid][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0};
+  await sb.from('budget_items').upsert({project_id:CID,room_id:gid,item_slug:islug,
+    item_name:clean,est:0,actual:0,est_note:'',actual_note:'',
+    est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0},
+    {onConflict:'project_id,room_id,item_slug'});
+  // Re-render BOTH tables (est + act) so item shows up in both
+  renderItems('est',gid);
+  renderItems('act',gid);
+  closeAddItemModal();
+  showSaved();
+}
+
+async function removeItem(gid,itemEnc,islug){
+  const item=decodeURIComponent(itemEnc);
+  if(!confirm('Remove "'+item+'" from this phase? All its data will be lost.')) return;
+  // Delete row
+  await sb.from('budget_items').delete()
+    .eq('project_id',CID).eq('room_id',gid).eq('item_slug',islug);
+  // Delete all attachments for this item
+  const atts=((attachMap[CID]||{})[gid]||{})[islug]||[];
+  for(const a of atts){
+    if(a.storage_path) await sb.storage.from('budget-attachments').remove([a.storage_path]);
+  }
+  await sb.from('budget_attachments').delete()
+    .eq('project_id',CID).eq('room_id',gid).eq('item_slug',islug);
+  // Remove from memory
+  if(itemsMap[CID]&&itemsMap[CID][gid]) itemsMap[CID][gid]=itemsMap[CID][gid].filter(x=>x.slug!==islug);
+  if(budgetMap[CID]&&budgetMap[CID][gid]) delete budgetMap[CID][gid][islug];
+  if(attachMap[CID]&&attachMap[CID][gid]) delete attachMap[CID][gid][islug];
+  renderItems('est',gid);
+  renderItems('act',gid);
+  updateGroupTotals(gid);
+  renderDashboard();
+  showSaved();
+}
+
+function updateGroupTotals(gid){
+  ['est','act'].forEach(type=>{
+    const tot=calcRoomItemTotal(CID,gid,type==='est'?'est':'actual');
+    const el=document.getElementById('brt-'+type+'-'+gid);
+    if(el) el.textContent=fmt(tot);
   });
 }
 
@@ -704,34 +869,11 @@ function loadProjectForms(p){
     if(pl) pl.textContent=(t.pct||0)+'%';
     updateTaskBadge(tid,t);
   }));
-  const bm=budgetMap[CID]||{};
-  ROOMS.forEach(r=>{
-    const rd=bm[r.id]||{};
-    r.items.forEach(item=>{
-      const d=rd[slug(item)]||{est:0,actual:0};
-      ['est','act'].forEach(type=>{
-        const val=type==='est'?d.est:d.actual;
-        const note=type==='est'?d.est_note:d.actual_note;
-        const sup=type==='est'?d.est_supplier:d.actual_supplier;
-        const qty=type==='est'?d.est_qty:d.actual_qty;
-        const uc=type==='est'?d.est_unit_cost:d.actual_unit_cost;
-        const inp=document.getElementById('bi-'+type+'-'+r.id+'-'+slug(item));
-        const cmt=document.getElementById('bc-'+type+'-'+r.id+'-'+slug(item));
-        const sEl=document.getElementById('bsup-'+type+'-'+r.id+'-'+slug(item));
-        const qEl=document.getElementById('bq-'+type+'-'+r.id+'-'+slug(item));
-        const uEl=document.getElementById('bu-'+type+'-'+r.id+'-'+slug(item));
-        if(inp&&val){inp.value=val;inp.style.borderColor=type==='est'?'#81C784':'#FFB74D';}
-        if(cmt&&note) cmt.value=note;
-        if(sEl&&sup) sEl.value=sup;
-        if(qEl&&qty) qEl.value=qty;
-        if(uEl&&uc) uEl.value=uc;
-      });
-    });
-    ['est','act'].forEach(type=>{
-      const tot=calcRoomItemTotal(CID,r.id,type==='est'?'est':'actual');
-      const el=document.getElementById('brt-'+type+'-'+r.id);
-      if(el) el.textContent=fmt(tot);
-    });
+  // Re-render budget tables with current items (hydration happens in renderItems)
+  GROUPS.forEach(g=>{
+    renderItems('est',g.id);
+    renderItems('act',g.id);
+    updateGroupTotals(g.id);
   });
   updateSchedProgress();
 }
@@ -891,6 +1033,111 @@ async function onBU(type,roomId,item,islug,el){
   _debBI[k]=setTimeout(()=>_saveBI(roomId,item,islug),500);
 }
 
+// ═══ ATTACHMENTS (Actual Costs only) ══════════════════════════════════
+let _attCtx={gid:null, item:null, islug:null};
+
+function openAttach(gid,itemEnc,islug){
+  _attCtx={gid, item:decodeURIComponent(itemEnc), islug};
+  document.getElementById('att-item-label').textContent=_attCtx.item+' · '+(GROUPS.find(g=>g.id===gid)?.name||'');
+  renderAttachList();
+  document.getElementById('modal-att').classList.add('open');
+}
+function closeAttachModal(){
+  document.getElementById('modal-att').classList.remove('open');
+  document.getElementById('att-file-input').value='';
+  document.getElementById('att-upload-progress').style.display='none';
+}
+function renderAttachList(){
+  const {gid,islug}=_attCtx;
+  const list=((attachMap[CID]||{})[gid]||{})[islug]||[];
+  const el=document.getElementById('att-list');
+  if(list.length===0){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--gray3);font-size:13px;font-style:italic">No attachments yet</div>';
+  } else {
+    el.innerHTML=list.map(a=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#F7FBFF;border:1px solid #E1E8F0;border-radius:8px;margin-bottom:6px">
+        <span style="font-size:18px">${fileIcon(a.name)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</div>
+          <div style="font-size:11px;color:var(--gray3)">${fmtSize(a.size)} · ${new Date(a.created_at).toLocaleDateString()}</div>
+        </div>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="downloadAttach('${a.id}')">⬇ Open</button>
+        <button class="btn btn-ghost" style="padding:4px 8px;font-size:14px;color:var(--red)" title="Remove" onclick="deleteAttach('${a.id}')">🗑</button>
+      </div>
+    `).join('');
+  }
+  // Update count badge on the row
+  const cntEl=document.getElementById('att-count-'+_attCtx.gid+'-'+_attCtx.islug);
+  if(cntEl) cntEl.textContent=list.length;
+}
+function fileIcon(name){
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  if(['pdf'].includes(ext)) return '📕';
+  if(['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) return '🖼';
+  if(['doc','docx'].includes(ext)) return '📘';
+  if(['xls','xlsx','csv'].includes(ext)) return '📊';
+  if(['zip','rar','7z'].includes(ext)) return '🗜';
+  return '📄';
+}
+function fmtSize(b){
+  if(!b) return '—';
+  if(b<1024) return b+' B';
+  if(b<1048576) return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(1)+' MB';
+}
+async function uploadAttach(){
+  const input=document.getElementById('att-file-input');
+  const files=Array.from(input.files||[]);
+  if(files.length===0) return;
+  const {gid,item,islug}=_attCtx;
+  const prog=document.getElementById('att-upload-progress');
+  prog.style.display='block';
+  let ok=0, fail=0;
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    prog.textContent=`Uploading ${i+1}/${files.length}: ${f.name}...`;
+    const path=`${CID}/${gid}/${islug}/${Date.now()}_${f.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const {error:upErr}=await sb.storage.from('budget-attachments').upload(path,f,{upsert:false});
+    if(upErr){console.error(upErr); fail++; continue;}
+    const {data:rec,error:insErr}=await sb.from('budget_attachments').insert({
+      project_id:CID, room_id:gid, item_slug:islug, item_name:item,
+      name:f.name, size:f.size, mime:f.type||'', storage_path:path
+    }).select().single();
+    if(insErr){console.error(insErr); await sb.storage.from('budget-attachments').remove([path]); fail++; continue;}
+    if(!attachMap[CID]) attachMap[CID]={};
+    if(!attachMap[CID][gid]) attachMap[CID][gid]={};
+    if(!attachMap[CID][gid][islug]) attachMap[CID][gid][islug]=[];
+    attachMap[CID][gid][islug].push(rec);
+    ok++;
+  }
+  prog.textContent=ok+' uploaded'+(fail?' · '+fail+' failed':'');
+  input.value='';
+  renderAttachList();
+  if(ok) showSaved();
+  setTimeout(()=>{prog.style.display='none';}, 2500);
+}
+async function downloadAttach(attId){
+  const {gid,islug}=_attCtx;
+  const a=(((attachMap[CID]||{})[gid]||{})[islug]||[]).find(x=>x.id===attId);
+  if(!a) return;
+  const {data,error}=await sb.storage.from('budget-attachments').createSignedUrl(a.storage_path,60);
+  if(error){toast('Error opening file',false);return;}
+  window.open(data.signedUrl,'_blank');
+}
+async function deleteAttach(attId){
+  if(!confirm('Remove this attachment?')) return;
+  const {gid,islug}=_attCtx;
+  const arr=(((attachMap[CID]||{})[gid]||{})[islug]||[]);
+  const idx=arr.findIndex(x=>x.id===attId);
+  if(idx<0) return;
+  const a=arr[idx];
+  if(a.storage_path) await sb.storage.from('budget-attachments').remove([a.storage_path]);
+  await sb.from('budget_attachments').delete().eq('id',attId);
+  arr.splice(idx,1);
+  renderAttachList();
+  showSaved();
+}
+
 // ═══ UI HELPERS ══════════════════════════════════════════════════════
 function updateTaskBadge(tid,t){
   const badge=document.getElementById('tbadge-'+tid);
@@ -950,7 +1197,7 @@ function renderDashboard(){
     .filter(r=>r.a>0&&r.a>r.e).sort((a,b)=>(b.a-b.e)-(a.a-a.e)).slice(0,5);
   document.getElementById('d-over').innerHTML=ov.length
     ?ov.map(r=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #EEF2F7;font-size:12px"><span>${r.n}</span><span style="color:#E53935;font-weight:700">+${fmt(r.a-r.e)}</span></div>`).join('')
-    :'<div style="color:var(--gray3);font-size:13px;padding:8px 0">✅ No rooms over budget</div>';
+    :'<div style="color:var(--gray3);font-size:13px;padding:8px 0">✅ No phases over budget</div>';
   const today=new Date().toISOString().split('T')[0];
   let pt=0;
   if(p.start_date&&p.end_date){const s=new Date(p.start_date),e=new Date(p.end_date),t=new Date(today);pt=Math.min(100,Math.max(0,Math.round((t-s)/86400000/Math.max(1,(e-s)/86400000)*100)));}
@@ -981,7 +1228,7 @@ function renderComparison(){
   const ctxD=document.getElementById('cmp-cd');
   const rwd=ROOMS.filter(r=>calcRoomItemTotal(CID,r.id,'est')>0||calcRoomItemTotal(CID,r.id,'actual')>0);
   if(ctxD) charts_['cd']=new Chart(ctxD,{type:'doughnut',data:{labels:rwd.map(r=>r.name),datasets:[{data:rwd.map(r=>calcRoomItemTotal(CID,r.id,'est')||0.001),backgroundColor:['#1565C0','#F57C00','#2E7D32','#6A1B9A','#E53935','#C8922A','#0277BD','#558B2F','#4527A0','#AD1457','#00838F','#37474F','#558B2F','#E65100','#1565C0','#283593'],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
-  let html=`<thead><tr style="background:var(--navy);color:#fff"><th style="padding:9px 12px">Room</th><th style="padding:9px 12px">Item</th><th class="r" style="padding:9px 12px">Estimated</th><th class="r" style="padding:9px 12px">Actual</th><th class="r" style="padding:9px 12px">Variance</th><th style="padding:9px 12px;text-align:center">Status</th></tr></thead><tbody>`;
+  let html=`<thead><tr style="background:var(--navy);color:#fff"><th style="padding:9px 12px">Phase</th><th style="padding:9px 12px">Item</th><th class="r" style="padding:9px 12px">Estimated</th><th class="r" style="padding:9px 12px">Actual</th><th class="r" style="padding:9px 12px">Variance</th><th style="padding:9px 12px;text-align:center">Status</th></tr></thead><tbody>`;
   let ge=0,ga=0;
   ROOMS.forEach(r=>{
     const re2=calcRoomItemTotal(CID,r.id,'est');
@@ -993,13 +1240,14 @@ function renderComparison(){
     const rtx=ra2===0?'No data':rv>0?'Over':'Under';
     html+=`<tr class="rrow"><td colspan="2" style="padding:9px 12px">${r.name}</td><td class="r" style="padding:9px 12px">${fmt(re2)}</td><td class="r" style="padding:9px 12px">${fmt(ra2)}</td><td class="r" style="padding:9px 12px;color:${rv>0?'#E53935':rv<0?'#2E7D32':'#1565C0'}">${rv===0?'—':(rv>0?'+':'')+fmt(rv)}</td><td style="padding:9px 12px;text-align:center"><span class="sc ${rs}">${rtx}</span></td></tr>`;
     const bm=(budgetMap[CID]||{})[r.id]||{};
-    r.items.forEach(item=>{
-      const d=bm[slug(item)]||{est:0,actual:0};
+    const itemsForGroup=((itemsMap[CID]||{})[r.id])||[];
+    itemsForGroup.forEach(it=>{
+      const d=bm[it.slug]||{est:0,actual:0};
       if(!d.est&&!d.actual) return;
       const iv=d.actual-d.est;
       const isc=!d.actual?'sc-mt':iv>0?'sc-ov':iv<0?'sc-un':'sc-eq';
       const itx=!d.actual?'—':iv>0?'⚠ Over':iv<0?'✅ Under':'✔ On budget';
-      html+=`<tr><td style="padding:7px 12px;font-size:11px;color:var(--gray3)"></td><td style="padding:7px 12px;font-size:13px">${item}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.est?fmt(d.est):'—'}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.actual?fmt(d.actual):'—'}</td><td class="r" style="padding:7px 12px;font-size:12px;color:${iv>0?'#E53935':iv<0?'#2E7D32':'#9AA5B4'}">${iv===0||(!d.est&&!d.actual)?'—':(iv>0?'+':'')+fmt(iv)}</td><td style="padding:7px 12px;text-align:center"><span class="sc ${isc}" style="font-size:10px">${itx}</span></td></tr>`;
+      html+=`<tr><td style="padding:7px 12px;font-size:11px;color:var(--gray3)"></td><td style="padding:7px 12px;font-size:13px">${it.name}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.est?fmt(d.est):'—'}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.actual?fmt(d.actual):'—'}</td><td class="r" style="padding:7px 12px;font-size:12px;color:${iv>0?'#E53935':iv<0?'#2E7D32':'#9AA5B4'}">${iv===0||(!d.est&&!d.actual)?'—':(iv>0?'+':'')+fmt(iv)}</td><td style="padding:7px 12px;text-align:center"><span class="sc ${isc}" style="font-size:10px">${itx}</span></td></tr>`;
     });
   });
   html+=`<tr class="trow"><td colspan="2" style="padding:11px 12px">TOTAL</td><td class="r" style="padding:11px 12px">${fmt(ge)}</td><td class="r" style="padding:11px 12px">${fmt(ga)}</td><td class="r" style="padding:11px 12px;color:${ga-ge>0?'#EF9A9A':ga-ge<0?'#A5D6A7':'#fff'}">${ga-ge===0?'—':(ga-ge>0?'+':'')+fmt(ga-ge)}</td><td style="padding:11px 12px;text-align:center;color:${ga-ge>0?'#EF9A9A':ga-ge<0?'#A5D6A7':'#fff'};font-weight:700">${ga-ge>0?'⚠ Over budget':ga-ge<0?'✅ Under budget':'✔ On budget'}</td></tr>`;
@@ -1080,6 +1328,9 @@ function toast(msg,ok=true){
 }
 
 document.getElementById('modal-new').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('modal-add-item').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddItemModal();});
+document.getElementById('modal-att').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAttachModal();});
+document.getElementById('add-item-name').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmAddItem();}});
 
 // INIT
 init();
