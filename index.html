@@ -378,6 +378,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
         </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📍 Location &amp; Utilities</div>
+          <div class="fgrid"><div class="fg"><label>ZIP Code</label><input id="pf-zip" placeholder="e.g. 34711" oninput="debouncePF()"></div><div class="fg"><label>County</label><input id="pf-county" placeholder="e.g. Lake County" oninput="debouncePF()"></div></div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #EEF2F7">
+            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Water Utility</div>
+            <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-water-co" placeholder="e.g. City of Clermont Utilities" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-water-acc" placeholder="e.g. 12345-6789" oninput="debouncePF()"></div></div>
+          </div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #EEF2F7">
+            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility</div>
+            <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-power-co" placeholder="e.g. Duke Energy" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-power-acc" placeholder="e.g. 987654321" oninput="debouncePF()"></div></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -408,6 +420,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
   </div>
 </div>
 
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="modal-add-task">
+  <div class="modal" style="max-width:440px">
+    <h2>➕ Add Task</h2>
+    <div id="add-task-phase-label" style="color:var(--gray3);font-size:13px;margin-bottom:16px"></div>
+    <div class="fg"><label>Task name</label>
+      <input id="add-task-name" placeholder="e.g. Remove kitchen cabinets, Install flooring..." autocomplete="off">
+    </div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="closeAddTaskModal()">Cancel</button><button class="btn btn-primary" onclick="confirmAddTask()">Add →</button></div>
+  </div>
+</div>
+
 <!-- ATTACHMENTS MODAL -->
 <div class="modal-overlay" id="modal-att">
   <div class="modal" style="max-width:620px">
@@ -434,10 +458,10 @@ const sb = supabase.createClient(SURL, SKEY);
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════
 const PHASES=[
-  {id:'ph1',n:1,label:'Phase 1 — Demolition',  color:'#E53935',colorL:'#FFEBEE',tasks:['General','Living Room','Kitchen','Dining Room','Bedroom','Bathroom','Basement','Exterior','Attic','Backyard','Garage']},
-  {id:'ph2',n:2,label:'Phase 2 — Preparation', color:'#F57C00',colorL:'#FFF3E0',tasks:['Frame','Drywall','Finish','Texture','Painting','Bathroom','Tiles','Electric','Windows','Interior Doors']},
-  {id:'ph3',n:3,label:'Phase 3 — Installation',color:'#2E7D32',colorL:'#E8F5E9',tasks:['Cabinets','Granite','Vinyl Flooring','HVAC']},
-  {id:'ph4',n:4,label:'Phase 4 — Finishing',   color:'#6A1B9A',colorL:'#F3E5F5',tasks:['Baseboard','Door Handles / Knobs / Doorstop','Faucets / Water Heater','Toilet','Bathroom Finishing','Shower Enclosure','Exterior Painting','Decoration','Landscaping']},
+  {id:'ph1',n:1,label:'Phase 1 — Demolition',  color:'#E53935',colorL:'#FFEBEE'},
+  {id:'ph2',n:2,label:'Phase 2 — Preparation', color:'#F57C00',colorL:'#FFF3E0'},
+  {id:'ph3',n:3,label:'Phase 3 — Installation',color:'#2E7D32',colorL:'#E8F5E9'},
+  {id:'ph4',n:4,label:'Phase 4 — Finishing',   color:'#6A1B9A',colorL:'#F3E5F5'},
 ];
 const GROUPS=[
   {id:'ph1', name:'🔴 Phase 1 — Demolition',  color:'#E53935'},
@@ -456,7 +480,8 @@ function dChart(id){if(charts_[id]){charts_[id].destroy();delete charts_[id];}}
 
 // ═══ IN-MEMORY STATE ══════════════════════════════════════════════════
 let projects=[];     // [{id, name, customer, pm, address, start_date, end_date, notes}]
-let schedMap={};     // {project_id: {task_key: {pct,owner,start_date,end_date,duration,done}}}
+let schedMap={};     // {project_id: {task_key: {pct,owner,start_date,end_date,duration,done,name,phase_id,description}}}
+let tasksMap={};     // {project_id: {phase_id: [{tid, name}]}} — dynamic tasks per phase
 let budgetMap={};    // {project_id: {group_id: {item_slug: {est,actual,est_note,actual_note,...}}}}
 let itemsMap={};     // {project_id: {group_id: [{slug, name}]}} — dynamic items per phase
 let attachMap={};    // {project_id: {group_id: {item_slug: [{id, name, url, size}]}}}
@@ -532,9 +557,20 @@ async function loadAllData(){
   projects=ps||[];
   // Build maps
   schedMap={};
+  tasksMap={};
   (ts||[]).forEach(t=>{
     if(!schedMap[t.project_id]) schedMap[t.project_id]={};
     schedMap[t.project_id][t.task_key]=t;
+    // Reconstruct tasksMap from schedule_tasks rows
+    // task_key format: 'ph1_<slug>' or legacy; phase_id column also stored
+    const pid=t.phase_id || (t.task_key||'').split('_')[0];
+    if(pid && PHASES.find(p=>p.id===pid)){
+      if(!tasksMap[t.project_id]) tasksMap[t.project_id]={};
+      if(!tasksMap[t.project_id][pid]) tasksMap[t.project_id][pid]=[];
+      if(!tasksMap[t.project_id][pid].find(x=>x.tid===t.task_key)){
+        tasksMap[t.project_id][pid].push({tid:t.task_key, name:t.name||'(untitled)'});
+      }
+    }
   });
   budgetMap={};
   itemsMap={};
@@ -623,13 +659,17 @@ function renderPortfolio(){
 // ═══ CALCULATIONS ════════════════════════════════════════════════════
 function calcSched(pid){
   const sm=schedMap[pid]||{};
+  const tm=tasksMap[pid]||{};
   const vals=[];
-  PHASES.forEach(ph=>ph.tasks.forEach(n=>vals.push(+(sm[ph.id+'_'+slug(n)]?.pct)||0)));
+  PHASES.forEach(ph=>(tm[ph.id]||[]).forEach(t=>vals.push(+(sm[t.tid]?.pct)||0)));
   return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
 }
 function calcPhasePct(pid,ph){
   const sm=schedMap[pid]||{};
-  const vals=ph.tasks.map(n=>+(sm[ph.id+'_'+slug(n)]?.pct)||0);
+  const tm=tasksMap[pid]||{};
+  const tasks=tm[ph.id]||[];
+  if(tasks.length===0) return 0;
+  const vals=tasks.map(t=>+(sm[t.tid]?.pct)||0);
   return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
 }
 function calcRoomTotal(pid,type){
@@ -823,25 +863,128 @@ function updateGroupTotals(gid){
 
 function buildTaskEditors(){
   PHASES.forEach(ph=>{
-    const c=document.getElementById('tasks-'+ph.id); c.innerHTML='';
-    ph.tasks.forEach((name,ti)=>{
-      const tid=ph.id+'_'+slug(name);
-      const div=document.createElement('div');
-      div.id='trow-'+tid; div.className='task-row';
-      div.innerHTML=`<div class="trh"><span style="font-size:11px;color:var(--gray3);min-width:26px">${ph.n}.${ti+1}</span>
-        <span class="tn">${name}</span>
-        <span id="tbadge-${tid}" style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#EAECEE;color:#9AA5B4">⏳ Not Started</span></div>
-        <div class="trb">
-          <div class="fg"><label>Task Owner</label><input id="to-${tid}" placeholder="Assign..." oninput="debounceTask('${tid}')"></div>
-          <div class="fg"><label>Start Date</label><input id="ts-${tid}" type="date" onchange="saveTask('${tid}')"></div>
-          <div class="fg"><label>End Date</label><input id="te-${tid}" type="date" onchange="saveTask('${tid}')"></div>
-          <div class="fg"><label>% Complete — <span id="tpl-${tid}" style="color:var(--blue);font-weight:800">0%</span></label>
-            <div class="rw"><input type="range" min="0" max="100" step="5" id="tp-${tid}" oninput="onPC('${tid}',this.value)">
-            <span style="font-size:13px;font-weight:800;color:var(--blue);min-width:36px" id="tpv-${tid}">0%</span></div></div>
-        </div>`;
-      c.appendChild(div);
-    });
+    const c=document.getElementById('tasks-'+ph.id);
+    if(!c) return;
+    // Container for tasks + Add Task button at the bottom
+    c.innerHTML=`<div id="tasks-list-${ph.id}"></div>
+      <div style="padding:10px 0;margin-top:6px;border-top:1px dashed var(--gray2)">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addTask('${ph.id}')">+ Add Task</button>
+      </div>`;
+    renderPhaseTasks(ph.id);
   });
+}
+
+function renderPhaseTasks(phaseId){
+  const list=document.getElementById('tasks-list-'+phaseId);
+  if(!list) return;
+  const ph=PHASES.find(p=>p.id===phaseId);
+  const tasks=((tasksMap[CID]||{})[phaseId])||[];
+  if(tasks.length===0){
+    list.innerHTML=`<div style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No tasks yet — click "+ Add Task" below</div>`;
+    return;
+  }
+  const sm=schedMap[CID]||{};
+  list.innerHTML=tasks.map((t,ti)=>{
+    const tid=t.tid;
+    const d=sm[tid]||{};
+    const pct=+d.pct||0;
+    return `<div id="trow-${tid}" class="task-row">
+      <div class="trh">
+        <span style="font-size:11px;color:var(--gray3);min-width:26px">${ph.n}.${ti+1}</span>
+        <span class="tn" contenteditable="true" style="outline:none;border-bottom:1px dashed transparent" onblur="renameTask('${phaseId}','${tid}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${t.name}</span>
+        <span id="tbadge-${tid}" style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#EAECEE;color:#9AA5B4">⏳ Not Started</span>
+        <button class="btn btn-ghost" style="margin-left:auto;padding:3px 7px;font-size:13px;color:var(--red)" title="Remove task" onclick="removeTask('${phaseId}','${tid}')">🗑</button>
+      </div>
+      <div class="trb">
+        <div class="fg"><label>Task Owner</label><input id="to-${tid}" placeholder="Assign..." oninput="debounceTask('${tid}')"></div>
+        <div class="fg"><label>Start Date</label><input id="ts-${tid}" type="date" onchange="saveTask('${tid}')"></div>
+        <div class="fg"><label>End Date</label><input id="te-${tid}" type="date" onchange="saveTask('${tid}')"></div>
+        <div class="fg"><label>% Complete — <span id="tpl-${tid}" style="color:var(--blue);font-weight:800">${pct}%</span></label>
+          <div class="rw"><input type="range" min="0" max="100" step="5" id="tp-${tid}" oninput="onPC('${tid}',this.value)" value="${pct}">
+          <span style="font-size:13px;font-weight:800;color:var(--blue);min-width:36px" id="tpv-${tid}">${pct}%</span></div></div>
+      </div>
+      <div class="trb" style="margin-top:6px">
+        <div class="fg" style="grid-column:1 / -1"><label>Description (optional)</label>
+          <textarea id="td-${tid}" rows="2" placeholder="Add any extra detail about this task..." oninput="debounceTask('${tid}')" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical"></textarea>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  // Hydrate input values
+  tasks.forEach(t=>{
+    const d=sm[t.tid]||{};
+    const o=document.getElementById('to-'+t.tid);
+    const s=document.getElementById('ts-'+t.tid);
+    const e=document.getElementById('te-'+t.tid);
+    const td=document.getElementById('td-'+t.tid);
+    if(o) o.value=d.owner||'';
+    if(s) s.value=d.start_date||'';
+    if(e) e.value=d.end_date||'';
+    if(td) td.value=d.description||'';
+    updateTaskBadge(t.tid,d);
+  });
+}
+
+// ─── DYNAMIC TASKS — Add / Remove / Rename ─────────────────────────────
+let _addTaskCtx={phaseId:null};
+function addTask(phaseId){
+  _addTaskCtx={phaseId};
+  document.getElementById('add-task-phase-label').textContent=PHASES.find(p=>p.id===phaseId)?.label||'';
+  const inp=document.getElementById('add-task-name');
+  inp.value='';
+  document.getElementById('modal-add-task').classList.add('open');
+  setTimeout(()=>inp.focus(),50);
+}
+function closeAddTaskModal(){
+  document.getElementById('modal-add-task').classList.remove('open');
+}
+async function confirmAddTask(){
+  const name=document.getElementById('add-task-name').value.trim();
+  if(!name){toast('Task name required',false);return;}
+  const {phaseId}=_addTaskCtx;
+  const tid=phaseId+'_'+slug(name)+'_'+Date.now().toString(36);
+  if(!tasksMap[CID]) tasksMap[CID]={};
+  if(!tasksMap[CID][phaseId]) tasksMap[CID][phaseId]=[];
+  tasksMap[CID][phaseId].push({tid, name});
+  if(!schedMap[CID]) schedMap[CID]={};
+  schedMap[CID][tid]={project_id:CID,task_key:tid,phase_id:phaseId,name,description:'',owner:'',start_date:null,end_date:null,duration:0,pct:0,done:false};
+  await sb.from('schedule_tasks').upsert({
+    project_id:CID, task_key:tid, phase_id:phaseId, name,
+    description:'', owner:'', pct:0, done:false, duration:0
+  },{onConflict:'project_id,task_key'});
+  renderPhaseTasks(phaseId);
+  updateSchedProgress();
+  closeAddTaskModal();
+  showSaved();
+}
+async function removeTask(phaseId,tid){
+  if(!confirm('Remove this task? All its data will be lost.')) return;
+  await sb.from('schedule_tasks').delete().eq('project_id',CID).eq('task_key',tid);
+  if(tasksMap[CID]&&tasksMap[CID][phaseId]) tasksMap[CID][phaseId]=tasksMap[CID][phaseId].filter(x=>x.tid!==tid);
+  if(schedMap[CID]) delete schedMap[CID][tid];
+  renderPhaseTasks(phaseId);
+  updateSchedProgress();
+  showSaved();
+}
+async function renameTask(phaseId,tid,el){
+  const newName=(el.textContent||'').trim();
+  if(!newName){
+    // Revert to old name if emptied
+    const old=((tasksMap[CID]||{})[phaseId]||[]).find(x=>x.tid===tid);
+    if(old) el.textContent=old.name;
+    return;
+  }
+  // Update in-memory
+  const arr=(tasksMap[CID]||{})[phaseId]||[];
+  const entry=arr.find(x=>x.tid===tid);
+  if(!entry||entry.name===newName){el.style.borderBottomColor='transparent';return;}
+  entry.name=newName;
+  if(!schedMap[CID]) schedMap[CID]={};
+  if(!schedMap[CID][tid]) schedMap[CID][tid]={};
+  schedMap[CID][tid].name=newName;
+  await sb.from('schedule_tasks').update({name:newName}).eq('project_id',CID).eq('task_key',tid);
+  el.style.borderBottomColor='transparent';
+  showSaved();
 }
 
 // ═══ LOAD PROJECT INTO FORMS ══════════════════════════════════════════
@@ -851,24 +994,21 @@ function loadProjectForms(p){
     const el=document.getElementById('pf-'+(k==='start_date'?'start':k==='end_date'?'end':fk));
     if(el) el.value=p[k]||'';
   });
-  const sm=schedMap[CID]||{};
-  PHASES.forEach(ph=>ph.tasks.forEach(name=>{
-    const tid=ph.id+'_'+slug(name);
-    const t=sm[tid]||{};
-    const o=document.getElementById('to-'+tid);
-    const s=document.getElementById('ts-'+tid);
-    const e=document.getElementById('te-'+tid);
-    const pr=document.getElementById('tp-'+tid);
-    const pv=document.getElementById('tpv-'+tid);
-    const pl=document.getElementById('tpl-'+tid);
-    if(o) o.value=t.owner||'';
-    if(s) s.value=t.start_date||'';
-    if(e) e.value=t.end_date||'';
-    if(pr) pr.value=t.pct||0;
-    if(pv) pv.textContent=(t.pct||0)+'%';
-    if(pl) pl.textContent=(t.pct||0)+'%';
-    updateTaskBadge(tid,t);
-  }));
+  // New location & utilities fields
+  const extras=[
+    ['pf-zip','zip_code'],
+    ['pf-county','county'],
+    ['pf-water-co','water_company'],
+    ['pf-water-acc','water_account'],
+    ['pf-power-co','power_company'],
+    ['pf-power-acc','power_account'],
+  ];
+  extras.forEach(([elId,key])=>{
+    const el=document.getElementById(elId);
+    if(el) el.value=p[key]||'';
+  });
+  // Re-render tasks for each phase (hydration happens in renderPhaseTasks)
+  PHASES.forEach(ph=>renderPhaseTasks(ph.id));
   // Re-render budget tables with current items (hydration happens in renderItems)
   GROUPS.forEach(g=>{
     renderItems('est',g.id);
@@ -885,7 +1025,10 @@ function debouncePF(){clearTimeout(_debPF);_debPF=setTimeout(savePF,600);}
 async function savePF(){
   if(!CID) return;
   const payload={name:v('pf-name'),customer:v('pf-customer'),pm:v('pf-pm'),
-    address:v('pf-address'),start_date:v('pf-start'),end_date:v('pf-end'),notes:v('pf-notes')};
+    address:v('pf-address'),start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
+    zip_code:v('pf-zip'),county:v('pf-county'),
+    water_company:v('pf-water-co'),water_account:v('pf-water-acc'),
+    power_company:v('pf-power-co'),power_account:v('pf-power-acc')};
   await sb.from('projects').update(payload).eq('id',CID);
   const i=projects.findIndex(x=>x.id===CID);
   if(i>=0) projects[i]={...projects[i],...payload};
@@ -902,13 +1045,20 @@ async function saveTask(tid){
   const s=document.getElementById('ts-'+tid);
   const e=document.getElementById('te-'+tid);
   const pr=document.getElementById('tp-'+tid);
+  const td=document.getElementById('td-'+tid);
   const pct=+(pr?.value||0);
   const start=s?.value||'';
   const end=e?.value||'';
   let dur=0;
   if(start&&end) dur=Math.max(0,Math.round((new Date(end)-new Date(start))/86400000));
-  const payload={project_id:CID,task_key:tid,pct,owner:o?.value||'',
-    start_date:start,end_date:end,duration:dur,done:pct===100};
+  // Figure out phase_id + name from schedMap (set when task was created)
+  const existing=(schedMap[CID]||{})[tid]||{};
+  const phase_id=existing.phase_id||(tid.split('_')[0]);
+  const name=existing.name||tid;
+  const payload={project_id:CID,task_key:tid,phase_id,name,
+    description:td?.value||'',
+    pct,owner:o?.value||'',
+    start_date:start||null,end_date:end||null,duration:dur,done:pct===100};
   const {error}=await sb.from('schedule_tasks').upsert(payload,{onConflict:'project_id,task_key'});
   if(!error){
     if(!schedMap[CID]) schedMap[CID]={};
@@ -1258,21 +1408,57 @@ function renderComparison(){
 function renderGantt(){
   if(!CID) return;
   const p=projects.find(x=>x.id===CID); if(!p) return;
-  const ps=new Date(p.start_date||'2026-03-27');
   const sm=schedMap[CID]||{};
-  const weeks=Array.from({length:12},(_,i)=>`<th style="text-align:center;min-width:54px;font-size:10px">W${i+1}</th>`).join('');
-  let html=`<thead><tr><th style="min-width:180px">Task</th><th style="min-width:80px">Owner</th><th style="min-width:80px">Dates</th><th style="min-width:44px;text-align:center">%</th>${weeks}</tr></thead><tbody>`;
+  const tm=tasksMap[CID]||{};
+
+  // Collect all dated tasks to determine Gantt range
+  const allTasks=[];
+  PHASES.forEach(ph=>(tm[ph.id]||[]).forEach(t=>allTasks.push({...t, phase:ph, data:sm[t.tid]||{}})));
+  const dated=allTasks.filter(x=>x.data.start_date);
+
+  // Project start defaults from project.start_date, but extend backward if any task starts earlier
+  let minMs=p.start_date?new Date(p.start_date).getTime():null;
+  let maxMs=p.end_date?new Date(p.end_date).getTime():null;
+  dated.forEach(x=>{
+    const sMs=new Date(x.data.start_date).getTime();
+    const eMs=x.data.end_date?new Date(x.data.end_date).getTime():sMs+86400000;
+    if(minMs===null||sMs<minMs) minMs=sMs;
+    if(maxMs===null||eMs>maxMs) maxMs=eMs;
+  });
+  if(minMs===null){minMs=new Date().getTime();}
+  if(maxMs===null){maxMs=minMs+7*86400000*12;} // default 12 weeks if nothing
+  // Align minMs to the Monday of that week for clean weekly columns
+  const ps=new Date(minMs);
+  const psDate=new Date(ps.getFullYear(),ps.getMonth(),ps.getDate());
+  const weekSpan=Math.max(1, Math.ceil((maxMs-psDate.getTime())/(7*86400000)));
+  const WEEKS=Math.max(12, weekSpan+1); // at least 12, or enough to fit everything +1 buffer
+
+  const weekCols=Array.from({length:WEEKS},(_,i)=>`<th style="text-align:center;min-width:54px;font-size:10px">W${i+1}</th>`).join('');
+  const totalCols=4+WEEKS;
+  let html=`<thead><tr><th style="min-width:180px">Task</th><th style="min-width:80px">Owner</th><th style="min-width:80px">Dates</th><th style="min-width:44px;text-align:center">%</th>${weekCols}</tr></thead><tbody>`;
+
   PHASES.forEach(ph=>{
-    html+=`<tr class="g-ph" style="background:${ph.colorL};border-left:3px solid ${ph.color}"><td colspan="16" style="color:${ph.color}">${ph.label}</td></tr>`;
-    ph.tasks.forEach((name,ti)=>{
-      const tid=ph.id+'_'+slug(name);
+    const tasks=tm[ph.id]||[];
+    html+=`<tr class="g-ph" style="background:${ph.colorL};border-left:3px solid ${ph.color}"><td colspan="${totalCols}" style="color:${ph.color}">${ph.label}${tasks.length?'':' — <span style="font-weight:400;opacity:.7">no tasks yet</span>'}</td></tr>`;
+    tasks.forEach((tobj,ti)=>{
+      const tid=tobj.tid;
       const t=sm[tid]||{pct:0};
       const pct=+t.pct||0;
-      let bs=0,bl=1;
-      if(t.start_date){bs=Math.max(0,Math.round((new Date(t.start_date)-ps)/86400000));bl=Math.max(1,+t.duration||1);}
+      let bs=0,bl=1,hasRange=false;
+      if(t.start_date){
+        bs=Math.max(0,Math.round((new Date(t.start_date).getTime()-psDate.getTime())/86400000));
+        bl=Math.max(1,+t.duration||1);
+        if(!t.duration && t.end_date){
+          bl=Math.max(1,Math.round((new Date(t.end_date)-new Date(t.start_date))/86400000));
+        }
+        hasRange=true;
+      }
       let wc='';
-      for(let w=0;w<12;w++){const ov=bs<(w+1)*7&&(bs+bl)>w*7;wc+=`<td style="background:${ov?ph.color+'22':'transparent'};border-right:1px solid #EEF2F7;height:33px"></td>`;}
-      html+=`<tr><td><div class="tic"><span style="font-size:10px;color:var(--gray3);min-width:24px">${ph.n}.${ti+1}</span><span style="font-size:12px;font-weight:600">${name}</span></div></td><td style="padding:6px 10px;font-size:11px;color:var(--gray3)">${t.owner||'—'}</td><td style="padding:6px 10px;font-size:11px;color:var(--gray3);white-space:nowrap">${t.start_date?t.start_date.slice(5):'—'}${t.end_date?' →'+t.end_date.slice(5):''}</td><td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:7px;background:var(--gray2);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${ph.color};width:${pct}%"></div></div><span style="font-size:11px;font-weight:700;color:${ph.color};min-width:28px">${pct}%</span></div></td>${wc}</tr>`;
+      for(let w=0;w<WEEKS;w++){
+        const ov=hasRange && (bs<(w+1)*7) && ((bs+bl)>w*7);
+        wc+=`<td style="background:${ov?ph.color+'22':'transparent'};border-right:1px solid #EEF2F7;height:33px"></td>`;
+      }
+      html+=`<tr><td><div class="tic"><span style="font-size:10px;color:var(--gray3);min-width:24px">${ph.n}.${ti+1}</span><span style="font-size:12px;font-weight:600">${tobj.name}</span></div></td><td style="padding:6px 10px;font-size:11px;color:var(--gray3)">${t.owner||'—'}</td><td style="padding:6px 10px;font-size:11px;color:var(--gray3);white-space:nowrap">${t.start_date?t.start_date.slice(5):'—'}${t.end_date?' →'+t.end_date.slice(5):''}</td><td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:7px;background:var(--gray2);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${ph.color};width:${pct}%"></div></div><span style="font-size:11px;font-weight:700;color:${ph.color};min-width:28px">${pct}%</span></div></td>${wc}</tr>`;
     });
   });
   document.getElementById('gantt-tbl').innerHTML=html+'</tbody>';
@@ -1329,8 +1515,10 @@ function toast(msg,ok=true){
 
 document.getElementById('modal-new').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('modal-add-item').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddItemModal();});
+document.getElementById('modal-add-task').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddTaskModal();});
 document.getElementById('modal-att').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAttachModal();});
 document.getElementById('add-item-name').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmAddItem();}});
+document.getElementById('add-task-name').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmAddTask();}});
 
 // INIT
 init();
