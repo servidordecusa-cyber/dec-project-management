@@ -713,8 +713,8 @@ function buildBudgetRooms(){
       const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-${type}-${g.id}">$0</span></div>`;
       // Table header — Actual has extra 📎 column
       const thead=type==='act'
-        ? `<thead><tr><th style="width:150px">Item</th><th style="width:120px">Supplier</th><th style="width:60px">Qty</th><th style="width:95px">Unit Cost ($)</th><th style="width:110px">${lbl}</th><th>Notes</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
-        : `<thead><tr><th style="width:160px">Item</th><th style="width:130px">Supplier</th><th style="width:70px">Qty</th><th style="width:100px">Unit Cost ($)</th><th style="width:120px">${lbl}</th><th>Notes</th><th style="width:40px"></th></tr></thead>`;
+        ? `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
+        : `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:110px">Supplier</th><th style="width:55px">Qty</th><th style="width:90px">Unit Cost ($)</th><th style="width:100px">${lbl}</th><th style="width:110px">Notes</th><th style="width:40px"></th></tr></thead>`;
       card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-${type}-${g.id}"></tbody></table>
         <div style="padding:10px 15px;background:#F7FBFF;border-top:1px solid #EEF2F7">
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('${type}','${g.id}')">+ Add Item</button>
@@ -731,7 +731,7 @@ function renderItems(type,gid){
   if(!tb) return;
   const items=(itemsMap[CID]||{})[gid]||[];
   if(items.length===0){
-    const colspan=type==='act'?8:7;
+    const colspan=type==='act'?9:8;
     tb.innerHTML=`<tr><td colspan="${colspan}" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
     return;
   }
@@ -745,42 +745,56 @@ function rowHTML(type,gid,item,islug){
     ? `<td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="openAttach('${gid}','${encodeURIComponent(item)}','${islug}')" id="att-btn-${gid}-${islug}">📎 <span id="att-count-${gid}-${islug}">0</span></button></td>`
     : '';
   return `<tr id="row-${type}-${gid}-${islug}">
-    <td style="font-size:13px;font-weight:600">${item}</td>
+    <td><span class="item-name" contenteditable="true" data-gid="${gid}" data-islug="${islug}" style="display:block;min-width:200px;font-size:13px;font-weight:600;outline:none;border-bottom:1px dashed transparent;padding:2px 0;line-height:1.3;word-break:break-word" onblur="renameBudgetItem('${gid}','${islug}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${item}</span></td>
+    <td>
+      <select class="ci" id="bcat-${type}-${gid}-${islug}" onchange="onBCat('${type}','${gid}','${islug}',this)" style="padding:5px 6px;font-size:12px">
+        <option value="">— select —</option>
+        <option value="material">📦 Material</option>
+        <option value="labor">🔧 Labor</option>
+        <option value="equipment">⚙️ Equipment</option>
+        <option value="other">📌 Other</option>
+      </select>
+    </td>
     <td><input class="ci" type="text" id="bsup-${type}-${gid}-${islug}"
-      oninput="onBSup('${type}','${gid}','${item}','${islug}',this)" placeholder="Supplier..."></td>
+      oninput="onBSup('${type}','${gid}','${islug}',this)" placeholder="Supplier..."></td>
     <td><input class="ni" type="number" min="0" step="1" id="bq-${type}-${gid}-${islug}"
-      oninput="onBQ('${type}','${gid}','${item}','${islug}',this)" placeholder="0"></td>
+      oninput="onBQ('${type}','${gid}','${islug}',this)" placeholder="0"></td>
     <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
       <input class="ni" type="number" min="0" step="0.01" id="bu-${type}-${gid}-${islug}"
-        oninput="onBU('${type}','${gid}','${item}','${islug}',this)" placeholder="0"></div></td>
+        oninput="onBU('${type}','${gid}','${islug}',this)" placeholder="0"></div></td>
     <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
       <input class="ni" type="number" min="0" step="100" id="bi-${type}-${gid}-${islug}"
-        oninput="onBI('${type}','${gid}','${item}','${islug}',this)" placeholder="0"></div></td>
+        oninput="onBI('${type}','${gid}','${islug}',this)" placeholder="0"></div></td>
     <td><input class="ci" type="text" id="bc-${type}-${gid}-${islug}"
-      oninput="onBC('${type}','${gid}','${item}','${islug}',this)" placeholder="Notes..."></td>
+      oninput="onBC('${type}','${gid}','${islug}',this)" placeholder="Notes..."></td>
     ${attachCell}
-    <td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 6px;font-size:14px;color:var(--red)" title="Remove item" onclick="removeItem('${gid}','${encodeURIComponent(item)}','${islug}')">🗑</button></td>
+    <td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 6px;font-size:14px;color:var(--red)" title="Remove item" onclick="removeItem('${gid}','${islug}')">🗑</button></td>
   </tr>`;
 }
 
 function hydrateRow(type,gid,islug){
   const d=((budgetMap[CID]||{})[gid]||{})[islug];
   if(!d) return;
-  const val=type==='est'?d.est:d.actual;
+  // Helper to strip floating-point garbage from legacy data
+  const clean=n=>Math.round((+n||0)*100)/100;
+  const val=clean(type==='est'?d.est:d.actual);
   const note=type==='est'?d.est_note:d.actual_note;
   const sup=type==='est'?d.est_supplier:d.actual_supplier;
-  const qty=type==='est'?d.est_qty:d.actual_qty;
-  const uc=type==='est'?d.est_unit_cost:d.actual_unit_cost;
+  const qty=clean(type==='est'?d.est_qty:d.actual_qty);
+  const uc=clean(type==='est'?d.est_unit_cost:d.actual_unit_cost);
+  const cat=d.category||'';
   const inp=document.getElementById('bi-'+type+'-'+gid+'-'+islug);
   const cmt=document.getElementById('bc-'+type+'-'+gid+'-'+islug);
   const sEl=document.getElementById('bsup-'+type+'-'+gid+'-'+islug);
   const qEl=document.getElementById('bq-'+type+'-'+gid+'-'+islug);
   const uEl=document.getElementById('bu-'+type+'-'+gid+'-'+islug);
+  const catEl=document.getElementById('bcat-'+type+'-'+gid+'-'+islug);
   if(inp&&val){inp.value=val;inp.style.borderColor=type==='est'?'#81C784':'#FFB74D';}
   if(cmt&&note) cmt.value=note;
   if(sEl&&sup) sEl.value=sup;
   if(qEl&&qty) qEl.value=qty;
   if(uEl&&uc) uEl.value=uc;
+  if(catEl) catEl.value=cat;
   if(type==='act'){
     const cnt=((attachMap[CID]||{})[gid]||{})[islug];
     const cntEl=document.getElementById('att-count-'+gid+'-'+islug);
@@ -817,10 +831,11 @@ async function confirmAddItem(){
   // Also create empty row in DB so it persists even before filling in values
   if(!budgetMap[CID]) budgetMap[CID]={};
   if(!budgetMap[CID][gid]) budgetMap[CID][gid]={};
-  if(!budgetMap[CID][gid][islug]) budgetMap[CID][gid][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0};
+  if(!budgetMap[CID][gid][islug]) budgetMap[CID][gid][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,category:''};
   await sb.from('budget_items').upsert({project_id:CID,room_id:gid,item_slug:islug,
     item_name:clean,est:0,actual:0,est_note:'',actual_note:'',
-    est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0},
+    est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,
+    category:''},
     {onConflict:'project_id,room_id,item_slug'});
   // Re-render BOTH tables (est + act) so item shows up in both
   renderItems('est',gid);
@@ -829,8 +844,10 @@ async function confirmAddItem(){
   showSaved();
 }
 
-async function removeItem(gid,itemEnc,islug){
-  const item=decodeURIComponent(itemEnc);
+async function removeItem(gid,islug){
+  // Look up current name from itemsMap (in case it was renamed)
+  const entry=((itemsMap[CID]||{})[gid]||[]).find(x=>x.slug===islug);
+  const item=entry?entry.name:islug;
   if(!confirm('Remove "'+item+'" from this phase? All its data will be lost.')) return;
   // Delete row
   await sb.from('budget_items').delete()
@@ -1084,72 +1101,38 @@ async function onPC(tid,val){
 }
 
 const _debBI={};
-async function onBI(type,roomId,item,islug,el){
-  const val=parseFloat(el.value)||0;
-  if(val>0) el.style.borderColor=type==='est'?'#81C784':'#FFB74D'; else el.style.borderColor='';
-  if(!budgetMap[CID]) budgetMap[CID]={};
-  if(!budgetMap[CID][roomId]) budgetMap[CID][roomId]={};
-  if(!budgetMap[CID][roomId][islug]) budgetMap[CID][roomId][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0};
-  budgetMap[CID][roomId][islug][type==='est'?'est':'actual']=val;
-  const tot=calcRoomItemTotal(CID,roomId,type==='est'?'est':'actual');
-  const el2=document.getElementById('brt-'+type+'-'+roomId);
-  if(el2) el2.textContent=fmt(tot);
-  const k=type+roomId+islug;
-  clearTimeout(_debBI[k]);
-  _debBI[k]=setTimeout(async()=>{
-    const d=budgetMap[CID][roomId][islug];
-    await sb.from('budget_items').upsert({project_id:CID,room_id:roomId,item_slug:islug,
-      item_name:item,est:d.est||0,actual:d.actual||0,est_note:d.est_note||'',actual_note:d.actual_note||'',
-      est_supplier:d.est_supplier||'',actual_supplier:d.actual_supplier||'',
-      est_qty:d.est_qty||0,actual_qty:d.actual_qty||0,
-      est_unit_cost:d.est_unit_cost||0,actual_unit_cost:d.actual_unit_cost||0},
-      {onConflict:'project_id,room_id,item_slug'});
-    showSaved();
-  },500);
-}
 
-async function onBC(type,roomId,item,islug,el){
-  if(!budgetMap[CID]) budgetMap[CID]={};
-  if(!budgetMap[CID][roomId]) budgetMap[CID][roomId]={};
-  if(!budgetMap[CID][roomId][islug]) budgetMap[CID][roomId][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0};
-  budgetMap[CID][roomId][islug][type==='est'?'est_note':'actual_note']=el.value;
-  const k='note_'+type+roomId+islug;
-  clearTimeout(_debBI[k]);
-  _debBI[k]=setTimeout(async()=>{
-    const d=budgetMap[CID][roomId][islug];
-    await sb.from('budget_items').upsert({project_id:CID,room_id:roomId,item_slug:islug,
-      item_name:item,est:d.est||0,actual:d.actual||0,est_note:d.est_note||'',actual_note:d.actual_note||'',
-      est_supplier:d.est_supplier||'',actual_supplier:d.actual_supplier||'',
-      est_qty:d.est_qty||0,actual_qty:d.actual_qty||0,
-      est_unit_cost:d.est_unit_cost||0,actual_unit_cost:d.actual_unit_cost||0},
-      {onConflict:'project_id,room_id,item_slug'});
-  },600);
+// Helper: get current item name from itemsMap (handles renames)
+function _itemName(roomId,islug){
+  const entry=((itemsMap[CID]||{})[roomId]||[]).find(x=>x.slug===islug);
+  return entry?entry.name:islug;
 }
-
-// ─── NEW HANDLERS for Supplier / Qty / Unit Cost ───────────────────────
 function _ensureBI(roomId,islug){
   if(!budgetMap[CID]) budgetMap[CID]={};
   if(!budgetMap[CID][roomId]) budgetMap[CID][roomId]={};
-  if(!budgetMap[CID][roomId][islug]) budgetMap[CID][roomId][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0};
+  if(!budgetMap[CID][roomId][islug]) budgetMap[CID][roomId][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,category:''};
 }
-async function _saveBI(roomId,item,islug){
+async function _saveBI(roomId,islug){
   const d=budgetMap[CID][roomId][islug];
+  const name=_itemName(roomId,islug);
   await sb.from('budget_items').upsert({project_id:CID,room_id:roomId,item_slug:islug,
-    item_name:item,est:d.est||0,actual:d.actual||0,est_note:d.est_note||'',actual_note:d.actual_note||'',
+    item_name:name,est:d.est||0,actual:d.actual||0,est_note:d.est_note||'',actual_note:d.actual_note||'',
     est_supplier:d.est_supplier||'',actual_supplier:d.actual_supplier||'',
     est_qty:d.est_qty||0,actual_qty:d.actual_qty||0,
-    est_unit_cost:d.est_unit_cost||0,actual_unit_cost:d.actual_unit_cost||0},
+    est_unit_cost:d.est_unit_cost||0,actual_unit_cost:d.actual_unit_cost||0,
+    category:d.category||''},
     {onConflict:'project_id,room_id,item_slug'});
   showSaved();
 }
-function _recalcAmount(type,roomId,item,islug){
+function _recalcAmount(type,roomId,islug){
   const d=budgetMap[CID][roomId][islug];
   const qf=type==='est'?'est_qty':'actual_qty';
   const uf=type==='est'?'est_unit_cost':'actual_unit_cost';
   const af=type==='est'?'est':'actual';
   const q=d[qf]||0, u=d[uf]||0;
   if(q>0 && u>0){
-    d[af]=q*u;
+    // Round to 2 decimals to avoid floating-point artifacts (400 * 1.1 = 440.00000000000006)
+    d[af]=Math.round(q*u*100)/100;
     const inp=document.getElementById('bi-'+type+'-'+roomId+'-'+islug);
     if(inp){inp.value=d[af]; inp.style.borderColor=type==='est'?'#81C784':'#FFB74D';}
     const tot=calcRoomItemTotal(CID,roomId,af);
@@ -1157,30 +1140,81 @@ function _recalcAmount(type,roomId,item,islug){
     if(el2) el2.textContent=fmt(tot);
   }
 }
-async function onBSup(type,roomId,item,islug,el){
+
+async function onBI(type,roomId,islug,el){
+  let val=parseFloat(el.value)||0;
+  // Round to 2 decimals to avoid floating-point garbage
+  val=Math.round(val*100)/100;
+  if(val>0) el.style.borderColor=type==='est'?'#81C784':'#FFB74D'; else el.style.borderColor='';
+  _ensureBI(roomId,islug);
+  budgetMap[CID][roomId][islug][type==='est'?'est':'actual']=val;
+  const tot=calcRoomItemTotal(CID,roomId,type==='est'?'est':'actual');
+  const el2=document.getElementById('brt-'+type+'-'+roomId);
+  if(el2) el2.textContent=fmt(tot);
+  const k=type+roomId+islug;
+  clearTimeout(_debBI[k]);
+  _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),500);
+}
+
+async function onBC(type,roomId,islug,el){
+  _ensureBI(roomId,islug);
+  budgetMap[CID][roomId][islug][type==='est'?'est_note':'actual_note']=el.value;
+  const k='note_'+type+roomId+islug;
+  clearTimeout(_debBI[k]);
+  _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),600);
+}
+
+async function onBSup(type,roomId,islug,el){
   _ensureBI(roomId,islug);
   budgetMap[CID][roomId][islug][type==='est'?'est_supplier':'actual_supplier']=el.value;
   const k='sup_'+type+roomId+islug;
   clearTimeout(_debBI[k]);
-  _debBI[k]=setTimeout(()=>_saveBI(roomId,item,islug),600);
+  _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),600);
 }
-async function onBQ(type,roomId,item,islug,el){
+async function onBQ(type,roomId,islug,el){
   const val=parseFloat(el.value)||0;
   _ensureBI(roomId,islug);
   budgetMap[CID][roomId][islug][type==='est'?'est_qty':'actual_qty']=val;
-  _recalcAmount(type,roomId,item,islug);
+  _recalcAmount(type,roomId,islug);
   const k='q_'+type+roomId+islug;
   clearTimeout(_debBI[k]);
-  _debBI[k]=setTimeout(()=>_saveBI(roomId,item,islug),500);
+  _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),500);
 }
-async function onBU(type,roomId,item,islug,el){
+async function onBU(type,roomId,islug,el){
   const val=parseFloat(el.value)||0;
   _ensureBI(roomId,islug);
   budgetMap[CID][roomId][islug][type==='est'?'est_unit_cost':'actual_unit_cost']=val;
-  _recalcAmount(type,roomId,item,islug);
+  _recalcAmount(type,roomId,islug);
   const k='u_'+type+roomId+islug;
   clearTimeout(_debBI[k]);
-  _debBI[k]=setTimeout(()=>_saveBI(roomId,item,islug),500);
+  _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),500);
+}
+// Category is shared between Estimate and Actual — when changed in one, update the other select too
+async function onBCat(type,roomId,islug,el){
+  _ensureBI(roomId,islug);
+  budgetMap[CID][roomId][islug].category=el.value||'';
+  // Mirror to the other table's dropdown
+  const other=type==='est'?'act':'est';
+  const otherEl=document.getElementById('bcat-'+other+'-'+roomId+'-'+islug);
+  if(otherEl) otherEl.value=el.value||'';
+  _saveBI(roomId,islug);
+}
+// Inline rename of item name
+async function renameBudgetItem(roomId,islug,el){
+  const newName=(el.textContent||'').trim();
+  const entry=((itemsMap[CID]||{})[roomId]||[]).find(x=>x.slug===islug);
+  if(!entry){el.style.borderBottomColor='transparent';return;}
+  if(!newName){el.textContent=entry.name;el.style.borderBottomColor='transparent';return;}
+  if(newName===entry.name){el.style.borderBottomColor='transparent';return;}
+  entry.name=newName;
+  // Mirror to the twin row in the other table (Estimate ↔ Actual)
+  document.querySelectorAll('.item-name[data-gid="'+roomId+'"][data-islug="'+islug+'"]').forEach(x=>{
+    if(x!==el) x.textContent=newName;
+  });
+  await sb.from('budget_items').update({item_name:newName})
+    .eq('project_id',CID).eq('room_id',roomId).eq('item_slug',islug);
+  el.style.borderBottomColor='transparent';
+  showSaved();
 }
 
 // ═══ ATTACHMENTS (Actual Costs only) ══════════════════════════════════
