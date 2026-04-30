@@ -384,6 +384,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <div class="card" style="margin-top:16px">
           <div class="card-title">📍 Location &amp; Utilities</div>
           <div class="fgrid"><div class="fg"><label>ZIP Code</label><input id="pf-zip" placeholder="e.g. 34711" oninput="debouncePF()"></div><div class="fg"><label>County</label><input id="pf-county" placeholder="e.g. Lake County" oninput="debouncePF()"></div></div>
+          <div class="fgrid"><div class="fg"><label>Permit</label><input id="pf-permit" placeholder="e.g. BR2026-1234" oninput="debouncePF()"></div><div class="fg"></div></div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #EEF2F7">
             <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Water Utility</div>
             <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-water-co" placeholder="e.g. City of Clermont Utilities" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-water-acc" placeholder="e.g. 12345-6789" oninput="debouncePF()"></div></div>
@@ -504,13 +505,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           </div>
           <div class="fgrid">
             <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="debouncePI()"></div>
-            <div class="fg"></div>
+            <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
         </div>
 
-        <!-- Card 5: DEC Invoice -->
+        <!-- Card 5: Costs (was DEC Invoice) -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">🧾 DEC Invoice
+          <div class="card-title">💰 Costs
             <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-dec-total">$0</span></span>
           </div>
           <div id="ec-dec-list"></div>
@@ -584,6 +585,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
               <div class="kpi" style="border-left-color:var(--gold);background:#FFF8E1"><div class="kpi-l">👤 Cliente recebe</div><div class="kpi-v" id="pft-client">$0</div></div>
               <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div></div>
             </div>
+            <div style="margin-top:24px;padding-top:18px;border-top:2px solid #EEF2F7;display:flex;justify-content:flex-end;gap:10px">
+              <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()">📄 Gerar Relatório (PDF)</button>
+            </div>
           </div>
         </div>
       </div>
@@ -606,7 +610,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           </div>
           <div class="fgrid">
             <div class="fg"><label>Asking price ($)</label><input id="lc-asking" type="number" min="0" step="0.01" placeholder="e.g. 325000.00" oninput="debounceLC()"></div>
-            <div class="fg"><label>Property Tax 2025 ($)</label><input id="lc-tax" type="number" min="0" step="0.01" placeholder="e.g. 2400.00" oninput="debounceLC()"></div>
+            <div class="fg"><label>Property Tax ($)</label><input id="lc-tax" type="number" min="0" step="0.01" placeholder="e.g. 2400.00" oninput="debounceLC()"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Bedrooms</label><input id="lc-beds" type="number" min="0" step="1" placeholder="3" oninput="debounceLC()"></div>
@@ -1032,6 +1036,7 @@ let CID=null;
 // Predefined items per category — only created on first load if not present
 const EC_DEFAULTS={
   dec_invoice: [
+    {name:'DEC Invoice'},
     {name:'General Contractor'},
     {name:'Mobile Home Build'},
     {name:'Mobile Home Installation'},
@@ -1045,6 +1050,9 @@ const EC_DEFAULTS={
     {name:'HOA', frequency:'monthly'},
     {name:'Internet', frequency:'monthly'},
     {name:'Pool', frequency:'monthly'},
+    {name:'Loan payment', frequency:'monthly'},
+    {name:'Annual Taxes', frequency:'annual'},
+    {name:'Annual Taxes', frequency:'annual'},
     {name:'Annual Taxes', frequency:'annual'},
   ],
   documents: [
@@ -1632,6 +1640,7 @@ function loadProjectForms(p){
   const extras=[
     ['pf-zip','zip_code'],
     ['pf-county','county'],
+    ['pf-permit','building_permit'],
     ['pf-water-co','water_company'],
     ['pf-water-acc','water_account'],
     ['pf-power-co','power_company'],
@@ -1665,7 +1674,7 @@ async function savePF(){
   if(!CID) return;
   const payload={name:v('pf-name'),customer:v('pf-customer'),pm:v('pf-pm'),
     address:v('pf-address'),start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
-    zip_code:v('pf-zip'),county:v('pf-county'),
+    zip_code:v('pf-zip'),county:v('pf-county'),building_permit:v('pf-permit'),
     water_company:v('pf-water-co'),water_account:v('pf-water-acc'),
     power_company:v('pf-power-co'),power_account:v('pf-power-acc')};
   await sb.from('projects').update(payload).eq('id',CID);
@@ -1706,6 +1715,7 @@ function loadPropertyForm(){
     ['pi-sale-date','sale_date'],
     ['pi-selling','selling_costs'],
     ['pi-holding','holding_costs'],
+    ['pi-lender-sale','lender_costs_sale'],
     ['pi-refund','refund_value'],
   ];
   pairs.forEach(([elId,k])=>{
@@ -1728,24 +1738,73 @@ async function ensureExtraCostsDefaults(){
   if(!extraCostsMap[CID]) extraCostsMap[CID]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
   const cats=Object.keys(EC_DEFAULTS);
   const toInsert=[];
+  const toUpdate=[]; // [{id, position}] for items needing reorder
   cats.forEach(cat=>{
     if(!extraCostsMap[CID][cat]) extraCostsMap[CID][cat]=[];
-    if(extraCostsMap[CID][cat].length===0){
-      EC_DEFAULTS[cat].forEach((it,idx)=>{
+    const existing=extraCostsMap[CID][cat];
+    // Build pool of existing items by name (to consume during the walk)
+    const pool={};
+    existing.forEach(it=>{
+      if(!pool[it.name]) pool[it.name]=[];
+      pool[it.name].push(it);
+    });
+    // Walk through defaults, assign them one of the existing items (consume) or queue insert
+    // Track extra (custom) items separately to keep them at the end
+    const matchedIds=new Set();
+    EC_DEFAULTS[cat].forEach((it,idx)=>{
+      const list=pool[it.name]||[];
+      if(list.length>0){
+        const found=list.shift();
+        matchedIds.add(found.id);
+        // Update its position if needed
+        if((+found.position||0)!==idx){
+          found.position=idx;
+          toUpdate.push({id:found.id, position:idx});
+        }
+      } else {
+        // Need to insert
         toInsert.push({
           project_id:CID, category:cat, name:it.name, amount:0,
           frequency:it.frequency||'', is_extra:false, position:idx,
         });
+      }
+    });
+    // Custom (is_extra=true) and unmatched defaults go to the end
+    const extras=existing.filter(x=>!matchedIds.has(x.id));
+    const baseLen=EC_DEFAULTS[cat].length;
+    extras.forEach((it,i)=>{
+      const newPos=baseLen+i;
+      if((+it.position||0)!==newPos){
+        it.position=newPos;
+        toUpdate.push({id:it.id, position:newPos});
+      }
+    });
+  });
+  // Apply DB changes in parallel
+  const promises=[];
+  if(toInsert.length>0){
+    promises.push(sb.from('extra_costs').insert(toInsert).select());
+  }
+  toUpdate.forEach(u=>{
+    promises.push(sb.from('extra_costs').update({position:u.position}).eq('id',u.id));
+  });
+  if(promises.length===0) return;
+  const results=await Promise.all(promises);
+  // First result is the insert (if any) — add inserted rows to in-memory map
+  if(toInsert.length>0){
+    const insertResult=results[0];
+    if(insertResult.error){console.error('seed err',insertResult.error);}
+    else {
+      (insertResult.data||[]).forEach(e=>{
+        if(!extraCostsMap[e.project_id]) extraCostsMap[e.project_id]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
+        if(!extraCostsMap[e.project_id][e.category]) extraCostsMap[e.project_id][e.category]=[];
+        extraCostsMap[e.project_id][e.category].push(e);
       });
     }
-  });
-  if(toInsert.length===0) return;
-  const {data,error}=await sb.from('extra_costs').insert(toInsert).select();
-  if(error){console.error('seed err',error); return;}
-  (data||[]).forEach(e=>{
-    if(!extraCostsMap[e.project_id]) extraCostsMap[e.project_id]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
-    if(!extraCostsMap[e.project_id][e.category]) extraCostsMap[e.project_id][e.category]=[];
-    extraCostsMap[e.project_id][e.category].push(e);
+  }
+  // Re-sort by position to ensure correct order in memory
+  Object.keys(extraCostsMap[CID]).forEach(c=>{
+    extraCostsMap[CID][c].sort((a,b)=>(a.position||0)-(b.position||0));
   });
 }
 
@@ -1778,6 +1837,7 @@ async function savePI(){
     sale_date:v('pi-sale-date')||null,
     selling_costs:num('pi-selling'),
     holding_costs:num('pi-holding'),
+    lender_costs_sale:num('pi-lender-sale'),
     // Refund + Distribution
     refund_value:num('pi-refund'),
     pct_client:num('pi-pct-client'),
@@ -1839,13 +1899,17 @@ function renderExtraCosts(category){
           <option value="">— freq —</option>
           ${FREQ_OPTIONS.map(([v,l])=>`<option value="${v}" ${it.frequency===v?'selected':''}>${l}</option>`).join('')}
         </select>`:'';
-      return `<div style="display:grid;grid-template-columns:${isRec?'1fr 130px 130px':'1fr 130px'};gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
+      const notesField=isRec?`
+        <input type="text" value="${(it.notes||'').replace(/"/g,'&quot;')}" oninput="updateExtraCost('${it.id}','notes',this.value)" placeholder="Notes..." style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:100%;color:var(--gray3)">`:'';
+      const cols=isRec?'1fr 110px 130px 160px':'1fr 130px';
+      return `<div style="display:grid;grid-template-columns:${cols};gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
         <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${it.name}</span></div>
         ${freqSel?`<div>${freqSel}</div>`:''}
         <div style="display:flex;align-items:center;gap:4px">
           <span style="font-size:13px;color:var(--gray3)">$</span>
           <input type="number" min="0" step="0.01" value="${it.amount||''}" oninput="updateExtraCost('${it.id}','amount',this.value)" placeholder="0.00" style="padding:6px 8px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:100%">
         </div>
+        ${notesField?`<div>${notesField}</div>`:''}
       </div>`;
     }).join('');
   }
@@ -1972,6 +2036,7 @@ function recalcProfit(){
   const sale=+p.final_sale_price||0;
   const selling=+p.selling_costs||0;
   const holding=+p.holding_costs||0;
+  const lenderSale=+p.lender_costs_sale||0;
   // Live read refund (might be unsaved)
   const refund=parseFloat(v('pi-refund'))||0;
   // Mirror refund display in the distribution card
@@ -1988,13 +2053,13 @@ function recalcProfit(){
   const estEl=document.getElementById('pft-est');
   estEl.textContent=arv?(estProfit>=0?'':'-')+fmt(Math.abs(estProfit)):'—';
   estEl.style.color=arv?(estProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
-  // Actual profit = Final Sale - Wholesaler - Sales total - Total Actual - Selling - Holding - Extras - Refund
-  const actProfit=sale?(sale-wholesaler-salesTotal-totAct-selling-holding-extraTotal-refund):0;
+  // Actual profit = Final Sale - Wholesaler - Sales total - Total Actual - Selling - Holding - Lender(sale) - Extras - Refund
+  const actProfit=sale?(sale-wholesaler-salesTotal-totAct-selling-holding-lenderSale-extraTotal-refund):0;
   const actEl=document.getElementById('pft-act');
   actEl.textContent=sale?(actProfit>=0?'':'-')+fmt(Math.abs(actProfit)):'—';
   actEl.style.color=sale?(actProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
   // ROI = Actual Profit / Total Investment
-  const totalInvest=wholesaler+salesTotal+totAct+selling+holding+extraTotal;
+  const totalInvest=wholesaler+salesTotal+totAct+selling+holding+lenderSale+extraTotal;
   const roiEl=document.getElementById('pft-roi');
   if(sale && totalInvest>0){
     const roi=(actProfit/totalInvest)*100;
@@ -2019,6 +2084,217 @@ function recalcProfit(){
     decEl.textContent=sale?(decShare>=0?'':'-')+fmt(Math.abs(decShare)):'—';
     decEl.style.color=sale?(decShare>=0?'var(--blue)':'var(--p1)'):'var(--gray3)';
   }
+}
+
+// ═══ REPORT GENERATOR (CEO ONLY) ══════════════════════════════════════
+function generateReport(){
+  if(!CID||!isCEO()){toast('Apenas CEO pode gerar relatório',false);return;}
+  const proj=projects.find(x=>x.id===CID);
+  if(!proj){toast('Projeto não encontrado',false);return;}
+  const p=propertyMap[CID]||{};
+
+  // Money formatter for the report (always 2 decimals, with $ sign)
+  const $$=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const dateBR=d=>{
+    if(!d) return '—';
+    const dt=new Date(d+'T00:00:00');
+    return dt.toLocaleDateString('pt-BR');
+  };
+
+  // Acquisition values
+  const cash=+p.cash||0;
+  const hardMoney=+p.hard_money||0;
+  const closing=+p.closing_costs||0; // Escrow
+  const lenderAcq=+p.lender_costs||0;
+  const otherAcq=+p.other_costs||0;
+  const total1=cash+hardMoney+closing+lenderAcq+otherAcq;
+
+  // Project costs (Total 2)
+  const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale)
+  const totAct=calcRoomTotal(CID,'actual'); // Reforma
+  // Recurring items (water, energy, etc.)
+  const recItems=getExtraCosts('recurring');
+  const recRows=recItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name+(it.notes?' — '+it.notes:''),
+    val:+it.amount||0
+  }));
+  // DEC Invoice items
+  const decItems=getExtraCosts('dec_invoice');
+  const decRows=decItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name,
+    val:+it.amount||0
+  }));
+  // Documents items
+  const docItems=getExtraCosts('documents');
+  const docRows=docItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name,
+    val:+it.amount||0
+  }));
+  // High End items
+  const heItems=getExtraCosts('high_end');
+  const heRows=heItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name,
+    val:+it.amount||0
+  }));
+
+  const recTotal=recRows.reduce((s,r)=>s+r.val,0);
+  const decExtraTotal=decRows.reduce((s,r)=>s+r.val,0);
+  const docTotal=docRows.reduce((s,r)=>s+r.val,0);
+  const heTotal=heRows.reduce((s,r)=>s+r.val,0);
+  const total2=lenderSale+totAct+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0)+(+p.selling_costs||0);
+
+  // Days under construction
+  let daysExec='—';
+  if(proj.start_date){
+    const startD=new Date(proj.start_date);
+    const endD=p.sale_date?new Date(p.sale_date):(proj.end_date?new Date(proj.end_date):new Date());
+    daysExec=Math.max(0,Math.round((endD-startD)/86400000))+' dias';
+  }
+
+  // Final calculations
+  const sale=+p.final_sale_price||0;
+  const refund=+p.refund_value||0;
+  // Custos Total = Total 1 + Total 2 - Hard Money (because hard money is paid back at sale)
+  const custosTotal=total1+total2-hardMoney;
+  const lucroLiquido=sale-custosTotal-refund;
+  const pctClient=+p.pct_client||0;
+  const pctDec=+p.pct_dec||0;
+  const lucroClient=lucroLiquido*pctClient/100;
+  const lucroDec=lucroLiquido*pctDec/100;
+  const pagarADec=lucroDec+refund;
+
+  // Build HTML
+  const projName=proj.name||'(sem nome)';
+  const address=proj.address||'';
+  const clientName=p.client_name||'';
+  const today=new Date().toLocaleDateString('pt-BR');
+  const purchDate=p.purchase_date?dateBR(p.purchase_date):'';
+  const saleDate=p.sale_date?dateBR(p.sale_date):'';
+
+  const rowHTML=(rows,empty='—')=>rows.length===0?
+    `<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">${empty}</td></tr>`:
+    rows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('');
+
+  const reportHTML=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Relatório - ${projName}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Arial,sans-serif;color:#1A202C;padding:30px;background:#fff;font-size:13px}
+  .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0B2545;padding-bottom:14px;margin-bottom:24px}
+  .h-left h1{color:#0B2545;font-size:22px;margin-bottom:4px}
+  .h-left .sub{color:#9AA5B4;font-size:12px}
+  .h-right{text-align:right;font-size:11px;color:#666}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:20px;font-size:12px}
+  .info-grid div{display:flex;gap:6px}
+  .info-grid strong{color:#0B2545;min-width:90px}
+  .section-title{background:#0B2545;color:#fff;padding:8px 12px;font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-top:18px;margin-bottom:0;border-radius:4px 4px 0 0}
+  table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:12px}
+  thead th{background:#F5F7FA;padding:7px 10px;text-align:left;border-bottom:2px solid #E0E6EF;color:#0B2545;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+  thead th.val,thead th.docs{text-align:right;width:120px}
+  thead th.docs{text-align:left;width:130px;color:#9AA5B4}
+  tbody td{padding:7px 10px;border-bottom:1px solid #EEF2F7}
+  tbody td.val{text-align:right;font-weight:600;width:120px}
+  tbody td.docs{color:#9AA5B4;font-size:11px;width:130px}
+  .total-row{background:#F1F8F1}
+  .total-row td{padding:9px 10px;font-weight:700;color:#2E7D32;border-top:2px solid #C8E6C9}
+  .summary{margin-top:22px;border:2px solid #0B2545;border-radius:6px;overflow:hidden}
+  .summary-row{display:flex;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #EEF2F7;font-size:12px}
+  .summary-row:last-child{border-bottom:none}
+  .summary-row strong{color:#0B2545}
+  .summary-row.highlight{background:#FFF8E1;font-weight:700;font-size:14px}
+  .summary-row.highlight strong{color:#C8922A}
+  .summary-row.final{background:#0B2545;color:#fff;font-weight:700;font-size:15px}
+  .summary-row.final strong{color:#fff}
+  .footer{margin-top:30px;padding-top:14px;border-top:1px solid #E0E6EF;text-align:center;font-size:10px;color:#9AA5B4}
+  @media print{body{padding:18px}.header{margin-bottom:18px}}
+  @page{size:A4;margin:14mm}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="h-left">
+      <h1>DEC Group USA</h1>
+      <div class="sub">Relatório Financeiro do Projeto</div>
+    </div>
+    <div class="h-right">
+      <div><strong>Emitido em:</strong> ${today}</div>
+      ${clientName?`<div><strong>Cliente:</strong> ${clientName}</div>`:''}
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div><strong>Projeto:</strong> ${projName}</div>
+    <div><strong>Endereço:</strong> ${address||'—'}</div>
+    ${purchDate?`<div><strong>Data compra:</strong> ${purchDate}</div>`:''}
+    ${saleDate?`<div><strong>Data venda:</strong> ${saleDate}</div>`:''}
+    <div><strong>Tempo execução:</strong> ${daysExec}</div>
+    <div><strong>Recebimento:</strong> ${$$(sale)}</div>
+  </div>
+
+  <div class="section-title">Total 1 — Aquisição</div>
+  <table>
+    <thead>
+      <tr><th>Descrição</th><th class="docs">Documentos</th><th class="val">Valor</th></tr>
+    </thead>
+    <tbody>
+      ${closing>0?`<tr><td>Escrow / Closing costs</td><td class="docs"></td><td class="val">${$$(closing)}</td></tr>`:''}
+      ${cash>0?`<tr><td>Cash</td><td class="docs"></td><td class="val">${$$(cash)}</td></tr>`:''}
+      ${hardMoney>0?`<tr><td>Hard Money</td><td class="docs"></td><td class="val">${$$(hardMoney)}</td></tr>`:''}
+      ${lenderAcq>0?`<tr><td>Lender costs (compra)</td><td class="docs"></td><td class="val">${$$(lenderAcq)}</td></tr>`:''}
+      ${otherAcq>0?`<tr><td>Outros custos (compra)</td><td class="docs"></td><td class="val">${$$(otherAcq)}</td></tr>`:''}
+      ${(closing+cash+hardMoney+lenderAcq+otherAcq)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem valores lançados</td></tr>`:''}
+      <tr class="total-row"><td colspan="2">Total 1</td><td class="val">${$$(total1)}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">Total 2 — Custos do Projeto</div>
+  <table>
+    <thead>
+      <tr><th>Descrição</th><th class="docs">Documentos</th><th class="val">Valor</th></tr>
+    </thead>
+    <tbody>
+      ${lenderSale>0?`<tr><td>Juros Hard Money — parcelas e payoff</td><td class="docs"></td><td class="val">${$$(lenderSale)}</td></tr>`:''}
+      ${totAct>0?`<tr><td>Reforma (Actual Costs)</td><td class="docs">Estimate/Actual</td><td class="val">${$$(totAct)}</td></tr>`:''}
+      ${decRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
+      ${recRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
+      ${docRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
+      ${heRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
+      ${(+p.holding_costs||0)>0?`<tr><td>Holding costs</td><td class="docs"></td><td class="val">${$$(+p.holding_costs)}</td></tr>`:''}
+      ${(+p.selling_costs||0)>0?`<tr><td>Selling costs (comissão, taxas)</td><td class="docs"></td><td class="val">${$$(+p.selling_costs)}</td></tr>`:''}
+      ${total2===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem custos lançados</td></tr>`:''}
+      <tr class="total-row"><td colspan="2">Total 2</td><td class="val">${$$(total2)}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="summary">
+    <div class="summary-row"><strong>Custos Total (1 + 2 − Hard Money)</strong><span>${$$(custosTotal)}</span></div>
+    <div class="summary-row"><strong>Recebimento Total</strong><span>${$$(sale)}</span></div>
+    ${refund>0?`<div class="summary-row"><strong>(−) Reembolso</strong><span>${$$(refund)}</span></div>`:''}
+    <div class="summary-row highlight"><strong>Lucro Líquido Total</strong><span>${$$(lucroLiquido)}</span></div>
+    <div class="summary-row"><strong>${pctClient}% Cliente</strong><span>${$$(lucroClient)}</span></div>
+    <div class="summary-row"><strong>${pctDec}% DEC</strong><span>${$$(lucroDec)}</span></div>
+    ${refund>0?`<div class="summary-row"><strong>Reembolso</strong><span>${$$(refund)}</span></div>`:''}
+    <div class="summary-row final"><strong>Pagar à DEC</strong><span>${$$(pagarADec)}</span></div>
+  </div>
+
+  <div class="footer">
+    DEC Group USA · Documento gerado automaticamente em ${today} · ${address||projName}
+  </div>
+
+  <script>
+    window.onload=function(){setTimeout(function(){window.print();},300);};
+  <\/script>
+</body>
+</html>`;
+
+  // Open in new window for printing
+  const w=window.open('','_blank','width=800,height=900');
+  if(!w){toast('Permita pop-ups pra gerar o relatório',false);return;}
+  w.document.write(reportHTML);
+  w.document.close();
 }
 
 // ═══ LISTING CHECKLIST (CEO ONLY) ═════════════════════════════════════
