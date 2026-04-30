@@ -511,7 +511,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <!-- Card 5: DEC Invoice -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">🧾 DEC Invoice
-            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-dec-total">0</span></span>
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-dec-total">$0</span></span>
           </div>
           <div id="ec-dec-list"></div>
         </div>
@@ -519,7 +519,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <!-- Card 6: Recurring Costs -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">📅 Recurring Costs
-            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-rec-total">0</span></span>
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-rec-total">$0</span></span>
           </div>
           <div style="font-size:11px;color:var(--gray3);margin-bottom:12px">💡 Frequency is informational only — enter the total amount you actually spent</div>
           <div id="ec-rec-list"></div>
@@ -528,7 +528,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <!-- Card 7: Documents & County Taxes -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">📄 Documents &amp; County Taxes
-            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-doc-total">0</span></span>
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-doc-total">$0</span></span>
           </div>
           <div id="ec-doc-list"></div>
         </div>
@@ -536,7 +536,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <!-- Card 8: High End Services -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">💎 High End Services
-            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-he-total">0</span></span>
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-he-total">$0</span></span>
           </div>
           <div id="ec-he-list"></div>
         </div>
@@ -1796,13 +1796,13 @@ function recalcAcquisition(){
   const cash=parseFloat(v('pi-cash'))||0;
   const hard=parseFloat(v('pi-hard-money'))||0;
   const wholesaler=Math.round((cash+hard)*100)/100;
-  document.getElementById('pi-wholesaler-total').textContent='$'+fmt(wholesaler);
+  document.getElementById('pi-wholesaler-total').textContent=fmt(wholesaler);
   // Sales total price = Closing + Lender + Other
   const closing=parseFloat(v('pi-closing'))||0;
   const lender=parseFloat(v('pi-lender'))||0;
   const other=parseFloat(v('pi-other-costs'))||0;
   const salesTotal=Math.round((closing+lender+other)*100)/100;
-  document.getElementById('pi-sales-total').textContent='$'+fmt(salesTotal);
+  document.getElementById('pi-sales-total').textContent=fmt(salesTotal);
   return {wholesaler, salesTotal};
 }
 
@@ -1950,10 +1950,10 @@ function recalcProfit(){
   const totEst=calcRoomTotal(CID,'est');
   const totAct=calcRoomTotal(CID,'actual');
   const variance=totAct-totEst;
-  document.getElementById('rn-est').textContent='$'+fmt(totEst);
-  document.getElementById('rn-act').textContent='$'+fmt(totAct);
+  document.getElementById('rn-est').textContent=fmt(totEst);
+  document.getElementById('rn-act').textContent=fmt(totAct);
   const varEl=document.getElementById('rn-var');
-  varEl.textContent=(variance>=0?'+':'')+'$'+fmt(Math.abs(variance));
+  varEl.textContent=(variance>=0?'+':'')+fmt(Math.abs(variance));
   varEl.style.color=variance>0?'var(--p1)':variance<0?'var(--p3)':'var(--gray3)';
   // Days under construction
   const proj=projects.find(x=>x.id===CID);
@@ -1976,7 +1976,7 @@ function recalcProfit(){
   const refund=parseFloat(v('pi-refund'))||0;
   // Mirror refund display in the distribution card
   const refMirror=document.getElementById('pi-refund-mirror');
-  if(refMirror) refMirror.value='$'+fmt(refund);
+  if(refMirror) refMirror.value=fmt(refund);
   // Extra costs subtotals
   const decTotal=calcExtraSubtotal('dec_invoice');
   const recTotal=calcExtraSubtotal('recurring');
@@ -1986,12 +1986,12 @@ function recalcProfit(){
   // Estimated profit (legacy formula, just shows expectation)
   const estProfit=arv?(arv-wholesaler-salesTotal-totEst-selling):0;
   const estEl=document.getElementById('pft-est');
-  estEl.textContent=arv?(estProfit>=0?'$':'-$')+fmt(Math.abs(estProfit)):'—';
+  estEl.textContent=arv?(estProfit>=0?'':'-')+fmt(Math.abs(estProfit)):'—';
   estEl.style.color=arv?(estProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
   // Actual profit = Final Sale - Wholesaler - Sales total - Total Actual - Selling - Holding - Extras - Refund
   const actProfit=sale?(sale-wholesaler-salesTotal-totAct-selling-holding-extraTotal-refund):0;
   const actEl=document.getElementById('pft-act');
-  actEl.textContent=sale?(actProfit>=0?'$':'-$')+fmt(Math.abs(actProfit)):'—';
+  actEl.textContent=sale?(actProfit>=0?'':'-')+fmt(Math.abs(actProfit)):'—';
   actEl.style.color=sale?(actProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
   // ROI = Actual Profit / Total Investment
   const totalInvest=wholesaler+salesTotal+totAct+selling+holding+extraTotal;
@@ -2012,11 +2012,11 @@ function recalcProfit(){
   const cliEl=document.getElementById('pft-client');
   const decEl=document.getElementById('pft-dec');
   if(cliEl){
-    cliEl.textContent=sale?(cliShare>=0?'$':'-$')+fmt(Math.abs(cliShare)):'—';
+    cliEl.textContent=sale?(cliShare>=0?'':'-')+fmt(Math.abs(cliShare)):'—';
     cliEl.style.color=sale?(cliShare>=0?'var(--gold)':'var(--p1)'):'var(--gray3)';
   }
   if(decEl){
-    decEl.textContent=sale?(decShare>=0?'$':'-$')+fmt(Math.abs(decShare)):'—';
+    decEl.textContent=sale?(decShare>=0?'':'-')+fmt(Math.abs(decShare)):'—';
     decEl.style.color=sale?(decShare>=0?'var(--blue)':'var(--p1)'):'var(--gray3)';
   }
 }
