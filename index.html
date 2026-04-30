@@ -312,6 +312,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <div class="sb-lnk"        id="snav-ph4"     onclick="sp('ph4',this,'s4')">🟣 Phase 4 — Finishing <span class="sb-ntag t4" id="snt-4">0%</span></div>
         <div class="sb-sec">Project</div>
         <div class="sb-lnk"        id="snav-info"    onclick="sp('info',this,'')">⚙️ Project Info</div>
+        <div class="sb-sec ceo-only" style="display:none">CEO Only</div>
+        <div class="sb-lnk ceo-only" id="snav-property" onclick="sp('property',this,'')" style="display:none">💎 Property &amp; Finance</div>
+        <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
       </div>
       <div class="sb-sync"><div class="sync-dot"></div>Live · Auto-saved</div>
     </div>
@@ -388,6 +391,542 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #EEF2F7">
             <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility</div>
             <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-power-co" placeholder="e.g. Duke Energy" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-power-acc" placeholder="e.g. 987654321" oninput="debouncePF()"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Property & Finance (CEO ONLY) -->
+      <div class="page" id="page-property">
+        <div class="page-title">💎 Property &amp; Finance <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-sub">Detailed property data + flip economics · Changes save automatically</div>
+
+        <!-- Card 1: Property Information -->
+        <div class="card">
+          <div class="card-title">🏠 Property Information</div>
+          <div class="fgrid">
+            <div class="fg"><label>Client name (buyer)</label><input id="pi-client" placeholder="e.g. John &amp; Jane Doe" oninput="debouncePI()"></div>
+            <div class="fg"><label>Year built</label><input id="pi-year" type="number" min="1800" max="2100" placeholder="e.g. 1985" oninput="debouncePI()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Lot size (sqft)</label><input id="pi-lot" type="number" min="0" placeholder="e.g. 7500" oninput="debouncePI()"></div>
+            <div class="fg"><label>Living area (sqft)</label><input id="pi-living" type="number" min="0" placeholder="e.g. 1800" oninput="debouncePI()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Pool</label>
+              <select id="pi-pool" onchange="savePI()">
+                <option value="">— select —</option>
+                <option value="yes">✓ Yes</option>
+                <option value="no">✗ No</option>
+              </select>
+            </div>
+            <div class="fg"><label>HOA</label>
+              <select id="pi-hoa-has" onchange="savePI()">
+                <option value="">— select —</option>
+                <option value="yes">✓ Yes</option>
+                <option value="no">✗ No</option>
+              </select>
+            </div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>HOA monthly fee ($)</label><input id="pi-hoa-fee" type="number" min="0" step="0.01" placeholder="e.g. 250.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Roof (condition / material)</label><input id="pi-roof" placeholder="e.g. Shingle, 5 years old" oninput="debouncePI()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>AC (condition / type)</label><input id="pi-ac" placeholder="e.g. Central, 2018" oninput="debouncePI()"></div>
+            <div class="fg"><label>Water heater</label><input id="pi-water-heater" placeholder="e.g. Electric tank, 40 gal" oninput="debouncePI()"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Other relevant info</label><textarea id="pi-other" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Termite history, easements, liens, additional details…" oninput="debouncePI()"></textarea></div></div>
+        </div>
+
+        <!-- Card 2: Acquisition -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">💰 Acquisition (Purchase)</div>
+
+          <!-- Wholesaler price (auto-calc) -->
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#F1F8F1;border:1.5px solid #C8E6C9;border-radius:8px;padding:12px 16px;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Cash + Hard money</span></div>
+                <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
+              </div>
+            </div>
+            <div class="fgrid">
+              <div class="fg"><label>Cash ($)</label><input id="pi-cash" type="number" min="0" step="0.01" placeholder="e.g. 50000.00" oninput="onAcqInput()"></div>
+              <div class="fg"><label>Hard money ($)</label><input id="pi-hard-money" type="number" min="0" step="0.01" placeholder="e.g. 130000.00" oninput="onAcqInput()"></div>
+            </div>
+          </div>
+
+          <!-- Sales total price (auto-calc) -->
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#F4F8FB;border:1.5px solid #C5D9E8;border-radius:8px;padding:12px 16px;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px">💵 Sales total price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Closing + Lender + Other</span></div>
+                <div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:2px" id="pi-sales-total">$0</div>
+              </div>
+            </div>
+            <div class="fgrid">
+              <div class="fg"><label>Closing costs ($)</label><input id="pi-closing" type="number" min="0" step="0.01" placeholder="e.g. 5500.00" oninput="onAcqInput()"></div>
+              <div class="fg"><label>Lender costs ($)</label><input id="pi-lender" type="number" min="0" step="0.01" placeholder="e.g. 2200.00" oninput="onAcqInput()"></div>
+            </div>
+            <div class="fgrid">
+              <div class="fg"><label>Other costs ($)</label><input id="pi-other-costs" type="number" min="0" step="0.01" placeholder="e.g. 800.00" oninput="onAcqInput()"></div>
+              <div class="fg"></div>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <div class="fg"><label>Purchase date</label><input id="pi-purch-date" type="date" onchange="savePI()"></div>
+            <div class="fg"></div>
+          </div>
+        </div>
+
+        <!-- Card 3: Renovation (auto-pulled) -->
+        <div class="card" style="margin-top:16px;background:#F7FBFF;border:1px solid #E1E8F0">
+          <div class="card-title">🔨 Renovation <span style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:8px">auto-calculated from Estimate &amp; Actual Costs</span></div>
+          <div class="dgrid" style="grid-template-columns:repeat(4,1fr)">
+            <div class="kpi" style="border-left-color:var(--blue)"><div class="kpi-l">📋 Estimated</div><div class="kpi-v" id="rn-est">$0</div></div>
+            <div class="kpi" style="border-left-color:var(--p2)"><div class="kpi-l">💰 Actual Spent</div><div class="kpi-v" id="rn-act">$0</div></div>
+            <div class="kpi" style="border-left-color:var(--gray3)"><div class="kpi-l">📊 Variance</div><div class="kpi-v" id="rn-var">$0</div></div>
+            <div class="kpi" style="border-left-color:var(--p4)"><div class="kpi-l">📅 Days under construction</div><div class="kpi-v" id="rn-days">—</div></div>
+          </div>
+        </div>
+
+        <!-- Card 4: Sale & Profit -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">💵 Sale &amp; Profit</div>
+          <div class="fgrid">
+            <div class="fg"><label>After Repair Value ($) <span style="font-size:10px;color:var(--gray3)">— ARV</span></label><input id="pi-arv" type="number" min="0" step="0.01" placeholder="e.g. 320000.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Final sale price ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Sale date</label><input id="pi-sale-date" type="date" onchange="savePI()"></div>
+            <div class="fg"><label>Selling costs ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="debouncePI()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="debouncePI()"></div>
+            <div class="fg"></div>
+          </div>
+        </div>
+
+        <!-- Card 5: DEC Invoice -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🧾 DEC Invoice
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-dec-total">0</span></span>
+          </div>
+          <div id="ec-dec-list"></div>
+        </div>
+
+        <!-- Card 6: Recurring Costs -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📅 Recurring Costs
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-rec-total">0</span></span>
+          </div>
+          <div style="font-size:11px;color:var(--gray3);margin-bottom:12px">💡 Frequency is informational only — enter the total amount you actually spent</div>
+          <div id="ec-rec-list"></div>
+        </div>
+
+        <!-- Card 7: Documents & County Taxes -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📄 Documents &amp; County Taxes
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-doc-total">0</span></span>
+          </div>
+          <div id="ec-doc-list"></div>
+        </div>
+
+        <!-- Card 8: High End Services -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">💎 High End Services
+            <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: $<span id="ec-he-total">0</span></span>
+          </div>
+          <div id="ec-he-list"></div>
+        </div>
+
+        <!-- Card 9: Refund -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">💸 Refund</div>
+          <div class="fg"><label>Refund value ($)</label>
+            <input id="pi-refund" type="number" min="0" step="0.01" placeholder="e.g. 0.00" oninput="onAcqInput()">
+          </div>
+        </div>
+
+        <!-- Card 10: Profit Summary + Distribution -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📊 Profit Summary &amp; Distribution</div>
+
+          <!-- Profit summary -->
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Summary</div>
+            <div class="dgrid" style="grid-template-columns:repeat(3,1fr);gap:14px">
+              <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">📈 Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV − Wholesaler − Sales total − Estimated</div></div>
+              <div class="kpi" style="border-left-color:var(--p3);background:#F1F8F1"><div class="kpi-l">💰 Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − all costs − Refund</div></div>
+              <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l">📊 ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total Investment × 100</div></div>
+            </div>
+          </div>
+
+          <!-- Profit distribution -->
+          <div style="margin-top:24px;padding-top:18px;border-top:2px solid #EEF2F7">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Distribution</div>
+            <div class="fgrid">
+              <div class="fg"><label>% Cliente</label>
+                <input id="pi-pct-client" type="number" min="0" max="100" step="0.1" placeholder="50" value="50" oninput="onPctChange('client')">
+              </div>
+              <div class="fg"><label>% DEC</label>
+                <input id="pi-pct-dec" type="number" min="0" max="100" step="0.1" placeholder="50" value="50" oninput="onPctChange('dec')">
+              </div>
+            </div>
+            <div class="fgrid" style="margin-top:6px">
+              <div class="fg"><label>Refund <span style="font-size:10px;color:var(--gray3)">— from above</span></label>
+                <input id="pi-refund-mirror" type="text" disabled style="background:#F5F7FA;color:var(--gray3)" value="$0">
+              </div>
+              <div class="fg"></div>
+            </div>
+            <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px">
+              <div class="kpi" style="border-left-color:var(--gold);background:#FFF8E1"><div class="kpi-l">👤 Cliente recebe</div><div class="kpi-v" id="pft-client">$0</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listing Checklist (CEO ONLY) -->
+      <div class="page" id="page-listing">
+        <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-sub">Complete property data for listing the home for sale · Auto-saved</div>
+
+        <!-- Card 1: Property Data -->
+        <div class="card">
+          <div class="card-title">🏠 Property Data</div>
+          <div class="fgrid">
+            <div class="fg"><label>Address <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-address" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
+            <div class="fg"><label>New owner (buyer) <span style="font-size:10px;color:var(--gray3)">— from Property &amp; Finance</span></label><input id="lc-client" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Buyer email</label><input id="lc-email" type="email" placeholder="buyer@example.com" oninput="debounceLC()"></div>
+            <div class="fg"><label>Expected listing date</label><input id="lc-list-date" type="date" onchange="saveLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Asking price ($)</label><input id="lc-asking" type="number" min="0" step="0.01" placeholder="e.g. 325000.00" oninput="debounceLC()"></div>
+            <div class="fg"><label>Property Tax 2025 ($)</label><input id="lc-tax" type="number" min="0" step="0.01" placeholder="e.g. 2400.00" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Bedrooms</label><input id="lc-beds" type="number" min="0" step="1" placeholder="3" oninput="debounceLC()"></div>
+            <div class="fg"><label>Full bathrooms</label><input id="lc-full-baths" type="number" min="0" step="1" placeholder="2" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Half bathrooms (lavabos)</label><input id="lc-half-baths" type="number" min="0" step="1" placeholder="1" oninput="debounceLC()"></div>
+            <div class="fg"><label>HOA / CDD</label>
+              <select id="lc-hoa" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="no">No</option>
+                <option value="hoa">HOA</option>
+                <option value="cdd">CDD</option>
+                <option value="both">HOA + CDD</option>
+              </select>
+            </div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>HOA / CDD value ($)</label><input id="lc-hoa-val" type="number" min="0" step="0.01" placeholder="e.g. 250.00" oninput="debounceLC()"></div>
+            <div class="fg"></div>
+          </div>
+        </div>
+
+        <!-- Card 2: Garage / Parking -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🚗 Garage &amp; Parking</div>
+          <div class="fgrid">
+            <div class="fg"><label>Garage</label>
+              <select id="lc-garage" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="0">No garage</option>
+                <option value="1">1 car</option>
+                <option value="2">2 cars</option>
+                <option value="3">3+ cars</option>
+              </select>
+            </div>
+            <div class="fg"><label>Carport</label>
+              <select id="lc-carport" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="0">No carport</option>
+                <option value="1">1 car</option>
+                <option value="2">2 cars</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Utilities & Construction -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">⚙️ Utilities &amp; Construction</div>
+          <div class="fgrid">
+            <div class="fg"><label>Water company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-water-co" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
+            <div class="fg"><label>Electric company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-power-co" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Private utilities</label>
+              <select id="lc-private" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="none">None (public only)</option>
+                <option value="well">Well</option>
+                <option value="septic">Septic</option>
+                <option value="both">Well + Septic</option>
+              </select>
+            </div>
+            <div class="fg"><label>Foundation</label>
+              <select id="lc-foundation" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="block">Block</option>
+                <option value="slab">Slab</option>
+                <option value="concrete">Concrete</option>
+                <option value="crawlspace">Crawlspace</option>
+              </select>
+            </div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Exterior</label>
+              <select id="lc-exterior" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="concrete">Concrete</option>
+                <option value="block">Block</option>
+                <option value="wood">Wood frame</option>
+                <option value="vinyl">Vinyl siding</option>
+                <option value="stucco">Stucco</option>
+                <option value="brick">Brick</option>
+              </select>
+            </div>
+            <div class="fg"><label>Manufactured home</label>
+              <select id="lc-manuf" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+                <option value="yes-retired">Yes — Retired</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Roof Status -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🏠 Roof</div>
+          <div class="fgrid">
+            <div class="fg"><label>Roof status</label>
+              <select id="lc-roof-status" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="replaced">✓ Replaced</option>
+                <option value="not-replaced">✗ Not replaced (still original)</option>
+                <option value="planned">⏳ Will be replaced before closing</option>
+              </select>
+            </div>
+            <div class="fg"><label>Age (years) <span style="font-size:10px;color:var(--gray3)">— if not replaced</span></label><input id="lc-roof-age" type="number" min="0" step="1" placeholder="e.g. 12" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Permit?</label>
+              <select id="lc-roof-permit" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div class="fg"><label>Permit number</label><input id="lc-roof-permit-num" placeholder="e.g. BR2024-1234" oninput="debounceLC()"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Notes (warranty contact / company / quote)</label><textarea id="lc-roof-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="e.g. Warranty transfer contact, company name, quote amount" oninput="debounceLC()"></textarea></div></div>
+        </div>
+
+        <!-- Card 5: HVAC -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">❄️ HVAC (AC)</div>
+          <div class="fgrid">
+            <div class="fg"><label>HVAC status</label>
+              <select id="lc-hvac-status" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="replaced">✓ Replaced</option>
+                <option value="not-replaced">✗ Not replaced</option>
+                <option value="planned">⏳ Will be replaced before closing</option>
+              </select>
+            </div>
+            <div class="fg"><label>Age (years)</label><input id="lc-hvac-age" type="number" min="0" step="1" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Permit?</label>
+              <select id="lc-hvac-permit" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div class="fg"><label>Permit number</label><input id="lc-hvac-permit-num" oninput="debounceLC()"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Notes (warranty / company / quote)</label><textarea id="lc-hvac-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debounceLC()"></textarea></div></div>
+        </div>
+
+        <!-- Card 6: Electrical -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">⚡ Electrical System</div>
+          <div class="fgrid">
+            <div class="fg"><label>Panel status</label>
+              <select id="lc-elec-status" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="replaced">✓ Replaced</option>
+                <option value="not-replaced">✗ Not replaced</option>
+              </select>
+            </div>
+            <div class="fg"><label>Age (years)</label><input id="lc-elec-age" type="number" min="0" step="1" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Permit?</label>
+              <select id="lc-elec-permit" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div class="fg"><label>Permit number</label><input id="lc-elec-permit-num" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>GFI outlets working? <span style="font-size:10px;color:var(--gray3)">— check before inspection</span></label>
+              <select id="lc-gfi" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="yes">✓ Yes</option>
+                <option value="no">✗ No (need to fix)</option>
+                <option value="not-checked">Not checked yet</option>
+              </select>
+            </div>
+            <div class="fg"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="lc-elec-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debounceLC()"></textarea></div></div>
+        </div>
+
+        <!-- Card 7: Plumbing -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🚿 Plumbing</div>
+          <div class="fgrid">
+            <div class="fg"><label>Plumbing status</label>
+              <select id="lc-plumb-status" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="replaced">✓ Replaced</option>
+                <option value="not-replaced">✗ Not replaced</option>
+              </select>
+            </div>
+            <div class="fg"><label>Age (years)</label><input id="lc-plumb-age" type="number" min="0" step="1" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Pipe type</label>
+              <select id="lc-pipe-type" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="pvc">PVC</option>
+                <option value="copper">Copper</option>
+                <option value="galvanized">Galvanized</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+            <div class="fg"><label>Permit number</label><input id="lc-plumb-permit-num" oninput="debounceLC()"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="lc-plumb-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debounceLC()"></textarea></div></div>
+        </div>
+
+        <!-- Card 8: Water Heater (extends Property & Finance one) -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🌡️ Water Heater Status</div>
+          <div class="fgrid">
+            <div class="fg"><label>Status</label>
+              <select id="lc-wh-status" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="replaced">✓ Replaced</option>
+                <option value="not-replaced">✗ Not replaced</option>
+              </select>
+            </div>
+            <div class="fg"><label>Age (years)</label><input id="lc-wh-age" type="number" min="0" step="1" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Permit?</label>
+              <select id="lc-wh-permit" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div class="fg"><label>Permit number</label><input id="lc-wh-permit-num" oninput="debounceLC()"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Notes (warranty / contact)</label><textarea id="lc-wh-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debounceLC()"></textarea></div></div>
+        </div>
+
+        <!-- Card 9: Renovations & Layout -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🛋️ Renovations &amp; Layout</div>
+          <div class="fg"><label>Floor plan</label>
+            <select id="lc-floorplan" onchange="saveLC()">
+              <option value="">— select —</option>
+              <option value="open">Open floor plan</option>
+              <option value="split">Split floor plan (master on opposite side)</option>
+            </select>
+          </div>
+          <div style="margin-top:14px"><div class="fg"><label>Kitchen renovations <span style="font-size:10px;color:var(--gray3)">— check all that apply</span></label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px;font-size:13px">
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-k-full" onchange="saveLC()"> Full renovation</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-k-app" onchange="saveLC()"> New appliances</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-k-cab" onchange="saveLC()"> New cabinets</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-k-gran" onchange="saveLC()"> Granite counter</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-k-quartz" onchange="saveLC()"> Quartz counter</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-k-pantry" onchange="saveLC()"> Pantry</label>
+            </div>
+          </div></div>
+          <div style="margin-top:14px" class="fgrid">
+            <div class="fg"><label>Bathroom renovation</label>
+              <select id="lc-bath-reno" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="full">Full renovation</option>
+                <option value="partial">Partial renovation</option>
+                <option value="none">No renovation</option>
+              </select>
+            </div>
+            <div class="fg"><label>Bathroom — describe (if partial)</label><input id="lc-bath-desc" placeholder="e.g. only master, new vanity" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Floor — replaced?</label>
+              <select id="lc-floor-replaced" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="full">✓ Full replacement</option>
+                <option value="partial">Partial</option>
+                <option value="no">✗ No</option>
+              </select>
+            </div>
+            <div class="fg"><label>Floor material</label><input id="lc-floor-material" placeholder="e.g. vinyl, tile, hardwood" oninput="debounceLC()"></div>
+          </div>
+          <div style="margin-top:14px"><div class="fg"><label>Walk-in closets</label>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px;font-size:13px">
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-wc-master" onchange="saveLC()"> Master</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-wc-bed1" onchange="saveLC()"> Bed 1</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-wc-bed2" onchange="saveLC()"> Bed 2</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-wc-bed3" onchange="saveLC()"> Bed 3</label>
+              <label style="font-weight:400;cursor:pointer"><input type="checkbox" id="lc-wc-bed4" onchange="saveLC()"> Bed 4</label>
+            </div>
+          </div></div>
+          <div style="margin-top:14px" class="fgrid">
+            <div class="fg"><label>Shed / extra storage</label>
+              <select id="lc-shed" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="yes">✓ Yes</option>
+                <option value="no">✗ No</option>
+              </select>
+            </div>
+            <div class="fg"><label>Fence</label>
+              <select id="lc-fence" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="yes">✓ Yes</option>
+                <option value="no">✗ No</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg"><label>Fence material (if yes)</label><input id="lc-fence-material" placeholder="e.g. wood, vinyl, chain link" oninput="debounceLC()"></div>
+        </div>
+
+        <!-- Card 10: Photo Notes & Lockbox -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📸 Photography &amp; Access</div>
+          <div class="fg"><label>Photo guidelines / things to highlight</label>
+            <textarea id="lc-photo-notes" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="e.g. Highlight new kitchen, master bath, backyard view…" oninput="debounceLC()"></textarea>
+          </div>
+          <div class="fg" style="margin-top:13px"><label>Lockbox code</label>
+            <input id="lc-lockbox" placeholder="e.g. 1234" oninput="debounceLC()" style="font-family:monospace;letter-spacing:2px">
           </div>
         </div>
       </div>
@@ -485,14 +1024,69 @@ let tasksMap={};     // {project_id: {phase_id: [{tid, name}]}} — dynamic task
 let budgetMap={};    // {project_id: {group_id: {item_slug: {est,actual,est_note,actual_note,...}}}}
 let itemsMap={};     // {project_id: {group_id: [{slug, name}]}} — dynamic items per phase
 let attachMap={};    // {project_id: {group_id: {item_slug: [{id, name, url, size}]}}}
+let propertyMap={};  // {project_id: {client_name, lot_size, living_area, year_built, ...}}
+let listingMap={};   // {project_id: { listing checklist data }}
+let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
+
+// Predefined items per category — only created on first load if not present
+const EC_DEFAULTS={
+  dec_invoice: [
+    {name:'General Contractor'},
+    {name:'Mobile Home Build'},
+    {name:'Mobile Home Installation'},
+  ],
+  recurring: [
+    {name:'Landscape', frequency:'monthly'},
+    {name:'Energy', frequency:'monthly'},
+    {name:'Water', frequency:'monthly'},
+    {name:'Gas', frequency:'monthly'},
+    {name:'Club', frequency:'monthly'},
+    {name:'HOA', frequency:'monthly'},
+    {name:'Internet', frequency:'monthly'},
+    {name:'Pool', frequency:'monthly'},
+    {name:'Annual Taxes', frequency:'annual'},
+  ],
+  documents: [
+    {name:'Lawyer'},
+    {name:'Clear to sell'},
+    {name:'Impact Fee'},
+    {name:'Code enforcement'},
+    {name:'Lot Subdivision'},
+    {name:'Inspections'},
+  ],
+  high_end: [
+    {name:'Labor'},
+    {name:'Woodworking'},
+    {name:'Paint'},
+    {name:'Goods Decoration'},
+    {name:'Curtain'},
+    {name:'Wallpaper'},
+    {name:'Ilumination'},
+    {name:'Furniture'},
+  ],
+};
+let CURRENT_USER=null;
+
+// CEO list — only these emails can access Property & Finance module
+const CEO_EMAILS=['fabiana@decgroupusa.com'];
+function isCEO(){
+  return !!(CURRENT_USER&&CURRENT_USER.email&&CEO_EMAILS.includes(CURRENT_USER.email.toLowerCase()));
+}
+function applyCEOVisibility(){
+  document.querySelectorAll('.ceo-only').forEach(el=>{
+    el.style.display=isCEO()?'':'none';
+  });
+}
 
 // ═══ AUTH ════════════════════════════════════════════════════════════
 async function init(){
   setLoading(true,'Connecting...');
   const {data:{session}}=await sb.auth.getSession();
   if(session){
+    CURRENT_USER=session.user;
     document.getElementById('user-email-lbl').textContent=session.user.email;
+    applyCEOVisibility();
     setLoading(true,'Loading projects...');
     await loadAllData();
     showApp();
@@ -512,7 +1106,9 @@ async function doLogin(){
   document.getElementById('login-load').style.display='none';
   document.querySelector('.login-btn').disabled=false;
   if(error){showLoginErr('Invalid email or password.');return;}
+  CURRENT_USER=data.user;
   document.getElementById('user-email-lbl').textContent=data.user.email;
+  applyCEOVisibility();
   setLoading(true,'Loading projects...');
   await loadAllData();
   showApp();
@@ -548,12 +1144,23 @@ function setLoading(show,msg='Loading...'){
 
 // ═══ LOAD DATA ════════════════════════════════════════════════════════
 async function loadAllData(){
-  const [{data:ps},{data:ts},{data:bs},{data:atts}]=await Promise.all([
+  const promises=[
     sb.from('projects').select('*').order('created_at'),
     sb.from('schedule_tasks').select('*'),
     sb.from('budget_items').select('*'),
     sb.from('budget_attachments').select('*'),
-  ]);
+  ];
+  // Only CEOs can read property_info / listing_checklist / extra_costs (RLS enforces this regardless)
+  if(isCEO()){
+    promises.push(sb.from('property_info').select('*'));
+    promises.push(sb.from('listing_checklist').select('*'));
+    promises.push(sb.from('extra_costs').select('*').order('category').order('position'));
+  }
+  const results=await Promise.all(promises);
+  const ps=results[0].data, ts=results[1].data, bs=results[2].data, atts=results[3].data;
+  const props=isCEO()?(results[4]?.data||[]):[];
+  const listings=isCEO()?(results[5]?.data||[]):[];
+  const ecs=isCEO()?(results[6]?.data||[]):[];
   projects=ps||[];
   // Build maps
   schedMap={};
@@ -591,6 +1198,16 @@ async function loadAllData(){
     if(!attachMap[a.project_id][a.room_id]) attachMap[a.project_id][a.room_id]={};
     if(!attachMap[a.project_id][a.room_id][a.item_slug]) attachMap[a.project_id][a.room_id][a.item_slug]=[];
     attachMap[a.project_id][a.room_id][a.item_slug].push(a);
+  });
+  propertyMap={};
+  (props||[]).forEach(pr=>{ propertyMap[pr.project_id]=pr; });
+  listingMap={};
+  (listings||[]).forEach(l=>{ listingMap[l.project_id]=l; });
+  extraCostsMap={};
+  (ecs||[]).forEach(e=>{
+    if(!extraCostsMap[e.project_id]) extraCostsMap[e.project_id]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
+    if(!extraCostsMap[e.project_id][e.category]) extraCostsMap[e.project_id][e.category]=[];
+    extraCostsMap[e.project_id][e.category].push(e);
   });
 }
 
@@ -1033,6 +1650,11 @@ function loadProjectForms(p){
     updateGroupTotals(g.id);
   });
   updateSchedProgress();
+  // CEO-only: load property/finance form + listing checklist
+  if(isCEO()){
+    loadPropertyForm();
+    loadListingForm();
+  }
 }
 
 // ═══ SAVE HANDLERS ════════════════════════════════════════════════════
@@ -1050,6 +1672,483 @@ async function savePF(){
   const i=projects.findIndex(x=>x.id===CID);
   if(i>=0) projects[i]={...projects[i],...payload};
   document.getElementById('tn-pname').textContent=payload.name;
+  showSaved();
+}
+
+// ═══ PROPERTY & FINANCE (CEO ONLY) ════════════════════════════════════
+let _debPI=null;
+function debouncePI(){clearTimeout(_debPI);_debPI=setTimeout(savePI,600);}
+
+function loadPropertyForm(){
+  if(!CID) return;
+  const p=propertyMap[CID]||{};
+  const pairs=[
+    ['pi-client','client_name'],
+    ['pi-year','year_built'],
+    ['pi-lot','lot_size'],
+    ['pi-living','living_area'],
+    ['pi-pool','pool'],
+    ['pi-hoa-has','hoa_has'],
+    ['pi-hoa-fee','hoa_fee'],
+    ['pi-roof','roof'],
+    ['pi-ac','ac'],
+    ['pi-water-heater','water_heater'],
+    ['pi-other','other_info'],
+    // Acquisition
+    ['pi-cash','cash'],
+    ['pi-hard-money','hard_money'],
+    ['pi-closing','closing_costs'],
+    ['pi-lender','lender_costs'],
+    ['pi-other-costs','other_costs'],
+    ['pi-purch-date','purchase_date'],
+    ['pi-arv','arv'],
+    ['pi-sale','final_sale_price'],
+    ['pi-sale-date','sale_date'],
+    ['pi-selling','selling_costs'],
+    ['pi-holding','holding_costs'],
+    ['pi-refund','refund_value'],
+  ];
+  pairs.forEach(([elId,k])=>{
+    const el=document.getElementById(elId);
+    if(el) el.value=(p[k]==null||p[k]===0&&el.type==='number'&&!p[k])?'':p[k];
+  });
+  // Percentages: default 50/50 if never set
+  document.getElementById('pi-pct-client').value=(p.pct_client==null?50:p.pct_client);
+  document.getElementById('pi-pct-dec').value=(p.pct_dec==null?50:p.pct_dec);
+  // Extra costs: seed defaults on first load if empty for this project
+  ensureExtraCostsDefaults();
+  // Render extra cost cards
+  ['dec_invoice','recurring','documents','high_end'].forEach(c=>renderExtraCosts(c));
+  recalcAcquisition();
+  recalcProfit();
+}
+
+async function ensureExtraCostsDefaults(){
+  if(!isCEO()||!CID) return;
+  if(!extraCostsMap[CID]) extraCostsMap[CID]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
+  const cats=Object.keys(EC_DEFAULTS);
+  const toInsert=[];
+  cats.forEach(cat=>{
+    if(!extraCostsMap[CID][cat]) extraCostsMap[CID][cat]=[];
+    if(extraCostsMap[CID][cat].length===0){
+      EC_DEFAULTS[cat].forEach((it,idx)=>{
+        toInsert.push({
+          project_id:CID, category:cat, name:it.name, amount:0,
+          frequency:it.frequency||'', is_extra:false, position:idx,
+        });
+      });
+    }
+  });
+  if(toInsert.length===0) return;
+  const {data,error}=await sb.from('extra_costs').insert(toInsert).select();
+  if(error){console.error('seed err',error); return;}
+  (data||[]).forEach(e=>{
+    if(!extraCostsMap[e.project_id]) extraCostsMap[e.project_id]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
+    if(!extraCostsMap[e.project_id][e.category]) extraCostsMap[e.project_id][e.category]=[];
+    extraCostsMap[e.project_id][e.category].push(e);
+  });
+}
+
+async function savePI(){
+  if(!CID||!isCEO()) return;
+  const num=id=>{const x=parseFloat(v(id));return isNaN(x)?null:Math.round(x*100)/100;};
+  const payload={
+    project_id:CID,
+    client_name:v('pi-client'),
+    year_built:parseInt(v('pi-year'))||null,
+    lot_size:num('pi-lot'),
+    living_area:num('pi-living'),
+    pool:v('pi-pool'),
+    hoa_has:v('pi-hoa-has'),
+    hoa_fee:num('pi-hoa-fee'),
+    roof:v('pi-roof'),
+    ac:v('pi-ac'),
+    water_heater:v('pi-water-heater'),
+    other_info:v('pi-other'),
+    // Acquisition
+    cash:num('pi-cash'),
+    hard_money:num('pi-hard-money'),
+    closing_costs:num('pi-closing'),
+    lender_costs:num('pi-lender'),
+    other_costs:num('pi-other-costs'),
+    purchase_date:v('pi-purch-date')||null,
+    // Sale
+    arv:num('pi-arv'),
+    final_sale_price:num('pi-sale'),
+    sale_date:v('pi-sale-date')||null,
+    selling_costs:num('pi-selling'),
+    holding_costs:num('pi-holding'),
+    // Refund + Distribution
+    refund_value:num('pi-refund'),
+    pct_client:num('pi-pct-client'),
+    pct_dec:num('pi-pct-dec'),
+  };
+  const {error}=await sb.from('property_info').upsert(payload,{onConflict:'project_id'});
+  if(error){console.error(error);toast('Error saving (check permissions)',false);return;}
+  propertyMap[CID]={...propertyMap[CID],...payload};
+  recalcAcquisition();
+  recalcProfit();
+  showSaved();
+}
+
+function recalcAcquisition(){
+  // Wholesaler price = Cash + Hard money
+  const cash=parseFloat(v('pi-cash'))||0;
+  const hard=parseFloat(v('pi-hard-money'))||0;
+  const wholesaler=Math.round((cash+hard)*100)/100;
+  document.getElementById('pi-wholesaler-total').textContent='$'+fmt(wholesaler);
+  // Sales total price = Closing + Lender + Other
+  const closing=parseFloat(v('pi-closing'))||0;
+  const lender=parseFloat(v('pi-lender'))||0;
+  const other=parseFloat(v('pi-other-costs'))||0;
+  const salesTotal=Math.round((closing+lender+other)*100)/100;
+  document.getElementById('pi-sales-total').textContent='$'+fmt(salesTotal);
+  return {wholesaler, salesTotal};
+}
+
+let _debAcq=null;
+function onAcqInput(){
+  recalcAcquisition();
+  recalcProfit();
+  clearTimeout(_debAcq);
+  _debAcq=setTimeout(savePI,600);
+}
+
+// ─── EXTRA COSTS ──────────────────────────────────────────────────────
+const FREQ_OPTIONS=[['monthly','Monthly'],['quarterly','Quarterly'],['semiannual','Semiannual'],['annual','Annual']];
+
+function getExtraCosts(category){
+  return ((extraCostsMap[CID]||{})[category])||[];
+}
+
+function calcExtraSubtotal(category){
+  return getExtraCosts(category).reduce((s,e)=>s+(+e.amount||0),0);
+}
+
+function renderExtraCosts(category){
+  const list=document.getElementById('ec-'+_catSlug(category)+'-list');
+  if(!list) return;
+  const items=getExtraCosts(category);
+  if(items.length===0){
+    list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Loading items...</div>`;
+  } else {
+    list.innerHTML=items.map(it=>{
+      const isRec=category==='recurring';
+      const freqSel=isRec?`
+        <select onchange="updateExtraCost('${it.id}','frequency',this.value)" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+          <option value="">— freq —</option>
+          ${FREQ_OPTIONS.map(([v,l])=>`<option value="${v}" ${it.frequency===v?'selected':''}>${l}</option>`).join('')}
+        </select>`:'';
+      return `<div style="display:grid;grid-template-columns:${isRec?'1fr 130px 130px':'1fr 130px'};gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
+        <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${it.name}</span></div>
+        ${freqSel?`<div>${freqSel}</div>`:''}
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:13px;color:var(--gray3)">$</span>
+          <input type="number" min="0" step="0.01" value="${it.amount||''}" oninput="updateExtraCost('${it.id}','amount',this.value)" placeholder="0.00" style="padding:6px 8px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:100%">
+        </div>
+      </div>`;
+    }).join('');
+  }
+  // Update subtotal display
+  const sub=calcExtraSubtotal(category);
+  const subEl=document.getElementById('ec-'+_catSlug(category)+'-total');
+  if(subEl) subEl.textContent=fmt(sub);
+}
+
+function _catSlug(c){
+  return {dec_invoice:'dec',recurring:'rec',documents:'doc',high_end:'he'}[c]||c;
+}
+
+const _debEC={};
+async function updateExtraCost(id,field,value){
+  if(!isCEO()) return;
+  // Find row in memory
+  let cat=null, idx=-1;
+  Object.keys(extraCostsMap[CID]||{}).forEach(c=>{
+    const i=(extraCostsMap[CID][c]||[]).findIndex(x=>x.id===id);
+    if(i>=0){cat=c; idx=i;}
+  });
+  if(!cat) return;
+  const it=extraCostsMap[CID][cat][idx];
+  // Convert and assign
+  if(field==='amount'){
+    const x=parseFloat(value); it.amount=isNaN(x)?0:Math.round(x*100)/100;
+  } else {
+    it[field]=value||'';
+  }
+  // Update subtotal in real time
+  const sub=calcExtraSubtotal(cat);
+  const subEl=document.getElementById('ec-'+_catSlug(cat)+'-total');
+  if(subEl) subEl.textContent=fmt(sub);
+  recalcProfit();
+  // Debounce save
+  const k=id+'_'+field;
+  clearTimeout(_debEC[k]);
+  _debEC[k]=setTimeout(async()=>{
+    const payload={};
+    payload[field]=it[field];
+    await sb.from('extra_costs').update(payload).eq('id',id);
+    showSaved();
+  },field==='amount'?500:300);
+}
+
+async function addExtraCost(category){
+  if(!isCEO()||!CID) return;
+  if(!extraCostsMap[CID]) extraCostsMap[CID]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
+  const cur=extraCostsMap[CID][category]||[];
+  const pos=cur.length;
+  const {data,error}=await sb.from('extra_costs').insert([{
+    project_id:CID, category, name:'', amount:0, frequency:'',
+    is_extra:true, position:pos
+  }]).select();
+  if(error){console.error(error);toast('Error adding item',false);return;}
+  if(data&&data[0]){
+    if(!extraCostsMap[CID][category]) extraCostsMap[CID][category]=[];
+    extraCostsMap[CID][category].push(data[0]);
+    renderExtraCosts(category);
+    showSaved();
+  }
+}
+
+async function removeExtraCost(id,category){
+  if(!isCEO()) return;
+  if(!confirm('Remove this extra item?')) return;
+  await sb.from('extra_costs').delete().eq('id',id);
+  if(extraCostsMap[CID]&&extraCostsMap[CID][category]){
+    extraCostsMap[CID][category]=extraCostsMap[CID][category].filter(x=>x.id!==id);
+  }
+  renderExtraCosts(category);
+  recalcProfit();
+  showSaved();
+}
+
+// ─── PROFIT DISTRIBUTION ──────────────────────────────────────────────
+let _debPct=null;
+function onPctChange(which){
+  // Auto-complement to 100
+  const cliEl=document.getElementById('pi-pct-client');
+  const decEl=document.getElementById('pi-pct-dec');
+  let val=parseFloat((which==='client'?cliEl:decEl).value);
+  if(isNaN(val)) val=0;
+  val=Math.max(0,Math.min(100,val));
+  if(which==='client'){
+    cliEl.value=val;
+    decEl.value=Math.round((100-val)*10)/10;
+  } else {
+    decEl.value=val;
+    cliEl.value=Math.round((100-val)*10)/10;
+  }
+  recalcProfit();
+  clearTimeout(_debPct);
+  _debPct=setTimeout(savePI,600);
+}
+
+function recalcProfit(){
+  if(!CID) return;
+  const p=propertyMap[CID]||{};
+  // Renovation card — pulled from budgetMap
+  const totEst=calcRoomTotal(CID,'est');
+  const totAct=calcRoomTotal(CID,'actual');
+  const variance=totAct-totEst;
+  document.getElementById('rn-est').textContent='$'+fmt(totEst);
+  document.getElementById('rn-act').textContent='$'+fmt(totAct);
+  const varEl=document.getElementById('rn-var');
+  varEl.textContent=(variance>=0?'+':'')+'$'+fmt(Math.abs(variance));
+  varEl.style.color=variance>0?'var(--p1)':variance<0?'var(--p3)':'var(--gray3)';
+  // Days under construction
+  const proj=projects.find(x=>x.id===CID);
+  if(proj&&proj.start_date){
+    const startD=new Date(proj.start_date);
+    const endD=proj.end_date?new Date(proj.end_date):new Date();
+    const days=Math.max(0,Math.round((endD-startD)/86400000));
+    document.getElementById('rn-days').textContent=days+' days'+(proj.end_date?'':' (ongoing)');
+  } else {
+    document.getElementById('rn-days').textContent='—';
+  }
+  // Acquisition totals (live from inputs)
+  const {wholesaler, salesTotal}=recalcAcquisition();
+  // Read sale data
+  const arv=+p.arv||0;
+  const sale=+p.final_sale_price||0;
+  const selling=+p.selling_costs||0;
+  const holding=+p.holding_costs||0;
+  // Live read refund (might be unsaved)
+  const refund=parseFloat(v('pi-refund'))||0;
+  // Mirror refund display in the distribution card
+  const refMirror=document.getElementById('pi-refund-mirror');
+  if(refMirror) refMirror.value='$'+fmt(refund);
+  // Extra costs subtotals
+  const decTotal=calcExtraSubtotal('dec_invoice');
+  const recTotal=calcExtraSubtotal('recurring');
+  const docTotal=calcExtraSubtotal('documents');
+  const heTotal=calcExtraSubtotal('high_end');
+  const extraTotal=decTotal+recTotal+docTotal+heTotal;
+  // Estimated profit (legacy formula, just shows expectation)
+  const estProfit=arv?(arv-wholesaler-salesTotal-totEst-selling):0;
+  const estEl=document.getElementById('pft-est');
+  estEl.textContent=arv?(estProfit>=0?'$':'-$')+fmt(Math.abs(estProfit)):'—';
+  estEl.style.color=arv?(estProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
+  // Actual profit = Final Sale - Wholesaler - Sales total - Total Actual - Selling - Holding - Extras - Refund
+  const actProfit=sale?(sale-wholesaler-salesTotal-totAct-selling-holding-extraTotal-refund):0;
+  const actEl=document.getElementById('pft-act');
+  actEl.textContent=sale?(actProfit>=0?'$':'-$')+fmt(Math.abs(actProfit)):'—';
+  actEl.style.color=sale?(actProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
+  // ROI = Actual Profit / Total Investment
+  const totalInvest=wholesaler+salesTotal+totAct+selling+holding+extraTotal;
+  const roiEl=document.getElementById('pft-roi');
+  if(sale && totalInvest>0){
+    const roi=(actProfit/totalInvest)*100;
+    roiEl.textContent=(roi>=0?'+':'')+roi.toFixed(1)+'%';
+    roiEl.style.color=roi>=0?'var(--p3)':'var(--p1)';
+  } else {
+    roiEl.textContent='—';
+    roiEl.style.color='var(--gray3)';
+  }
+  // Distribution
+  const pctClient=parseFloat(v('pi-pct-client'))||0;
+  const pctDec=parseFloat(v('pi-pct-dec'))||0;
+  const cliShare=actProfit*pctClient/100;
+  const decShare=actProfit*pctDec/100;
+  const cliEl=document.getElementById('pft-client');
+  const decEl=document.getElementById('pft-dec');
+  if(cliEl){
+    cliEl.textContent=sale?(cliShare>=0?'$':'-$')+fmt(Math.abs(cliShare)):'—';
+    cliEl.style.color=sale?(cliShare>=0?'var(--gold)':'var(--p1)'):'var(--gray3)';
+  }
+  if(decEl){
+    decEl.textContent=sale?(decShare>=0?'$':'-$')+fmt(Math.abs(decShare)):'—';
+    decEl.style.color=sale?(decShare>=0?'var(--blue)':'var(--p1)'):'var(--gray3)';
+  }
+}
+
+// ═══ LISTING CHECKLIST (CEO ONLY) ═════════════════════════════════════
+// Field map: HTML id ↔ DB column
+const LC_FIELDS=[
+  // Property Data
+  ['lc-email','buyer_email','text'],
+  ['lc-list-date','listing_date','date'],
+  ['lc-asking','asking_price','num'],
+  ['lc-tax','property_tax_2025','num'],
+  ['lc-beds','bedrooms','int'],
+  ['lc-full-baths','full_baths','int'],
+  ['lc-half-baths','half_baths','int'],
+  ['lc-hoa','hoa_type','text'],
+  ['lc-hoa-val','hoa_value','num'],
+  // Garage
+  ['lc-garage','garage','text'],
+  ['lc-carport','carport','text'],
+  // Utilities & Construction
+  ['lc-private','private_utilities','text'],
+  ['lc-foundation','foundation','text'],
+  ['lc-exterior','exterior','text'],
+  ['lc-manuf','manufactured','text'],
+  // Roof
+  ['lc-roof-status','roof_status','text'],
+  ['lc-roof-age','roof_age','int'],
+  ['lc-roof-permit','roof_permit','text'],
+  ['lc-roof-permit-num','roof_permit_num','text'],
+  ['lc-roof-notes','roof_notes','text'],
+  // HVAC
+  ['lc-hvac-status','hvac_status','text'],
+  ['lc-hvac-age','hvac_age','int'],
+  ['lc-hvac-permit','hvac_permit','text'],
+  ['lc-hvac-permit-num','hvac_permit_num','text'],
+  ['lc-hvac-notes','hvac_notes','text'],
+  // Electrical
+  ['lc-elec-status','elec_status','text'],
+  ['lc-elec-age','elec_age','int'],
+  ['lc-elec-permit','elec_permit','text'],
+  ['lc-elec-permit-num','elec_permit_num','text'],
+  ['lc-gfi','gfi_outlets','text'],
+  ['lc-elec-notes','elec_notes','text'],
+  // Plumbing
+  ['lc-plumb-status','plumb_status','text'],
+  ['lc-plumb-age','plumb_age','int'],
+  ['lc-pipe-type','pipe_type','text'],
+  ['lc-plumb-permit-num','plumb_permit_num','text'],
+  ['lc-plumb-notes','plumb_notes','text'],
+  // Water Heater
+  ['lc-wh-status','wh_status','text'],
+  ['lc-wh-age','wh_age','int'],
+  ['lc-wh-permit','wh_permit','text'],
+  ['lc-wh-permit-num','wh_permit_num','text'],
+  ['lc-wh-notes','wh_notes','text'],
+  // Renovations & Layout
+  ['lc-floorplan','floorplan','text'],
+  ['lc-k-full','kitchen_full','bool'],
+  ['lc-k-app','kitchen_appliances','bool'],
+  ['lc-k-cab','kitchen_cabinets','bool'],
+  ['lc-k-gran','kitchen_granite','bool'],
+  ['lc-k-quartz','kitchen_quartz','bool'],
+  ['lc-k-pantry','kitchen_pantry','bool'],
+  ['lc-bath-reno','bath_renovation','text'],
+  ['lc-bath-desc','bath_description','text'],
+  ['lc-floor-replaced','floor_replaced','text'],
+  ['lc-floor-material','floor_material','text'],
+  ['lc-wc-master','wc_master','bool'],
+  ['lc-wc-bed1','wc_bed1','bool'],
+  ['lc-wc-bed2','wc_bed2','bool'],
+  ['lc-wc-bed3','wc_bed3','bool'],
+  ['lc-wc-bed4','wc_bed4','bool'],
+  ['lc-shed','shed','text'],
+  ['lc-fence','fence','text'],
+  ['lc-fence-material','fence_material','text'],
+  // Photo & Lockbox
+  ['lc-photo-notes','photo_notes','text'],
+  ['lc-lockbox','lockbox_code','text'],
+];
+
+let _debLC=null;
+function debounceLC(){clearTimeout(_debLC);_debLC=setTimeout(saveLC,600);}
+
+function loadListingForm(){
+  if(!CID) return;
+  // Mirror data from project + property (these are read-only display fields)
+  const proj=projects.find(x=>x.id===CID);
+  if(proj){
+    const addrEl=document.getElementById('lc-address'); if(addrEl) addrEl.value=proj.address||'';
+    const wcoEl=document.getElementById('lc-water-co'); if(wcoEl) wcoEl.value=proj.water_company||'';
+    const pcoEl=document.getElementById('lc-power-co'); if(pcoEl) pcoEl.value=proj.power_company||'';
+  }
+  const propI=propertyMap[CID]||{};
+  const cliEl=document.getElementById('lc-client'); if(cliEl) cliEl.value=propI.client_name||'';
+  // Hydrate editable fields from listingMap
+  const data=listingMap[CID]||{};
+  LC_FIELDS.forEach(([elId,k,t])=>{
+    const el=document.getElementById(elId);
+    if(!el) return;
+    const val=data[k];
+    if(t==='bool'){
+      el.checked=!!val;
+    } else {
+      el.value=(val==null||val==='')?'':val;
+    }
+  });
+}
+
+async function saveLC(){
+  if(!CID||!isCEO()) return;
+  const payload={project_id:CID};
+  LC_FIELDS.forEach(([elId,k,t])=>{
+    const el=document.getElementById(elId);
+    if(!el) return;
+    if(t==='bool'){
+      payload[k]=!!el.checked;
+    } else if(t==='int'){
+      const x=parseInt(el.value);
+      payload[k]=isNaN(x)?null:x;
+    } else if(t==='num'){
+      const x=parseFloat(el.value);
+      payload[k]=isNaN(x)?null:Math.round(x*100)/100;
+    } else if(t==='date'){
+      payload[k]=el.value||null;
+    } else {
+      payload[k]=el.value||'';
+    }
+  });
+  const {error}=await sb.from('listing_checklist').upsert(payload,{onConflict:'project_id'});
+  if(error){console.error(error);toast('Error saving listing (check permissions)',false);return;}
+  listingMap[CID]={...listingMap[CID],...payload};
   showSaved();
 }
 
@@ -1507,6 +2606,8 @@ function sp(id,el,cls){
   if(id==='dash') renderDashboard();
   if(id==='gantt') renderGantt();
   if(id==='cmp') renderComparison();
+  if(id==='property' && isCEO()) recalcProfit();
+  if(id==='listing' && isCEO()) loadListingForm();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
