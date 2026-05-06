@@ -2232,6 +2232,12 @@ function generateReport(){
   const lucroClient=lucroLiquido*pctClient/100;
   const lucroDec=lucroLiquido*pctDec/100;
   const pagarADec=lucroDec+refund;
+  // ROI = Lucro Líquido / Total Investido × 100 (dividido proporcionalmente entre Cliente e DEC)
+  const roiTotal=totalInvestido>0?(lucroLiquido/totalInvestido*100):0;
+  const roiClient=roiTotal*pctClient/100;
+  const roiDec=roiTotal*pctDec/100;
+  // Format ROI as percentage (1 decimal place, with sign)
+  const $pct=n=>(n>=0?'':'-')+Math.abs(n).toFixed(1)+'%';
 
   // Build HTML
   const projName=proj.name||'(sem nome)';
@@ -2341,8 +2347,11 @@ function generateReport(){
     <div class="summary-row"><strong>Total Investido</strong><span>${$$(totalInvestido)}</span></div>
     <div class="summary-row"><strong>Gross Profit</strong><span>${$$(grossProfit)}</span></div>
     <div class="summary-row highlight"><strong>Lucro Líquido Total</strong><span>${$$(lucroLiquido)}</span></div>
+    <div class="summary-row"><strong>ROI Total</strong><span>${$pct(roiTotal)}</span></div>
     <div class="summary-row"><strong>${pctClient}% Cliente</strong><span>${$$(lucroClient)}</span></div>
+    <div class="summary-row"><strong>ROI Cliente</strong><span>${$pct(roiClient)}</span></div>
     <div class="summary-row"><strong>${pctDec}% DEC</strong><span>${$$(lucroDec)}</span></div>
+    <div class="summary-row"><strong>ROI DEC</strong><span>${$pct(roiDec)}</span></div>
     ${refund>0?`<div class="summary-row"><strong>Reembolso</strong><span>${$$(refund)}</span></div>`:''}
     <div class="summary-row final"><strong>Pagar à DEC</strong><span>${$$(pagarADec)}</span></div>
   </div>
