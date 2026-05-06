@@ -590,10 +590,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
               <div class="kpi" style="border-left-color:var(--gold);background:#FFF8E1"><div class="kpi-l">👤 Cliente recebe</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Cliente do lucro</div></div>
               <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC do lucro + Refund</div></div>
             </div>
-            <div style="margin-top:14px;padding:10px 14px;background:#F5F7FA;border-left:3px solid var(--gray3);border-radius:6px;font-size:12px">
-              <span style="color:var(--gray3);font-weight:600">📋 DEC Invoice (info):</span>
-              <span id="pft-dec-invoice" style="font-weight:700;color:var(--navy);margin-left:6px">$0</span>
-              <span style="color:var(--gray3);font-style:italic;margin-left:8px">— valor da DEC Invoice (faturada separadamente)</span>
+            <div style="margin-top:14px;padding:12px 14px;background:#F5F7FA;border-left:3px solid var(--gray3);border-radius:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="color:var(--navy);font-weight:700;font-size:13px">📋 DEC Invoice:</span>
+              <span style="color:var(--gray3);font-size:13px">$</span>
+              <input id="pi-dec-invoice" type="number" min="0" step="0.01" placeholder="0.00" oninput="debouncePI()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:140px">
+              <span style="color:var(--gray3);font-size:11px;font-style:italic">— faturada separadamente, NÃO soma no Total Investido</span>
             </div>
             <div style="margin-top:24px;padding-top:18px;border-top:2px solid #EEF2F7;display:flex;justify-content:flex-end;gap:10px">
               <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()">📄 Gerar Relatório (PDF)</button>
@@ -1046,7 +1047,6 @@ let CID=null;
 // Predefined items per category — only created on first load if not present
 const EC_DEFAULTS={
   dec_invoice: [
-    {name:'DEC Invoice'},
     {name:'General Contractor'},
     {name:'Mobile Home Build'},
     {name:'Mobile Home Installation'},
@@ -1735,6 +1735,7 @@ function loadPropertyForm(){
     ['pi-holding','holding_costs'],
     ['pi-lender-sale','lender_costs_sale'],
     ['pi-refund','refund_value'],
+    ['pi-dec-invoice','dec_invoice_value'],
   ];
   pairs.forEach(([elId,k])=>{
     const el=document.getElementById(elId);
@@ -1859,6 +1860,7 @@ async function savePI(){
     refund_value:num('pi-refund'),
     pct_client:num('pi-pct-client'),
     pct_dec:num('pi-pct-dec'),
+    dec_invoice_value:num('pi-dec-invoice'),
   };
   const {error}=await sb.from('property_info').upsert(payload,{onConflict:'project_id'});
   if(error){console.error(error);toast('Error saving (check permissions)',false);return;}
@@ -2104,9 +2106,6 @@ function recalcProfit(){
   const cliShare=actProfit*pctClient/100;
   const decShareRaw=actProfit*pctDec/100;
   const decShare=decShareRaw+refund; // DEC recebe = % do lucro + Refund
-  // DEC Invoice value (only the "DEC Invoice" item, not the whole Costs subtotal)
-  const decInvoiceItem=getExtraCosts('dec_invoice').find(x=>x.name==='DEC Invoice');
-  const decInvoiceVal=decInvoiceItem?(+decInvoiceItem.amount||0):0;
   const cliEl=document.getElementById('pft-client');
   const decEl=document.getElementById('pft-dec');
   if(cliEl){
@@ -2117,9 +2116,6 @@ function recalcProfit(){
     decEl.textContent=sale?(decShare>=0?'':'-')+fmt(Math.abs(decShare)):'—';
     decEl.style.color=sale?(decShare>=0?'var(--blue)':'var(--p1)'):'var(--gray3)';
   }
-  // DEC Invoice info (read-only, info only, NOT summed)
-  const decInvEl=document.getElementById('pft-dec-invoice');
-  if(decInvEl) decInvEl.textContent=fmt(decInvoiceVal);
 }
 
 // ═══ REPORT GENERATOR (CEO ONLY) ══════════════════════════════════════
