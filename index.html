@@ -2174,14 +2174,15 @@ function generateReport(){
   const total1=cash+hardMoney+closing+lenderAcq+otherAcq;
 
   // Project costs (Total 2)
-  const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale)
+  const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale) — ainda lido para Gross Profit
   const totAct=calcRoomTotal(CID,'actual'); // Reforma
-  // Recurring items (water, energy, etc.)
-  const recItems=getExtraCosts('recurring');
-  const recRows=recItems.filter(it=>(+it.amount||0)>0).map(it=>({
-    desc:it.name+(it.notes?' — '+it.notes:''),
-    val:+it.amount||0
-  }));
+  // Recurring items (water, energy, etc.) — agora puxa do recurring_detail (24 meses)
+  const rcdData=recurringMap[CID]||{};
+  const recRows=RC_ITEMS.map(itemName=>{
+    const row=rcdData[itemName]||{};
+    const total=RC_MONTHS.reduce((s,m)=>s+(+row[m]||0),0);
+    return {desc:itemName+(row.notes?' — '+row.notes:''),val:total};
+  }).filter(r=>r.val>0);
   // DEC Invoice items
   const decItems=getExtraCosts('dec_invoice');
   const decRows=decItems.filter(it=>(+it.amount||0)>0).map(it=>({
@@ -2205,7 +2206,8 @@ function generateReport(){
   const decExtraTotal=decRows.reduce((s,r)=>s+r.val,0);
   const docTotal=docRows.reduce((s,r)=>s+r.val,0);
   const heTotal=heRows.reduce((s,r)=>s+r.val,0);
-  const total2=lenderSale+totAct+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0)+(+p.selling_costs||0);
+  // Total 2 — without Juros Hard Money (lenderSale) and without Selling costs
+  const total2=totAct+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0);
 
   // Days under construction
   let daysExec='—';
@@ -2218,9 +2220,13 @@ function generateReport(){
   // Final calculations
   const sale=+p.final_sale_price||0;
   const refund=+p.refund_value||0;
-  // Custos Total = Total 1 + Total 2 - Hard Money (because hard money is paid back at sale)
-  const custosTotal=total1+total2-hardMoney;
-  const lucroLiquido=sale-custosTotal-refund;
+  const sellingCosts=+p.selling_costs||0;
+  // Total Investido = Cash + Actual Spent + Costs (DEC Invoice) + Recurring + Documents + High End
+  const totalInvestido=cash+totAct+decExtraTotal+recTotal+docTotal+heTotal;
+  // Gross Profit = Final Sale − Selling − Lender(sale)
+  const grossProfit=sale-sellingCosts-lenderSale;
+  // Lucro Líquido = Gross Profit − Total Investido (= Actual Profit)
+  const lucroLiquido=grossProfit-totalInvestido;
   const pctClient=+p.pct_client||0;
   const pctDec=+p.pct_dec||0;
   const lucroClient=lucroLiquido*pctClient/100;
@@ -2320,23 +2326,20 @@ function generateReport(){
       <tr><th>Descrição</th><th class="docs">Documentos</th><th class="val">Valor</th></tr>
     </thead>
     <tbody>
-      ${lenderSale>0?`<tr><td>Juros Hard Money — parcelas e payoff</td><td class="docs"></td><td class="val">${$$(lenderSale)}</td></tr>`:''}
       ${totAct>0?`<tr><td>Reforma (Actual Costs)</td><td class="docs">Estimate/Actual</td><td class="val">${$$(totAct)}</td></tr>`:''}
       ${decRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${recRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${docRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${heRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${(+p.holding_costs||0)>0?`<tr><td>Holding costs</td><td class="docs"></td><td class="val">${$$(+p.holding_costs)}</td></tr>`:''}
-      ${(+p.selling_costs||0)>0?`<tr><td>Selling costs (comissão, taxas)</td><td class="docs"></td><td class="val">${$$(+p.selling_costs)}</td></tr>`:''}
       ${total2===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem custos lançados</td></tr>`:''}
       <tr class="total-row"><td colspan="2">Total 2</td><td class="val">${$$(total2)}</td></tr>
     </tbody>
   </table>
 
   <div class="summary">
-    <div class="summary-row"><strong>Custos Total (1 + 2 − Hard Money)</strong><span>${$$(custosTotal)}</span></div>
-    <div class="summary-row"><strong>Recebimento Total</strong><span>${$$(sale)}</span></div>
-    ${refund>0?`<div class="summary-row"><strong>(−) Reembolso</strong><span>${$$(refund)}</span></div>`:''}
+    <div class="summary-row"><strong>Total Investido</strong><span>${$$(totalInvestido)}</span></div>
+    <div class="summary-row"><strong>Gross Profit</strong><span>${$$(grossProfit)}</span></div>
     <div class="summary-row highlight"><strong>Lucro Líquido Total</strong><span>${$$(lucroLiquido)}</span></div>
     <div class="summary-row"><strong>${pctClient}% Cliente</strong><span>${$$(lucroClient)}</span></div>
     <div class="summary-row"><strong>${pctDec}% DEC</strong><span>${$$(lucroDec)}</span></div>
