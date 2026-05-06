@@ -952,35 +952,25 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
 
         <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
             <div class="card-title" style="margin:0;border:0;padding:0">📅 Lançamentos mensais
-              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">— ano corrente, 12 meses</span>
+              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">— 24 meses (Ano 1 + Ano 2)</span>
             </div>
-            <div style="font-size:13px;font-weight:700;color:var(--p3)">Total Geral: <span id="rcd-grand-total">$0</span></div>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:6px">
+                <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase">Ano 1</label>
+                <input id="rcd-year1" type="number" min="2000" max="2100" placeholder="2026" oninput="onRCYearChange()" style="padding:5px 8px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:80px;text-align:center">
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase">Ano 2</label>
+                <input id="rcd-year2" type="number" min="2000" max="2100" placeholder="2027" oninput="onRCYearChange()" style="padding:5px 8px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:80px;text-align:center">
+              </div>
+              <div style="font-size:13px;font-weight:700;color:var(--p3)">Total Geral: <span id="rcd-grand-total">$0</span></div>
+            </div>
           </div>
           <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-            <table id="rcd-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1400px">
-              <thead>
-                <tr style="background:#F5F7FA">
-                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#F5F7FA;z-index:1;min-width:140px">Item</th>
-                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Empresa</th>
-                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:110px">Account #</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Jan</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Fev</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Mar</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Abr</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Mai</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Jun</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Jul</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Ago</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Set</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Out</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Nov</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Dez</th>
-                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:90px;background:#E8F5E9">Subtotal</th>
-                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:160px">Observação</th>
-                </tr>
-              </thead>
+            <table id="rcd-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:2400px">
+              <thead id="rcd-thead"></thead>
               <tbody id="rcd-tbody"></tbody>
             </table>
           </div>
@@ -2372,14 +2362,19 @@ function generateReport(){
 }
 
 // ═══ RECURRING COSTS DETAIL (CEO ONLY) ════════════════════════════════
-// 12 fixed items × 12 months tracking
+// 12 fixed items × 24 months tracking (year 1 + year 2)
 const RC_ITEMS=[
   'Landscape','Energy','Water','Gas','Club','HOA','Internet','Pool',
   'Loan payment','Annual Taxes 1','Annual Taxes 2','Annual Taxes 3'
 ];
-const RC_MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-let recurringMap={}; // {project_id: {item_name: {company, account, jan, feb, ..., notes}}}
+// Year 1 months (jan..dec) + Year 2 months (jan2..dec2) = 24 columns total
+const RC_MONTHS_Y1=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+const RC_MONTHS_Y2=['jan2','feb2','mar2','apr2','may2','jun2','jul2','aug2','sep2','oct2','nov2','dec2'];
+const RC_MONTHS=[...RC_MONTHS_Y1,...RC_MONTHS_Y2];
+const RC_MONTH_LABELS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let recurringMap={}; // {project_id: {item_name: {company, account, jan, ..., dec2, notes}}}
 let _debRC={}; // debounce per project+item+field
+let _debRCYear=null; // debounce for year inputs
 
 async function loadRecurringDetailData(){
   // Load all rows for current CID
@@ -2393,18 +2388,82 @@ async function loadRecurringDetailData(){
 
 function loadRecurringDetail(){
   if(!CID||!isCEO()) return;
+  // Hydrate year inputs from project.rcd_year1 / rcd_year2 (or current year)
+  const proj=projects.find(x=>x.id===CID);
+  const curYear=new Date().getFullYear();
+  const y1=proj&&proj.rcd_year1?proj.rcd_year1:curYear;
+  const y2=proj&&proj.rcd_year2?proj.rcd_year2:(curYear+1);
+  const y1El=document.getElementById('rcd-year1');
+  const y2El=document.getElementById('rcd-year2');
+  if(y1El) y1El.value=y1;
+  if(y2El) y2El.value=y2;
   loadRecurringDetailData().then(()=>renderRecurringDetail());
 }
 
+function _getRCYears(){
+  const proj=projects.find(x=>x.id===CID);
+  const curYear=new Date().getFullYear();
+  const y1Val=document.getElementById('rcd-year1')?.value;
+  const y2Val=document.getElementById('rcd-year2')?.value;
+  const y1=parseInt(y1Val)||(proj&&proj.rcd_year1)||curYear;
+  const y2=parseInt(y2Val)||(proj&&proj.rcd_year2)||(curYear+1);
+  return {y1,y2};
+}
+
+function onRCYearChange(){
+  // Re-render header with new years
+  renderRecurringDetailHeader();
+  // Debounce save to projects table
+  clearTimeout(_debRCYear);
+  _debRCYear=setTimeout(saveRCYears,600);
+}
+
+async function saveRCYears(){
+  if(!CID||!isCEO()) return;
+  const {y1,y2}=_getRCYears();
+  const {error}=await sb.from('projects').update({rcd_year1:y1,rcd_year2:y2}).eq('id',CID);
+  if(error){console.error('rcd year save',error);return;}
+  const i=projects.findIndex(x=>x.id===CID);
+  if(i>=0){projects[i].rcd_year1=y1;projects[i].rcd_year2=y2;}
+  showSaved();
+}
+
+function renderRecurringDetailHeader(){
+  const thead=document.getElementById('rcd-thead');
+  if(!thead) return;
+  const {y1,y2}=_getRCYears();
+  const y1Short=String(y1).slice(-2);
+  const y2Short=String(y2).slice(-2);
+  let html=`<tr style="background:#F5F7FA">
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#F5F7FA;z-index:1;min-width:140px">Item</th>
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Empresa</th>
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:110px">Account #</th>`;
+  // Year 1 months
+  RC_MONTH_LABELS.forEach(lbl=>{
+    html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px;font-size:11px">${lbl}/${y1Short}</th>`;
+  });
+  // Year 2 months
+  RC_MONTH_LABELS.forEach(lbl=>{
+    html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px;font-size:11px;background:#FAFCFE">${lbl}/${y2Short}</th>`;
+  });
+  html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:90px;background:#E8F5E9">Subtotal</th>
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:160px">Observação</th>
+  </tr>`;
+  thead.innerHTML=html;
+}
+
 function renderRecurringDetail(){
+  renderRecurringDetailHeader();
   const tbody=document.getElementById('rcd-tbody');
   if(!tbody) return;
   const data=recurringMap[CID]||{};
   tbody.innerHTML=RC_ITEMS.map(itemName=>{
     const row=data[itemName]||{};
-    const monthCells=RC_MONTHS.map(m=>{
+    const monthCells=RC_MONTHS.map((m,idx)=>{
       const val=row[m]||'';
-      return `<td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+      const isYear2=idx>=12;
+      const bg=isYear2?'background:#FAFCFE':'';
+      return `<td style="padding:4px 2px;border-bottom:1px solid #EEF2F7;${bg}">
         <input type="number" min="0" step="0.01" value="${val}" placeholder="0"
           oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','${m}',this.value)"
           style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;text-align:right">
