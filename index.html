@@ -315,6 +315,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <div class="sb-sec ceo-only" style="display:none">CEO Only</div>
         <div class="sb-lnk ceo-only" id="snav-property" onclick="sp('property',this,'')" style="display:none">💎 Property &amp; Finance</div>
         <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
+        <div class="sb-lnk ceo-only" id="snav-recurring" onclick="sp('recurring',this,'')" style="display:none">🔄 Recurring Costs</div>
       </div>
       <div class="sb-sync"><div class="sync-dot"></div>Live · Auto-saved</div>
     </div>
@@ -521,12 +522,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div id="ec-dec-list"></div>
         </div>
 
-        <!-- Card 6: Recurring Costs -->
+        <!-- Card 6: Recurring Costs (read-only summary, sourced from Recurring Costs Detail page) -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">📅 Recurring Costs
             <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-rec-total">$0</span></span>
           </div>
-          <div style="font-size:11px;color:var(--gray3);margin-bottom:12px">💡 Frequency is informational only — enter the total amount you actually spent</div>
+          <div style="font-size:11px;color:var(--gray3);margin-bottom:12px">💡 Os valores são puxados da página <strong>🔄 Recurring Costs</strong> (lança mês a mês lá)</div>
           <div id="ec-rec-list"></div>
         </div>
 
@@ -944,6 +945,47 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           </div>
         </div>
       </div>
+
+      <!-- Recurring Costs Detail (CEO ONLY) -->
+      <div class="page" id="page-recurring">
+        <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+            <div class="card-title" style="margin:0;border:0;padding:0">📅 Lançamentos mensais
+              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">— ano corrente, 12 meses</span>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--p3)">Total Geral: <span id="rcd-grand-total">$0</span></div>
+          </div>
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+            <table id="rcd-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1400px">
+              <thead>
+                <tr style="background:#F5F7FA">
+                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#F5F7FA;z-index:1;min-width:140px">Item</th>
+                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Empresa</th>
+                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:110px">Account #</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Jan</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Fev</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Mar</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Abr</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Mai</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Jun</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Jul</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Ago</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Set</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Out</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Nov</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px">Dez</th>
+                  <th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:90px;background:#E8F5E9">Subtotal</th>
+                  <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:160px">Observação</th>
+                </tr>
+              </thead>
+              <tbody id="rcd-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1044,25 +1086,12 @@ let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, i
 let CID=null;
 
 // Predefined items per category — only created on first load if not present
+// NOTE: 'recurring' was moved to dedicated 'recurring_detail' table (v8.9)
 const EC_DEFAULTS={
   dec_invoice: [
     {name:'General Contractor'},
     {name:'Mobile Home Build'},
     {name:'Mobile Home Installation'},
-  ],
-  recurring: [
-    {name:'Landscape', frequency:'monthly'},
-    {name:'Energy', frequency:'monthly'},
-    {name:'Water', frequency:'monthly'},
-    {name:'Gas', frequency:'monthly'},
-    {name:'Club', frequency:'monthly'},
-    {name:'HOA', frequency:'monthly'},
-    {name:'Internet', frequency:'monthly'},
-    {name:'Pool', frequency:'monthly'},
-    {name:'Loan payment', frequency:'monthly'},
-    {name:'Annual Taxes', frequency:'annual'},
-    {name:'Annual Taxes', frequency:'annual'},
-    {name:'Annual Taxes', frequency:'annual'},
   ],
   documents: [
     {name:'Lawyer'},
@@ -1167,17 +1196,19 @@ async function loadAllData(){
     sb.from('budget_items').select('*'),
     sb.from('budget_attachments').select('*'),
   ];
-  // Only CEOs can read property_info / listing_checklist / extra_costs (RLS enforces this regardless)
+  // Only CEOs can read property_info / listing_checklist / extra_costs / recurring_detail (RLS enforces this regardless)
   if(isCEO()){
     promises.push(sb.from('property_info').select('*'));
     promises.push(sb.from('listing_checklist').select('*'));
     promises.push(sb.from('extra_costs').select('*').order('category').order('position'));
+    promises.push(sb.from('recurring_detail').select('*'));
   }
   const results=await Promise.all(promises);
   const ps=results[0].data, ts=results[1].data, bs=results[2].data, atts=results[3].data;
   const props=isCEO()?(results[4]?.data||[]):[];
   const listings=isCEO()?(results[5]?.data||[]):[];
   const ecs=isCEO()?(results[6]?.data||[]):[];
+  const rcds=isCEO()?(results[7]?.data||[]):[];
   projects=ps||[];
   // Build maps
   schedMap={};
@@ -1225,6 +1256,11 @@ async function loadAllData(){
     if(!extraCostsMap[e.project_id]) extraCostsMap[e.project_id]={dec_invoice:[],recurring:[],documents:[],high_end:[]};
     if(!extraCostsMap[e.project_id][e.category]) extraCostsMap[e.project_id][e.category]=[];
     extraCostsMap[e.project_id][e.category].push(e);
+  });
+  recurringMap={};
+  (rcds||[]).forEach(r=>{
+    if(!recurringMap[r.project_id]) recurringMap[r.project_id]={};
+    recurringMap[r.project_id][r.item_name]=r;
   });
 }
 
@@ -1900,34 +1936,41 @@ function getExtraCosts(category){
 }
 
 function calcExtraSubtotal(category){
+  // Recurring is now sourced from recurring_detail, not extra_costs
+  if(category==='recurring') return calcRCDTotal(CID);
   return getExtraCosts(category).reduce((s,e)=>s+(+e.amount||0),0);
 }
 
 function renderExtraCosts(category){
   const list=document.getElementById('ec-'+_catSlug(category)+'-list');
   if(!list) return;
+  // Special handling for "recurring" — read-only summary from recurringMap
+  if(category==='recurring'){
+    const perItem=calcRCDPerItem(CID);
+    list.innerHTML=RC_ITEMS.map(name=>{
+      const val=perItem[name]||0;
+      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
+        <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${name}</span></div>
+        <div style="text-align:right;font-size:13px;font-weight:600;color:${val>0?'var(--p3)':'var(--gray3)'}">${fmt(val)}</div>
+      </div>`;
+    }).join('');
+    // Update subtotal
+    const sub=calcRCDTotal(CID);
+    const subEl=document.getElementById('ec-rec-total');
+    if(subEl) subEl.textContent=fmt(sub);
+    return;
+  }
   const items=getExtraCosts(category);
   if(items.length===0){
     list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Loading items...</div>`;
   } else {
     list.innerHTML=items.map(it=>{
-      const isRec=category==='recurring';
-      const freqSel=isRec?`
-        <select onchange="updateExtraCost('${it.id}','frequency',this.value)" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
-          <option value="">— freq —</option>
-          ${FREQ_OPTIONS.map(([v,l])=>`<option value="${v}" ${it.frequency===v?'selected':''}>${l}</option>`).join('')}
-        </select>`:'';
-      const notesField=isRec?`
-        <input type="text" value="${(it.notes||'').replace(/"/g,'&quot;')}" oninput="updateExtraCost('${it.id}','notes',this.value)" placeholder="Notes..." style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:100%;color:var(--gray3)">`:'';
-      const cols=isRec?'1fr 110px 130px 160px':'1fr 130px';
-      return `<div style="display:grid;grid-template-columns:${cols};gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
+      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
         <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${it.name}</span></div>
-        ${freqSel?`<div>${freqSel}</div>`:''}
         <div style="display:flex;align-items:center;gap:4px">
           <span style="font-size:13px;color:var(--gray3)">$</span>
           <input type="number" min="0" step="0.01" value="${it.amount||''}" oninput="updateExtraCost('${it.id}','amount',this.value)" placeholder="0.00" style="padding:6px 8px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:100%">
         </div>
-        ${notesField?`<div>${notesField}</div>`:''}
       </div>`;
     }).join('');
   }
@@ -2326,6 +2369,145 @@ function generateReport(){
   if(!w){toast('Permita pop-ups pra gerar o relatório',false);return;}
   w.document.write(reportHTML);
   w.document.close();
+}
+
+// ═══ RECURRING COSTS DETAIL (CEO ONLY) ════════════════════════════════
+// 12 fixed items × 12 months tracking
+const RC_ITEMS=[
+  'Landscape','Energy','Water','Gas','Club','HOA','Internet','Pool',
+  'Loan payment','Annual Taxes 1','Annual Taxes 2','Annual Taxes 3'
+];
+const RC_MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+let recurringMap={}; // {project_id: {item_name: {company, account, jan, feb, ..., notes}}}
+let _debRC={}; // debounce per project+item+field
+
+async function loadRecurringDetailData(){
+  // Load all rows for current CID
+  if(!CID||!isCEO()) return;
+  if(!recurringMap[CID]) recurringMap[CID]={};
+  const {data,error}=await sb.from('recurring_detail').select('*').eq('project_id',CID);
+  if(error){console.error('rcd load',error);return;}
+  recurringMap[CID]={};
+  (data||[]).forEach(row=>{recurringMap[CID][row.item_name]=row;});
+}
+
+function loadRecurringDetail(){
+  if(!CID||!isCEO()) return;
+  loadRecurringDetailData().then(()=>renderRecurringDetail());
+}
+
+function renderRecurringDetail(){
+  const tbody=document.getElementById('rcd-tbody');
+  if(!tbody) return;
+  const data=recurringMap[CID]||{};
+  tbody.innerHTML=RC_ITEMS.map(itemName=>{
+    const row=data[itemName]||{};
+    const monthCells=RC_MONTHS.map(m=>{
+      const val=row[m]||'';
+      return `<td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+        <input type="number" min="0" step="0.01" value="${val}" placeholder="0"
+          oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','${m}',this.value)"
+          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;text-align:right">
+      </td>`;
+    }).join('');
+    const subtotal=RC_MONTHS.reduce((s,m)=>s+(+row[m]||0),0);
+    return `<tr>
+      <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #EEF2F7;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${itemName}</td>
+      <td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+        <input type="text" value="${(row.company||'').replace(/"/g,'&quot;')}" placeholder="Empresa"
+          oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','company',this.value)"
+          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+      </td>
+      <td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+        <input type="text" value="${(row.account||'').replace(/"/g,'&quot;')}" placeholder="Acc#"
+          oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','account',this.value)"
+          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+      </td>
+      ${monthCells}
+      <td style="padding:6px 6px;font-weight:700;color:var(--p3);border-bottom:1px solid #EEF2F7;text-align:right;background:#F1F8F1;font-size:12px" id="rcd-sub-${_slugRC(itemName)}">$${subtotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+      <td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+        <input type="text" value="${(row.notes||'').replace(/"/g,'&quot;')}" placeholder="Observação..."
+          oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','notes',this.value)"
+          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+      </td>
+    </tr>`;
+  }).join('');
+  recalcRCDTotals();
+}
+
+function _slugRC(name){return name.toLowerCase().replace(/[^a-z0-9]+/g,'-');}
+
+function updateRCD(itemName,field,value){
+  if(!CID||!isCEO()) return;
+  if(!recurringMap[CID]) recurringMap[CID]={};
+  if(!recurringMap[CID][itemName]) recurringMap[CID][itemName]={item_name:itemName};
+  // Convert numeric fields
+  if(RC_MONTHS.includes(field)){
+    recurringMap[CID][itemName][field]=value===''?null:Math.round(parseFloat(value)*100)/100;
+  } else {
+    recurringMap[CID][itemName][field]=value;
+  }
+  // Recalc subtotal of this row in the UI
+  const row=recurringMap[CID][itemName];
+  const subtotal=RC_MONTHS.reduce((s,m)=>s+(+row[m]||0),0);
+  const subEl=document.getElementById('rcd-sub-'+_slugRC(itemName));
+  if(subEl) subEl.textContent='$'+subtotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  recalcRCDTotals();
+  // Debounce save (per item)
+  const key=itemName;
+  clearTimeout(_debRC[key]);
+  _debRC[key]=setTimeout(()=>saveRCD(itemName),600);
+  // Update Property & Finance card too if visible
+  recalcProfit();
+}
+
+async function saveRCD(itemName){
+  if(!CID||!isCEO()) return;
+  const row=recurringMap[CID][itemName]||{};
+  const payload={
+    project_id:CID,
+    item_name:itemName,
+    company:row.company||'',
+    account:row.account||'',
+    notes:row.notes||'',
+  };
+  RC_MONTHS.forEach(m=>{payload[m]=row[m]||null;});
+  const {error}=await sb.from('recurring_detail').upsert(payload,{onConflict:'project_id,item_name'});
+  if(error){console.error('rcd save',error);toast('Error saving (check permissions)',false);return;}
+  showSaved();
+}
+
+function recalcRCDTotals(){
+  const data=recurringMap[CID]||{};
+  let total=0;
+  RC_ITEMS.forEach(it=>{
+    const row=data[it]||{};
+    RC_MONTHS.forEach(m=>{total+=+row[m]||0;});
+  });
+  const totEl=document.getElementById('rcd-grand-total');
+  if(totEl) totEl.textContent='$'+total.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+
+// Get total recurring for current project (used by Property & Finance card)
+function calcRCDTotal(projectId){
+  const data=recurringMap[projectId]||{};
+  let total=0;
+  RC_ITEMS.forEach(it=>{
+    const row=data[it]||{};
+    RC_MONTHS.forEach(m=>{total+=+row[m]||0;});
+  });
+  return total;
+}
+
+// Get per-item totals (used by Property & Finance Y view)
+function calcRCDPerItem(projectId){
+  const data=recurringMap[projectId]||{};
+  const out={};
+  RC_ITEMS.forEach(it=>{
+    const row=data[it]||{};
+    out[it]=RC_MONTHS.reduce((s,m)=>s+(+row[m]||0),0);
+  });
+  return out;
 }
 
 // ═══ LISTING CHECKLIST (CEO ONLY) ═════════════════════════════════════
@@ -2915,6 +3097,7 @@ function sp(id,el,cls){
   if(id==='cmp') renderComparison();
   if(id==='property' && isCEO()) recalcProfit();
   if(id==='listing' && isCEO()) loadListingForm();
+  if(id==='recurring' && isCEO()) loadRecurringDetail();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
