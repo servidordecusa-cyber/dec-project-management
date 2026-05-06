@@ -405,7 +405,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <div class="card">
           <div class="card-title">🏠 Property Information</div>
           <div class="fgrid">
-            <div class="fg"><label>Client name (buyer)</label><input id="pi-client" placeholder="e.g. John &amp; Jane Doe" oninput="debouncePI()"></div>
+            <div class="fg"><label>Client name (buyer) <span style="font-size:10px;color:var(--gray3)">— sincronizado com Customer (Project Info)</span></label><input id="pi-client" placeholder="(preencha em Project Info → Customer)" readonly style="background:#F5F7FA;color:var(--gray3);cursor:not-allowed"></div>
             <div class="fg"><label>Year built</label><input id="pi-year" type="number" min="1800" max="2100" placeholder="e.g. 1985" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
@@ -1681,6 +1681,11 @@ async function savePF(){
   const i=projects.findIndex(x=>x.id===CID);
   if(i>=0) projects[i]={...projects[i],...payload};
   document.getElementById('tn-pname').textContent=payload.name;
+  // Update read-only mirrors that show project.customer
+  const clientEl=document.getElementById('pi-client');
+  if(clientEl) clientEl.value=payload.customer||'';
+  const lcCliEl=document.getElementById('lc-client');
+  if(lcCliEl) lcCliEl.value=payload.customer||'';
   showSaved();
 }
 
@@ -1691,8 +1696,11 @@ function debouncePI(){clearTimeout(_debPI);_debPI=setTimeout(savePI,600);}
 function loadPropertyForm(){
   if(!CID) return;
   const p=propertyMap[CID]||{};
+  // Auto-fill client name from project customer (read-only mirror)
+  const proj=projects.find(x=>x.id===CID);
+  const clientEl=document.getElementById('pi-client');
+  if(clientEl) clientEl.value=(proj&&proj.customer)||'';
   const pairs=[
-    ['pi-client','client_name'],
     ['pi-year','year_built'],
     ['pi-lot','lot_size'],
     ['pi-living','living_area'],
@@ -1813,7 +1821,6 @@ async function savePI(){
   const num=id=>{const x=parseFloat(v(id));return isNaN(x)?null:Math.round(x*100)/100;};
   const payload={
     project_id:CID,
-    client_name:v('pi-client'),
     year_built:parseInt(v('pi-year'))||null,
     lot_size:num('pi-lot'),
     living_area:num('pi-living'),
@@ -2166,7 +2173,7 @@ function generateReport(){
   // Build HTML
   const projName=proj.name||'(sem nome)';
   const address=proj.address||'';
-  const clientName=p.client_name||'';
+  const clientName=proj.customer||p.client_name||'';
   const today=new Date().toLocaleDateString('pt-BR');
   const purchDate=p.purchase_date?dateBR(p.purchase_date):'';
   const saleDate=p.sale_date?dateBR(p.sale_date):'';
@@ -2387,7 +2394,7 @@ function loadListingForm(){
     const pcoEl=document.getElementById('lc-power-co'); if(pcoEl) pcoEl.value=proj.power_company||'';
   }
   const propI=propertyMap[CID]||{};
-  const cliEl=document.getElementById('lc-client'); if(cliEl) cliEl.value=propI.client_name||'';
+  const cliEl=document.getElementById('lc-client'); if(cliEl) cliEl.value=(proj&&proj.customer)||propI.client_name||'';
   // Hydrate editable fields from listingMap
   const data=listingMap[CID]||{};
   LC_FIELDS.forEach(([elId,k,t])=>{
