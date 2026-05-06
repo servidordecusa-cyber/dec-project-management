@@ -563,7 +563,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
             <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Summary</div>
             <div class="dgrid" style="grid-template-columns:repeat(3,1fr);gap:14px">
               <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">📈 Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV − Wholesaler − Sales total − Estimated</div></div>
-              <div class="kpi" style="border-left-color:var(--p3);background:#F1F8F1"><div class="kpi-l">💰 Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − all costs − Refund</div></div>
+              <div class="kpi" style="border-left-color:var(--p3);background:#F1F8F1"><div class="kpi-l">💰 Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total Investido − Selling − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l">📊 ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total Investment × 100</div></div>
             </div>
           </div>
@@ -2069,13 +2069,13 @@ function recalcProfit(){
   const estEl=document.getElementById('pft-est');
   estEl.textContent=arv?(estProfit>=0?'':'-')+fmt(Math.abs(estProfit)):'—';
   estEl.style.color=arv?(estProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
-  // Actual profit = Final Sale - Wholesaler - Sales total - Total Actual - Selling - Holding - Lender(sale) - Extras - Refund
-  const actProfit=sale?(sale-wholesaler-salesTotal-totAct-selling-holding-lenderSale-extraTotal-refund):0;
+  // Actual profit = Final Sale - Total Investido - Selling - Lender(sale)
+  const actProfit=sale?(sale-totalInvested-selling-lenderSale):0;
   const actEl=document.getElementById('pft-act');
   actEl.textContent=sale?(actProfit>=0?'':'-')+fmt(Math.abs(actProfit)):'—';
   actEl.style.color=sale?(actProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
-  // ROI = Actual Profit / Total Investment
-  const totalInvest=wholesaler+salesTotal+totAct+selling+holding+lenderSale+extraTotal;
+  // ROI = Actual Profit / Total Investment (Total Investido + Selling + Lender Sale)
+  const totalInvest=totalInvested+selling+lenderSale;
   const roiEl=document.getElementById('pft-roi');
   if(sale && totalInvest>0){
     const roi=(actProfit/totalInvest)*100;
