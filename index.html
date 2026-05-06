@@ -591,10 +591,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
               <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC do lucro + Refund</div></div>
             </div>
             <div style="margin-top:14px;padding:12px 14px;background:#F5F7FA;border-left:3px solid var(--gray3);border-radius:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <span style="color:var(--navy);font-weight:700;font-size:13px">📋 DEC Invoice:</span>
-              <span style="color:var(--gray3);font-size:13px">$</span>
-              <input id="pi-dec-invoice" type="number" min="0" step="0.01" placeholder="0.00" oninput="debouncePI()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:140px">
-              <span style="color:var(--gray3);font-size:11px;font-style:italic">— faturada separadamente, NÃO soma no Total Investido</span>
+              <span style="color:var(--navy);font-weight:700;font-size:13px">📋 DEC Invoice #:</span>
+              <input id="pi-dec-invoice" type="text" placeholder="INV-2025-001" oninput="debouncePI()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:180px">
+              <span style="color:var(--gray3);font-size:11px;font-style:italic">— número da invoice emitida (faturada separadamente)</span>
             </div>
             <div style="margin-top:24px;padding-top:18px;border-top:2px solid #EEF2F7;display:flex;justify-content:flex-end;gap:10px">
               <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()">📄 Gerar Relatório (PDF)</button>
@@ -1735,7 +1734,7 @@ function loadPropertyForm(){
     ['pi-holding','holding_costs'],
     ['pi-lender-sale','lender_costs_sale'],
     ['pi-refund','refund_value'],
-    ['pi-dec-invoice','dec_invoice_value'],
+    ['pi-dec-invoice','dec_invoice_number'],
   ];
   pairs.forEach(([elId,k])=>{
     const el=document.getElementById(elId);
@@ -1860,7 +1859,7 @@ async function savePI(){
     refund_value:num('pi-refund'),
     pct_client:num('pi-pct-client'),
     pct_dec:num('pi-pct-dec'),
-    dec_invoice_value:num('pi-dec-invoice'),
+    dec_invoice_number:v('pi-dec-invoice'),
   };
   const {error}=await sb.from('property_info').upsert(payload,{onConflict:'project_id'});
   if(error){console.error(error);toast('Error saving (check permissions)',false);return;}
