@@ -4,18 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>DEC Group USA · System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0B2545;--blue:#1565C0;--light:#E8F0FE;
-  --p1:#E53935;--p1l:#FFEBEE;--p2:#F57C00;--p2l:#FFF3E0;
-  --p3:#2E7D32;--p3l:#E8F5E9;--p4:#6A1B9A;--p4l:#F3E5F5;
-  --gold:#C8922A;--gray:#F5F7FA;--gray2:#E0E6EF;--gray3:#9AA5B4;
-  --text:#1A202C;--white:#fff;--shadow:0 2px 12px rgba(11,37,69,.09);
+  /* DEC Group Brand Palette */
+  --navy:#15120E;--blue:#3D271A;--light:#FAF7F3;
+  --p1:#B85450;--p1l:#F8E8E5;--p2:#C68A4A;--p2l:#F5EBDA;
+  --p3:#5C7A3F;--p3l:#ECEFE3;--p4:#7B5C8C;--p4l:#EDE5F0;
+  --gold:#B8860B;--gray:#FAF7F3;--gray2:#D5C9BC;--gray3:#655A4E;
+  --text:#15120E;--white:#fff;--shadow:0 2px 12px rgba(61,39,26,.09);
 }
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--text);min-height:100vh}
+body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
 /* LOGIN */
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--navy)}
@@ -32,7 +36,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 .login-btn{width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:8px;
   font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;margin-top:6px}
 .login-btn:hover{opacity:.87}
-.login-err{color:#E53935;font-size:13px;text-align:center;margin-top:8px;display:none}
+.login-err{color:#B85450;font-size:13px;text-align:center;margin-top:8px;display:none}
 .login-loading{text-align:center;color:var(--gray3);font-size:13px;margin-top:8px;display:none}
 
 /* LOADING OVERLAY */
@@ -114,13 +118,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
   font-size:12px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
 .sb-lnk:hover{background:rgba(255,255,255,.07);color:#fff}
 .sb-lnk.active{color:#fff;font-weight:700;background:rgba(21,101,192,.3);border-left-color:#90CAF9}
-.sb-lnk.active.s1{background:rgba(229,57,53,.2);border-left-color:#EF9A9A}
+.sb-lnk.active.s1{background:rgba(229,57,53,.2);border-left-color:#D69D9A}
 .sb-lnk.active.s2{background:rgba(245,124,0,.2);border-left-color:#FFCC80}
 .sb-lnk.active.s3{background:rgba(46,125,50,.2);border-left-color:#A5D6A7}
 .sb-lnk.active.s4{background:rgba(106,27,154,.2);border-left-color:#CE93D8}
 .sb-ntag{font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:auto}
-.t1{background:#FFEBEE;color:#E53935}.t2{background:#FFF3E0;color:#F57C00}
-.t3{background:#E8F5E9;color:#2E7D32}.t4{background:#F3E5F5;color:#6A1B9A}
+.t1{background:#F8E8E5;color:#B85450}.t2{background:#F5EBDA;color:#C68A4A}
+.t3{background:#ECEFE3;color:#5C7A3F}.t4{background:#EDE5F0;color:#7B5C8C}
 .sb-sync{padding:10px 15px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.3)}
 .sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4CAF50;margin-right:5px}
 
@@ -142,14 +146,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 .bitbl{width:100%;border-collapse:collapse}
 .bitbl thead tr{background:var(--light)}
 .bitbl thead th{padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px}
-.bitbl tbody tr{border-bottom:1px solid #EEF2F7}
-.bitbl tbody tr:hover{background:#F7FBFF}
+.bitbl tbody tr{border-bottom:1px solid #F0EAE2}
+.bitbl tbody tr:hover{background:#FAF7F3}
 .bitbl td{padding:7px 12px;vertical-align:middle}
 .ni{border:1.5px solid var(--gray2);border-radius:6px;padding:6px 9px;font-size:13px;
   width:120px;outline:none;font-family:inherit;text-align:right;transition:border .15s;background:#fff}
 .ni:focus{border-color:var(--blue)}
-.ni.est-v{border-color:#81C784;background:#F1F8E9}
-.ni.act-v{border-color:#FFB74D;background:#FFF8F0}
+.ni.est-v{border-color:#9CB079;background:#F1F8E9}
+.ni.act-v{border-color:#D9A876;background:#FFF8F0}
 .ci{border:1.5px solid var(--gray2);border-radius:6px;padding:6px 9px;font-size:12px;
   width:100%;outline:none;font-family:inherit;transition:border .15s;color:var(--gray3)}
 .ci:focus{border-color:var(--blue);color:var(--text)}
@@ -159,15 +163,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 .cmp-tbl thead tr{background:var(--navy);color:#fff}
 .cmp-tbl thead th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600}
 .cmp-tbl thead th.r{text-align:right}
-.cmp-tbl tbody tr{border-bottom:1px solid #EEF2F7}
-.cmp-tbl tbody tr:hover{background:#F7FBFF}
+.cmp-tbl tbody tr{border-bottom:1px solid #F0EAE2}
+.cmp-tbl tbody tr:hover{background:#FAF7F3}
 .cmp-tbl td{padding:8px 12px;vertical-align:middle}
 .cmp-tbl td.r{text-align:right}
 .cmp-tbl .rrow td{background:var(--light);font-weight:700;color:var(--navy);font-size:12px}
 .cmp-tbl .trow td{background:var(--navy);color:#fff;font-weight:700;font-size:13px;padding:11px 12px}
 .sc{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
-.sc-ov{background:#FFEBEE;color:#E53935}.sc-un{background:#E8F5E9;color:#2E7D32}
-.sc-eq{background:var(--light);color:var(--blue)}.sc-mt{background:#EAECEE;color:#9AA5B4}
+.sc-ov{background:#F8E8E5;color:#B85450}.sc-un{background:#ECEFE3;color:#5C7A3F}
+.sc-eq{background:var(--light);color:var(--blue)}.sc-mt{background:#E8E0D5;color:#655A4E}
 
 /* TASK ROWS */
 .task-row{background:var(--white);border-radius:8px;padding:13px 15px;margin-bottom:9px;
@@ -185,8 +189,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 .gantt-wrap{overflow-x:auto}
 .gtbl{border-collapse:collapse;min-width:100%;font-size:12px}
 .gtbl th{background:var(--navy);color:#fff;padding:8px 10px;font-size:11px;font-weight:600;text-align:left;white-space:nowrap}
-.gtbl td{padding:0;border-bottom:1px solid #EEF2F7;vertical-align:middle}
-.gtbl tr:hover td{background:#F7FBFF}
+.gtbl td{padding:0;border-bottom:1px solid #F0EAE2;vertical-align:middle}
+.gtbl tr:hover td{background:#FAF7F3}
 .g-ph td{padding:8px 12px!important;border-bottom:none;font-weight:700;font-size:12px}
 .tic{display:flex;align-items:center;gap:7px;padding:8px 10px;min-width:190px}
 
@@ -204,7 +208,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 .btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .18s}
 .btn:hover{opacity:.85;transform:translateY(-1px)}
 .btn-primary{background:var(--navy);color:#fff}.btn-gold{background:var(--gold);color:#fff}
-.btn-green{background:#2E7D32;color:#fff}.btn-red{background:var(--p1);color:#fff}
+.btn-green{background:#5C7A3F;color:#fff}.btn-red{background:var(--p1);color:#fff}
 .btn-ghost{background:transparent;border:1.5px solid var(--gray2);color:var(--text)}
 .btn-sm{padding:5px 13px;font-size:12px}
 
@@ -217,7 +221,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 .chart-wrap{position:relative;height:200px}
 
 /* TOAST */
-.toast{position:fixed;bottom:22px;right:22px;background:#2E7D32;color:#fff;
+.toast{position:fixed;bottom:22px;right:22px;background:#5C7A3F;color:#fff;
   padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;
   transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
@@ -386,11 +390,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div class="card-title">📍 Location &amp; Utilities</div>
           <div class="fgrid"><div class="fg"><label>ZIP Code</label><input id="pf-zip" placeholder="e.g. 34711" oninput="debouncePF()"></div><div class="fg"><label>County</label><input id="pf-county" placeholder="e.g. Lake County" oninput="debouncePF()"></div></div>
           <div class="fgrid"><div class="fg"><label>Permit</label><input id="pf-permit" placeholder="e.g. BR2026-1234" oninput="debouncePF()"></div><div class="fg"></div></div>
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #EEF2F7">
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
             <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Water Utility</div>
             <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-water-co" placeholder="e.g. City of Clermont Utilities" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-water-acc" placeholder="e.g. 12345-6789" oninput="debouncePF()"></div></div>
           </div>
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #EEF2F7">
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
             <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility</div>
             <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-power-co" placeholder="e.g. Duke Energy" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-power-acc" placeholder="e.g. 987654321" oninput="debouncePF()"></div></div>
           </div>
@@ -399,14 +403,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 
       <!-- Property & Finance (CEO ONLY) -->
       <div class="page" id="page-property">
-        <div class="page-title">💎 Property &amp; Finance <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">💎 Property &amp; Finance <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Detailed property data + flip economics · Changes save automatically</div>
 
         <!-- Card 1: Property Information -->
         <div class="card">
           <div class="card-title">🏠 Property Information</div>
           <div class="fgrid">
-            <div class="fg"><label>Client name (buyer) <span style="font-size:10px;color:var(--gray3)">— sincronizado com Customer (Project Info)</span></label><input id="pi-client" placeholder="(preencha em Project Info → Customer)" readonly style="background:#F5F7FA;color:var(--gray3);cursor:not-allowed"></div>
+            <div class="fg"><label>Client name (buyer) <span style="font-size:10px;color:var(--gray3)">— sincronizado com Customer (Project Info)</span></label><input id="pi-client" placeholder="(preencha em Project Info → Customer)" readonly style="background:#FAF7F3;color:var(--gray3);cursor:not-allowed"></div>
             <div class="fg"><label>Year built</label><input id="pi-year" type="number" min="1800" max="2100" placeholder="e.g. 1985" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
@@ -446,7 +450,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 
           <!-- Wholesaler price (auto-calc) -->
           <div style="margin-bottom:18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;background:#F1F8F1;border:1.5px solid #C8E6C9;border-radius:8px;padding:12px 16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
                 <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Cash + Hard money</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
@@ -460,7 +464,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 
           <!-- Sales total price (auto-calc) -->
           <div style="margin-bottom:18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;background:#F4F8FB;border:1.5px solid #C5D9E8;border-radius:8px;padding:12px 16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#FAF7F3;border:1.5px solid #C5D9E8;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
                 <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px">💵 Sales total price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Closing + Lender + Other</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:2px" id="pi-sales-total">$0</div>
@@ -483,7 +487,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         </div>
 
         <!-- Card 3: Renovation (auto-pulled) -->
-        <div class="card" style="margin-top:16px;background:#F7FBFF;border:1px solid #E1E8F0">
+        <div class="card" style="margin-top:16px;background:#FAF7F3;border:1px solid #E1E8F0">
           <div class="card-title">🔨 Renovation <span style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:8px">auto-calculated from Estimate &amp; Actual Costs</span></div>
           <div class="dgrid" style="grid-template-columns:repeat(4,1fr)">
             <div class="kpi" style="border-left-color:var(--blue)"><div class="kpi-l">📋 Estimated</div><div class="kpi-v" id="rn-est">$0</div></div>
@@ -508,7 +512,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
             <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="debouncePI()"></div>
             <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
-          <div style="margin-top:14px;padding:14px 16px;background:#E8F5E9;border-left:4px solid var(--p3);border-radius:6px">
+          <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
             <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— Cash + Actual Spent + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
@@ -563,15 +567,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Summary</div>
             <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px">
-              <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">📈 Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV − Wholesaler − Sales total − Estimated</div></div>
-              <div class="kpi" style="border-left-color:var(--gold);background:#FFF8E1"><div class="kpi-l">💵 Gross Profit</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Lender(sale)</div></div>
-              <div class="kpi" style="border-left-color:var(--p3);background:#F1F8F1"><div class="kpi-l">💰 Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total Investido − Selling − Lender(sale)</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l">📈 Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV − Wholesaler − Sales total − Estimated</div></div>
+              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l">💵 Gross Profit</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Lender(sale)</div></div>
+              <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l">💰 Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total Investido − Selling − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l">📊 ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total Investido × 100</div></div>
             </div>
           </div>
 
           <!-- Profit distribution -->
-          <div style="margin-top:24px;padding-top:18px;border-top:2px solid #EEF2F7">
+          <div style="margin-top:24px;padding-top:18px;border-top:2px solid #F0EAE2">
             <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Distribution</div>
             <div class="fgrid">
               <div class="fg"><label>% Cliente</label>
@@ -583,20 +587,20 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
             </div>
             <div class="fgrid" style="margin-top:6px">
               <div class="fg"><label>Refund <span style="font-size:10px;color:var(--gray3)">— from above</span></label>
-                <input id="pi-refund-mirror" type="text" disabled style="background:#F5F7FA;color:var(--gray3)" value="$0">
+                <input id="pi-refund-mirror" type="text" disabled style="background:#FAF7F3;color:var(--gray3)" value="$0">
               </div>
               <div class="fg"></div>
             </div>
             <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px">
-              <div class="kpi" style="border-left-color:var(--gold);background:#FFF8E1"><div class="kpi-l">👤 Cliente recebe</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Cliente do lucro</div></div>
-              <div class="kpi" style="border-left-color:var(--blue);background:#F4F8FB"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC do lucro + Refund</div></div>
+              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l">👤 Cliente recebe</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Cliente do lucro</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC do lucro + Refund</div></div>
             </div>
-            <div style="margin-top:14px;padding:12px 14px;background:#F5F7FA;border-left:3px solid var(--gray3);border-radius:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="margin-top:14px;padding:12px 14px;background:#FAF7F3;border-left:3px solid var(--gray3);border-radius:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <span style="color:var(--navy);font-weight:700;font-size:13px">📋 DEC Invoice #:</span>
               <input id="pi-dec-invoice" type="text" placeholder="INV-2025-001" oninput="debouncePI()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:180px">
               <span style="color:var(--gray3);font-size:11px;font-style:italic">— número da invoice emitida (faturada separadamente)</span>
             </div>
-            <div style="margin-top:24px;padding-top:18px;border-top:2px solid #EEF2F7;display:flex;justify-content:flex-end;gap:10px">
+            <div style="margin-top:24px;padding-top:18px;border-top:2px solid #F0EAE2;display:flex;justify-content:flex-end;gap:10px">
               <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()">📄 Gerar Relatório (PDF)</button>
             </div>
           </div>
@@ -605,15 +609,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 
       <!-- Listing Checklist (CEO ONLY) -->
       <div class="page" id="page-listing">
-        <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Complete property data for listing the home for sale · Auto-saved</div>
 
         <!-- Card 1: Property Data -->
         <div class="card">
           <div class="card-title">🏠 Property Data</div>
           <div class="fgrid">
-            <div class="fg"><label>Address <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-address" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
-            <div class="fg"><label>New owner (buyer) <span style="font-size:10px;color:var(--gray3)">— from Property &amp; Finance</span></label><input id="lc-client" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
+            <div class="fg"><label>Address <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-address" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
+            <div class="fg"><label>New owner (buyer) <span style="font-size:10px;color:var(--gray3)">— from Property &amp; Finance</span></label><input id="lc-client" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Buyer email</label><input id="lc-email" type="email" placeholder="buyer@example.com" oninput="debounceLC()"></div>
@@ -673,8 +677,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
         <div class="card" style="margin-top:16px">
           <div class="card-title">⚙️ Utilities &amp; Construction</div>
           <div class="fgrid">
-            <div class="fg"><label>Water company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-water-co" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
-            <div class="fg"><label>Electric company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-power-co" disabled style="background:#F5F7FA;color:var(--gray3)"></div>
+            <div class="fg"><label>Water company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-water-co" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
+            <div class="fg"><label>Electric company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-power-co" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Private utilities</label>
@@ -948,7 +952,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
 
       <!-- Recurring Costs Detail (CEO ONLY) -->
       <div class="page" id="page-recurring">
-        <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
 
         <div class="card">
@@ -1043,16 +1047,16 @@ const sb = supabase.createClient(SURL, SKEY);
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════
 const PHASES=[
-  {id:'ph1',n:1,label:'Phase 1 — Demolition',  color:'#E53935',colorL:'#FFEBEE'},
-  {id:'ph2',n:2,label:'Phase 2 — Preparation', color:'#F57C00',colorL:'#FFF3E0'},
-  {id:'ph3',n:3,label:'Phase 3 — Installation',color:'#2E7D32',colorL:'#E8F5E9'},
-  {id:'ph4',n:4,label:'Phase 4 — Finishing',   color:'#6A1B9A',colorL:'#F3E5F5'},
+  {id:'ph1',n:1,label:'Phase 1 — Demolition',  color:'#B85450',colorL:'#F8E8E5'},
+  {id:'ph2',n:2,label:'Phase 2 — Preparation', color:'#C68A4A',colorL:'#F5EBDA'},
+  {id:'ph3',n:3,label:'Phase 3 — Installation',color:'#5C7A3F',colorL:'#ECEFE3'},
+  {id:'ph4',n:4,label:'Phase 4 — Finishing',   color:'#7B5C8C',colorL:'#EDE5F0'},
 ];
 const GROUPS=[
-  {id:'ph1', name:'🔴 Phase 1 — Demolition',  color:'#E53935'},
-  {id:'ph2', name:'🟠 Phase 2 — Preparation', color:'#F57C00'},
-  {id:'ph3', name:'🟢 Phase 3 — Installation',color:'#2E7D32'},
-  {id:'ph4', name:'🟣 Phase 4 — Finishing',   color:'#6A1B9A'},
+  {id:'ph1', name:'🔴 Phase 1 — Demolition',  color:'#B85450'},
+  {id:'ph2', name:'🟠 Phase 2 — Preparation', color:'#C68A4A'},
+  {id:'ph3', name:'🟢 Phase 3 — Installation',color:'#5C7A3F'},
+  {id:'ph4', name:'🟣 Phase 4 — Finishing',   color:'#7B5C8C'},
 ];
 // ROOMS kept as alias for backward-compat with any leftover references
 const ROOMS=GROUPS;
@@ -1288,10 +1292,10 @@ function renderPortfolio(){
     const est=calcRoomTotal(p.id,'est');
     const act=calcRoomTotal(p.id,'actual');
     const v2=act-est;
-    const stBg=pct===100?'#E8F5E9':pct>0?'#FFF3E0':'#EAECEE';
-    const stFg=pct===100?'#2E7D32':pct>0?'#F57C00':'#9AA5B4';
+    const stBg=pct===100?'#ECEFE3':pct>0?'#F5EBDA':'#E8E0D5';
+    const stFg=pct===100?'#5C7A3F':pct>0?'#C68A4A':'#655A4E';
     const stTx=pct===100?'✅ Complete':pct>0?'🔄 In Progress':'⏳ Not Started';
-    const vColor=v2>0?'#E53935':v2<0?'#2E7D32':'#1565C0';
+    const vColor=v2>0?'#B85450':v2<0?'#5C7A3F':'#3D271A';
     const vTx=v2>0?'⚠ Over '+fmt(v2):v2<0?'✅ Under '+fmt(Math.abs(v2)):'On budget';
     const card=document.createElement('div');
     card.className='proj-card';
@@ -1300,9 +1304,9 @@ function renderPortfolio(){
         <span style="background:${stBg};color:${stFg};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${stTx}</span></div>
       <div class="pc-body">
         <div class="pc-pl"><span>Schedule</span><span>${pct}%</span></div>
-        <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#2E7D32':pct>50?'#F57C00':'#1565C0'}"></div></div>
-        <div class="pc-br"><span>Estimated</span><strong style="color:#1565C0">${fmt(est)}</strong></div>
-        <div class="pc-br"><span>Actual</span><strong style="color:#F57C00">${fmt(act)}</strong></div>
+        <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#5C7A3F':pct>50?'#C68A4A':'#3D271A'}"></div></div>
+        <div class="pc-br"><span>Estimated</span><strong style="color:#3D271A">${fmt(est)}</strong></div>
+        <div class="pc-br"><span>Actual</span><strong style="color:#C68A4A">${fmt(act)}</strong></div>
         <div class="pc-br"><span>Variance</span><strong style="color:${vColor}">${vTx}</strong></div>
       </div>
       <div class="pc-ftr"><span>${p.start_date||'No date'} → ${p.end_date||'No end'}</span><strong>PM: ${p.pm||'—'}</strong></div>`;
@@ -1376,7 +1380,7 @@ function buildBudgetRooms(){
         ? `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
         : `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:110px">Supplier</th><th style="width:55px">Qty</th><th style="width:90px">Unit Cost ($)</th><th style="width:100px">${lbl}</th><th style="width:110px">Notes</th><th style="width:40px"></th></tr></thead>`;
       card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-${type}-${g.id}"></tbody></table>
-        <div style="padding:10px 15px;background:#F7FBFF;border-top:1px solid #EEF2F7">
+        <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('${type}','${g.id}')">+ Add Item</button>
         </div>`;
       container.appendChild(card);
@@ -1449,7 +1453,7 @@ function hydrateRow(type,gid,islug){
   const qEl=document.getElementById('bq-'+type+'-'+gid+'-'+islug);
   const uEl=document.getElementById('bu-'+type+'-'+gid+'-'+islug);
   const catEl=document.getElementById('bcat-'+type+'-'+gid+'-'+islug);
-  if(inp&&val){inp.value=val;inp.style.borderColor=type==='est'?'#81C784':'#FFB74D';}
+  if(inp&&val){inp.value=val;inp.style.borderColor=type==='est'?'#9CB079':'#D9A876';}
   if(cmt&&note) cmt.value=note;
   if(sEl&&sup) sEl.value=sup;
   if(qEl&&qty) qEl.value=qty;
@@ -1569,7 +1573,7 @@ function renderPhaseTasks(phaseId){
       <div class="trh">
         <span style="font-size:11px;color:var(--gray3);min-width:26px">${ph.n}.${ti+1}</span>
         <span class="tn" contenteditable="true" style="outline:none;border-bottom:1px dashed transparent" onblur="renameTask('${phaseId}','${tid}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${t.name}</span>
-        <span id="tbadge-${tid}" style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#EAECEE;color:#9AA5B4">⏳ Not Started</span>
+        <span id="tbadge-${tid}" style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#E8E0D5;color:#655A4E">⏳ Not Started</span>
         <button class="btn btn-ghost" style="margin-left:auto;padding:3px 7px;font-size:13px;color:var(--red)" title="Remove task" onclick="removeTask('${phaseId}','${tid}')">🗑</button>
       </div>
       <div class="trb">
@@ -1939,7 +1943,7 @@ function renderExtraCosts(category){
     const perItem=calcRCDPerItem(CID);
     list.innerHTML=RC_ITEMS.map(name=>{
       const val=perItem[name]||0;
-      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
+      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #F0EAE2;align-items:center">
         <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${name}</span></div>
         <div style="text-align:right;font-size:13px;font-weight:600;color:${val>0?'var(--p3)':'var(--gray3)'}">${fmt(val)}</div>
       </div>`;
@@ -1955,7 +1959,7 @@ function renderExtraCosts(category){
     list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Loading items...</div>`;
   } else {
     list.innerHTML=items.map(it=>{
-      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #EEF2F7;align-items:center">
+      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #F0EAE2;align-items:center">
         <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${it.name}</span></div>
         <div style="display:flex;align-items:center;gap:4px">
           <span style="font-size:13px;color:var(--gray3)">$</span>
@@ -2464,8 +2468,8 @@ function renderRecurringDetailHeader(){
   const {y1,y2}=_getRCYears();
   const y1Short=String(y1).slice(-2);
   const y2Short=String(y2).slice(-2);
-  let html=`<tr style="background:#F5F7FA">
-    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#F5F7FA;z-index:1;min-width:140px">Item</th>
+  let html=`<tr style="background:#FAF7F3">
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#FAF7F3;z-index:1;min-width:140px">Item</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Empresa</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:110px">Account #</th>`;
   // Year 1 months
@@ -2476,7 +2480,7 @@ function renderRecurringDetailHeader(){
   RC_MONTH_LABELS.forEach(lbl=>{
     html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px;font-size:11px;background:#FAFCFE">${lbl}/${y2Short}</th>`;
   });
-  html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:90px;background:#E8F5E9">Subtotal</th>
+  html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:90px;background:#ECEFE3">Subtotal</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:160px">Observação</th>
   </tr>`;
   thead.innerHTML=html;
@@ -2493,7 +2497,7 @@ function renderRecurringDetail(){
       const val=row[m]||'';
       const isYear2=idx>=12;
       const bg=isYear2?'background:#FAFCFE':'';
-      return `<td style="padding:4px 2px;border-bottom:1px solid #EEF2F7;${bg}">
+      return `<td style="padding:4px 2px;border-bottom:1px solid #F0EAE2;${bg}">
         <input type="number" min="0" step="0.01" value="${val}" placeholder="0"
           oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','${m}',this.value)"
           style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;text-align:right">
@@ -2501,20 +2505,20 @@ function renderRecurringDetail(){
     }).join('');
     const subtotal=RC_MONTHS.reduce((s,m)=>s+(+row[m]||0),0);
     return `<tr>
-      <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #EEF2F7;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${itemName}</td>
-      <td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+      <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #F0EAE2;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${itemName}</td>
+      <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
         <input type="text" value="${(row.company||'').replace(/"/g,'&quot;')}" placeholder="Empresa"
           oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','company',this.value)"
           style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
       </td>
-      <td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+      <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
         <input type="text" value="${(row.account||'').replace(/"/g,'&quot;')}" placeholder="Acc#"
           oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','account',this.value)"
           style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
       </td>
       ${monthCells}
-      <td style="padding:6px 6px;font-weight:700;color:var(--p3);border-bottom:1px solid #EEF2F7;text-align:right;background:#F1F8F1;font-size:12px" id="rcd-sub-${_slugRC(itemName)}">$${subtotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
-      <td style="padding:4px 2px;border-bottom:1px solid #EEF2F7">
+      <td style="padding:6px 6px;font-weight:700;color:var(--p3);border-bottom:1px solid #F0EAE2;text-align:right;background:#F2F4EC;font-size:12px" id="rcd-sub-${_slugRC(itemName)}">$${subtotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+      <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
         <input type="text" value="${(row.notes||'').replace(/"/g,'&quot;')}" placeholder="Observação..."
           oninput="updateRCD('${itemName.replace(/'/g,"\\'")}','notes',this.value)"
           style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
@@ -2811,7 +2815,7 @@ function _recalcAmount(type,roomId,islug){
     // Round to 2 decimals to avoid floating-point artifacts (400 * 1.1 = 440.00000000000006)
     d[af]=Math.round(q*u*100)/100;
     const inp=document.getElementById('bi-'+type+'-'+roomId+'-'+islug);
-    if(inp){inp.value=d[af]; inp.style.borderColor=type==='est'?'#81C784':'#FFB74D';}
+    if(inp){inp.value=d[af]; inp.style.borderColor=type==='est'?'#9CB079':'#D9A876';}
     const tot=calcRoomItemTotal(CID,roomId,af);
     const el2=document.getElementById('brt-'+type+'-'+roomId);
     if(el2) el2.textContent=fmt(tot);
@@ -2822,7 +2826,7 @@ async function onBI(type,roomId,islug,el){
   let val=parseFloat(el.value)||0;
   // Round to 2 decimals to avoid floating-point garbage
   val=Math.round(val*100)/100;
-  if(val>0) el.style.borderColor=type==='est'?'#81C784':'#FFB74D'; else el.style.borderColor='';
+  if(val>0) el.style.borderColor=type==='est'?'#9CB079':'#D9A876'; else el.style.borderColor='';
   _ensureBI(roomId,islug);
   budgetMap[CID][roomId][islug][type==='est'?'est':'actual']=val;
   const tot=calcRoomItemTotal(CID,roomId,type==='est'?'est':'actual');
@@ -2916,7 +2920,7 @@ function renderAttachList(){
     el.innerHTML='<div style="text-align:center;padding:20px;color:var(--gray3);font-size:13px;font-style:italic">No attachments yet</div>';
   } else {
     el.innerHTML=list.map(a=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#F7FBFF;border:1px solid #E1E8F0;border-radius:8px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FAF7F3;border:1px solid #E1E8F0;border-radius:8px;margin-bottom:6px">
         <span style="font-size:18px">${fileIcon(a.name)}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</div>
@@ -3005,9 +3009,9 @@ function updateTaskBadge(tid,t){
   const row=document.getElementById('trow-'+tid);
   if(!badge) return;
   const pct=+t?.pct||0;
-  if(pct===100){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#E8F5E9;color:#2E7D32';badge.textContent='✅ Done';if(row){row.className='task-row tr-done';}}
-  else if(pct>0){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#FFF3E0;color:#F57C00';badge.textContent='🔄 '+pct+'%';if(row){row.className='task-row tr-prog';row.style.borderLeftColor='#F57C00';}}
-  else{badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#EAECEE;color:#9AA5B4';badge.textContent='⏳ Not Started';if(row){row.className='task-row';row.style.borderLeftColor='';}}
+  if(pct===100){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#ECEFE3;color:#5C7A3F';badge.textContent='✅ Done';if(row){row.className='task-row tr-done';}}
+  else if(pct>0){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#F5EBDA;color:#C68A4A';badge.textContent='🔄 '+pct+'%';if(row){row.className='task-row tr-prog';row.style.borderLeftColor='#C68A4A';}}
+  else{badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#E8E0D5;color:#655A4E';badge.textContent='⏳ Not Started';if(row){row.className='task-row';row.style.borderLeftColor='';}}
 }
 function updateSchedProgress(){
   if(!CID) return;
@@ -3042,9 +3046,9 @@ function renderDashboard(){
   document.getElementById('d-est').textContent=fmt(est);
   document.getElementById('d-actual').textContent=fmt(act);
   document.getElementById('d-var').textContent=(va>=0?'+':'')+fmt(va);
-  document.getElementById('d-var').style.color=va>0?'#E53935':va<0?'#2E7D32':'#1565C0';
+  document.getElementById('d-var').style.color=va>0?'#B85450':va<0?'#5C7A3F':'#3D271A';
   document.getElementById('d-var-lbl').textContent=va>0?'over budget':va<0?'under budget':'on budget';
-  document.getElementById('d-var-kpi').style.borderTopColor=va>0?'#E53935':va<0?'#2E7D32':'#1565C0';
+  document.getElementById('d-var-kpi').style.borderTopColor=va>0?'#B85450':va<0?'#5C7A3F':'#3D271A';
   document.getElementById('d-phases').innerHTML=PHASES.map(ph=>{
     const pct=calcPhasePct(CID,ph);
     return `<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px"><span style="color:${ph.color}">${ph.label}</span><span>${pct}%</span></div><div style="background:var(--gray2);border-radius:4px;height:7px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${ph.color};width:${pct}%"></div></div></div>`;
@@ -3052,12 +3056,12 @@ function renderDashboard(){
   dChart('d');
   const ctx=document.getElementById('d-chart');
   if(ctx) charts_['d']=new Chart(ctx,{type:'doughnut',data:{labels:['Estimated','Actual','Remaining'],
-    datasets:[{data:[est,act,Math.max(0,est-act)],backgroundColor:['#1565C0','#F57C00','#E0E6EF'],borderWidth:2,borderColor:'#fff'}]},
+    datasets:[{data:[est,act,Math.max(0,est-act)],backgroundColor:['#3D271A','#C68A4A','#D5C9BC'],borderWidth:2,borderColor:'#fff'}]},
     options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},responsive:true,maintainAspectRatio:false,cutout:'55%'}});
   const ov=ROOMS.map(r=>({n:r.name,e:calcRoomItemTotal(CID,r.id,'est'),a:calcRoomItemTotal(CID,r.id,'actual')}))
     .filter(r=>r.a>0&&r.a>r.e).sort((a,b)=>(b.a-b.e)-(a.a-a.e)).slice(0,5);
   document.getElementById('d-over').innerHTML=ov.length
-    ?ov.map(r=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #EEF2F7;font-size:12px"><span>${r.n}</span><span style="color:#E53935;font-weight:700">+${fmt(r.a-r.e)}</span></div>`).join('')
+    ?ov.map(r=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0EAE2;font-size:12px"><span>${r.n}</span><span style="color:#B85450;font-weight:700">+${fmt(r.a-r.e)}</span></div>`).join('')
     :'<div style="color:var(--gray3);font-size:13px;padding:8px 0">✅ No phases over budget</div>';
   const today=new Date().toISOString().split('T')[0];
   let pt=0;
@@ -3074,9 +3078,9 @@ function renderComparison(){
   document.getElementById('cmp-est').textContent=fmt(est);
   document.getElementById('cmp-actual').textContent=fmt(act);
   document.getElementById('cmp-var').textContent=(va>=0?'+':'')+fmt(va);
-  document.getElementById('cmp-var').style.color=va>0?'#E53935':va<0?'#2E7D32':'#1565C0';
+  document.getElementById('cmp-var').style.color=va>0?'#B85450':va<0?'#5C7A3F':'#3D271A';
   document.getElementById('cmp-var-lbl').textContent=va>0?'over budget':va<0?'under budget':'on budget';
-  document.getElementById('cmp-var-kpi').style.borderTopColor=va>0?'#E53935':va<0?'#2E7D32':'#1565C0';
+  document.getElementById('cmp-var-kpi').style.borderTopColor=va>0?'#B85450':va<0?'#5C7A3F':'#3D271A';
   dChart('cr');dChart('cd');
   const rn=ROOMS.map(r=>r.name.length>10?r.name.slice(0,10)+'…':r.name);
   const re=ROOMS.map(r=>calcRoomItemTotal(CID,r.id,'est'));
@@ -3088,7 +3092,7 @@ function renderComparison(){
   ]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v2=>'$'+v2.toLocaleString()}}},responsive:true,maintainAspectRatio:false}});
   const ctxD=document.getElementById('cmp-cd');
   const rwd=ROOMS.filter(r=>calcRoomItemTotal(CID,r.id,'est')>0||calcRoomItemTotal(CID,r.id,'actual')>0);
-  if(ctxD) charts_['cd']=new Chart(ctxD,{type:'doughnut',data:{labels:rwd.map(r=>r.name),datasets:[{data:rwd.map(r=>calcRoomItemTotal(CID,r.id,'est')||0.001),backgroundColor:['#1565C0','#F57C00','#2E7D32','#6A1B9A','#E53935','#C8922A','#0277BD','#558B2F','#4527A0','#AD1457','#00838F','#37474F','#558B2F','#E65100','#1565C0','#283593'],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  if(ctxD) charts_['cd']=new Chart(ctxD,{type:'doughnut',data:{labels:rwd.map(r=>r.name),datasets:[{data:rwd.map(r=>calcRoomItemTotal(CID,r.id,'est')||0.001),backgroundColor:['#3D271A','#C68A4A','#5C7A3F','#7B5C8C','#B85450','#B8860B','#0277BD','#558B2F','#4527A0','#AD1457','#00838F','#37474F','#558B2F','#A86A2C','#3D271A','#283593'],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
   let html=`<thead><tr style="background:var(--navy);color:#fff"><th style="padding:9px 12px">Phase</th><th style="padding:9px 12px">Item</th><th class="r" style="padding:9px 12px">Estimated</th><th class="r" style="padding:9px 12px">Actual</th><th class="r" style="padding:9px 12px">Variance</th><th style="padding:9px 12px;text-align:center">Status</th></tr></thead><tbody>`;
   let ge=0,ga=0;
   ROOMS.forEach(r=>{
@@ -3099,7 +3103,7 @@ function renderComparison(){
     const rv=ra2-re2;
     const rs=ra2===0?'sc-mt':rv>0?'sc-ov':rv<0?'sc-un':'sc-eq';
     const rtx=ra2===0?'No data':rv>0?'Over':'Under';
-    html+=`<tr class="rrow"><td colspan="2" style="padding:9px 12px">${r.name}</td><td class="r" style="padding:9px 12px">${fmt(re2)}</td><td class="r" style="padding:9px 12px">${fmt(ra2)}</td><td class="r" style="padding:9px 12px;color:${rv>0?'#E53935':rv<0?'#2E7D32':'#1565C0'}">${rv===0?'—':(rv>0?'+':'')+fmt(rv)}</td><td style="padding:9px 12px;text-align:center"><span class="sc ${rs}">${rtx}</span></td></tr>`;
+    html+=`<tr class="rrow"><td colspan="2" style="padding:9px 12px">${r.name}</td><td class="r" style="padding:9px 12px">${fmt(re2)}</td><td class="r" style="padding:9px 12px">${fmt(ra2)}</td><td class="r" style="padding:9px 12px;color:${rv>0?'#B85450':rv<0?'#5C7A3F':'#3D271A'}">${rv===0?'—':(rv>0?'+':'')+fmt(rv)}</td><td style="padding:9px 12px;text-align:center"><span class="sc ${rs}">${rtx}</span></td></tr>`;
     const bm=(budgetMap[CID]||{})[r.id]||{};
     const itemsForGroup=((itemsMap[CID]||{})[r.id])||[];
     itemsForGroup.forEach(it=>{
@@ -3108,10 +3112,10 @@ function renderComparison(){
       const iv=d.actual-d.est;
       const isc=!d.actual?'sc-mt':iv>0?'sc-ov':iv<0?'sc-un':'sc-eq';
       const itx=!d.actual?'—':iv>0?'⚠ Over':iv<0?'✅ Under':'✔ On budget';
-      html+=`<tr><td style="padding:7px 12px;font-size:11px;color:var(--gray3)"></td><td style="padding:7px 12px;font-size:13px">${it.name}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.est?fmt(d.est):'—'}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.actual?fmt(d.actual):'—'}</td><td class="r" style="padding:7px 12px;font-size:12px;color:${iv>0?'#E53935':iv<0?'#2E7D32':'#9AA5B4'}">${iv===0||(!d.est&&!d.actual)?'—':(iv>0?'+':'')+fmt(iv)}</td><td style="padding:7px 12px;text-align:center"><span class="sc ${isc}" style="font-size:10px">${itx}</span></td></tr>`;
+      html+=`<tr><td style="padding:7px 12px;font-size:11px;color:var(--gray3)"></td><td style="padding:7px 12px;font-size:13px">${it.name}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.est?fmt(d.est):'—'}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.actual?fmt(d.actual):'—'}</td><td class="r" style="padding:7px 12px;font-size:12px;color:${iv>0?'#B85450':iv<0?'#5C7A3F':'#655A4E'}">${iv===0||(!d.est&&!d.actual)?'—':(iv>0?'+':'')+fmt(iv)}</td><td style="padding:7px 12px;text-align:center"><span class="sc ${isc}" style="font-size:10px">${itx}</span></td></tr>`;
     });
   });
-  html+=`<tr class="trow"><td colspan="2" style="padding:11px 12px">TOTAL</td><td class="r" style="padding:11px 12px">${fmt(ge)}</td><td class="r" style="padding:11px 12px">${fmt(ga)}</td><td class="r" style="padding:11px 12px;color:${ga-ge>0?'#EF9A9A':ga-ge<0?'#A5D6A7':'#fff'}">${ga-ge===0?'—':(ga-ge>0?'+':'')+fmt(ga-ge)}</td><td style="padding:11px 12px;text-align:center;color:${ga-ge>0?'#EF9A9A':ga-ge<0?'#A5D6A7':'#fff'};font-weight:700">${ga-ge>0?'⚠ Over budget':ga-ge<0?'✅ Under budget':'✔ On budget'}</td></tr>`;
+  html+=`<tr class="trow"><td colspan="2" style="padding:11px 12px">TOTAL</td><td class="r" style="padding:11px 12px">${fmt(ge)}</td><td class="r" style="padding:11px 12px">${fmt(ga)}</td><td class="r" style="padding:11px 12px;color:${ga-ge>0?'#D69D9A':ga-ge<0?'#A5D6A7':'#fff'}">${ga-ge===0?'—':(ga-ge>0?'+':'')+fmt(ga-ge)}</td><td style="padding:11px 12px;text-align:center;color:${ga-ge>0?'#D69D9A':ga-ge<0?'#A5D6A7':'#fff'};font-weight:700">${ga-ge>0?'⚠ Over budget':ga-ge<0?'✅ Under budget':'✔ On budget'}</td></tr>`;
   document.getElementById('cmp-tbl').innerHTML=html+'</tbody>';
 }
 
@@ -3167,7 +3171,7 @@ function renderGantt(){
       let wc='';
       for(let w=0;w<WEEKS;w++){
         const ov=hasRange && (bs<(w+1)*7) && ((bs+bl)>w*7);
-        wc+=`<td style="background:${ov?ph.color+'22':'transparent'};border-right:1px solid #EEF2F7;height:33px"></td>`;
+        wc+=`<td style="background:${ov?ph.color+'22':'transparent'};border-right:1px solid #F0EAE2;height:33px"></td>`;
       }
       html+=`<tr><td><div class="tic"><span style="font-size:10px;color:var(--gray3);min-width:24px">${ph.n}.${ti+1}</span><span style="font-size:12px;font-weight:600">${tobj.name}</span></div></td><td style="padding:6px 10px;font-size:11px;color:var(--gray3)">${t.owner||'—'}</td><td style="padding:6px 10px;font-size:11px;color:var(--gray3);white-space:nowrap">${t.start_date?t.start_date.slice(5):'—'}${t.end_date?' →'+t.end_date.slice(5):''}</td><td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:7px;background:var(--gray2);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${ph.color};width:${pct}%"></div></div><span style="font-size:11px;font-weight:700;color:${ph.color};min-width:28px">${pct}%</span></div></td>${wc}</tr>`;
     });
@@ -3223,7 +3227,7 @@ async function deleteProject(){
 
 function toast(msg,ok=true){
   const t=document.getElementById('toast-el');
-  t.textContent=msg; t.style.background=ok?'#2E7D32':'#C62828';
+  t.textContent=msg; t.style.background=ok?'#5C7A3F':'#C62828';
   t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200);
 }
 
