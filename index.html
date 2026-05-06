@@ -507,6 +507,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--
             <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="debouncePI()"></div>
             <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
+          <div style="margin-top:14px;padding:14px 16px;background:#E8F5E9;border-left:4px solid var(--p3);border-radius:6px">
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— Cash + Actual Spent + Costs + Recurring + Documents + High End</span></div>
+            <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
+          </div>
         </div>
 
         <!-- Card 5: Costs (was DEC Invoice) -->
@@ -2055,6 +2059,11 @@ function recalcProfit(){
   const docTotal=calcExtraSubtotal('documents');
   const heTotal=calcExtraSubtotal('high_end');
   const extraTotal=decTotal+recTotal+docTotal+heTotal;
+  // Total Investido = Cash + Actual Spent + Costs + Recurring + Documents + High End
+  const cash=+p.cash||0;
+  const totalInvested=cash+totAct+decTotal+recTotal+docTotal+heTotal;
+  const tiEl=document.getElementById('pi-total-invested');
+  if(tiEl) tiEl.textContent=fmt(totalInvested);
   // Estimated profit (legacy formula, just shows expectation)
   const estProfit=arv?(arv-wholesaler-salesTotal-totEst-selling):0;
   const estEl=document.getElementById('pft-est');
