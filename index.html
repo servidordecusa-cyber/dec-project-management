@@ -337,6 +337,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
         <div class="sb-lnk ceo-only" id="snav-recurring" onclick="sp('recurring',this,'')" style="display:none">🔄 Recurring Costs</div>
         <div class="sb-lnk ceo-only" id="snav-clients" onclick="sp('clients',this,'')" style="display:none">👥 Clientes</div>
+        <div class="sb-lnk ceo-only" id="snav-vendors" onclick="sp('vendors',this,'')" style="display:none">🔨 Fornecedores</div>
       </div>
       <div class="sb-sync"><div class="sync-dot"></div>Live · Auto-saved</div>
     </div>
@@ -1037,6 +1038,40 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           </div>
         </div>
       </div>
+
+      <!-- Fornecedores (CEO ONLY) -->
+      <div class="page" id="page-vendors">
+        <div class="page-title">🔨 Fornecedores <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-sub">Base de fornecedores · contratos e seguros · usado em Actual Costs</div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+            <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Fornecedores
+              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="vn-count">— 0 fornecedor(es)</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <input id="vn-search" type="text" placeholder="🔍 Buscar..." oninput="renderVendors()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
+              <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openVendorModal()">+ Novo Fornecedor</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:900px">
+              <thead>
+                <tr style="background:#FAF7F3">
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Nome</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Especialidade</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Telefone</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
+                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">📄 Contratos</th>
+                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">🛡️ Seguros</th>
+                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:140px">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="vn-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1073,6 +1108,42 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <div class="fgrid"><div class="fg"><label>EIN / Tax ID</label><input id="cm-tax" placeholder="00-0000000"></div><div class="fg"></div></div>
     <div class="fg"><label>Notas</label><textarea id="cm-notes" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Observações adicionais..."></textarea></div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeClientModal()">Cancel</button><button class="btn btn-primary" onclick="saveClient()">Salvar →</button></div>
+  </div>
+</div>
+
+<!-- VENDOR MODAL (create / edit) -->
+<div class="modal-overlay" id="modal-vendor">
+  <div class="modal">
+    <h2 id="vm-title">➕ Novo Fornecedor</h2>
+    <input type="hidden" id="vm-id">
+    <div class="fgrid"><div class="fg"><label>Nome / Razão social *</label><input id="vm-name" placeholder="e.g. JR Duran Painting"></div><div class="fg"><label>Especialidade</label><input id="vm-specialty" placeholder="e.g. Pintor, Encanador, Elétrico..."></div></div>
+    <div class="fgrid"><div class="fg"><label>Endereço</label><input id="vm-address" placeholder="Endereço completo"></div></div>
+    <div class="fgrid"><div class="fg"><label>Telefone</label><input id="vm-phone" placeholder="(407) 000-0000"></div><div class="fg"><label>Email</label><input id="vm-email" type="email" placeholder="email@example.com"></div></div>
+    <div class="fgrid"><div class="fg"><label>EIN / Tax ID</label><input id="vm-tax" placeholder="00-0000000"></div><div class="fg"></div></div>
+    <div class="fg"><label>Notas</label><textarea id="vm-notes" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Observações adicionais..."></textarea></div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="closeVendorModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendor()">Salvar →</button></div>
+  </div>
+</div>
+
+<!-- VENDOR DOCS MODAL (contracts + insurance uploads) -->
+<div class="modal-overlay" id="modal-vendor-docs">
+  <div class="modal" style="max-width:720px">
+    <h2 id="vdm-title">📄 Documentos do Fornecedor</h2>
+    <input type="hidden" id="vdm-vendor-id">
+    <input type="hidden" id="vdm-doc-type">
+    <div id="vdm-subtitle" style="color:var(--gray3);font-size:13px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:12px;background:#FAF7F3;border-radius:8px;margin-bottom:14px">
+      <div class="fg" style="flex:1;min-width:200px"><label>Adicionar arquivo</label>
+        <input type="file" id="vdm-file" accept=".pdf,.jpg,.jpeg,.png" style="font-size:12px">
+      </div>
+      <div class="fg" id="vdm-expiry-wrap" style="display:none"><label>Validade do seguro</label>
+        <input id="vdm-expiry" type="date" style="font-size:12px">
+      </div>
+      <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="uploadVendorDoc()">⬆ Upload</button>
+    </div>
+    <div id="vdm-progress" style="font-size:12px;color:var(--gray3);margin-bottom:10px;display:none"></div>
+    <div id="vdm-list" style="max-height:340px;overflow-y:auto"></div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="closeVendorDocsModal()">Fechar</button></div>
   </div>
 </div>
 
@@ -1156,6 +1227,8 @@ let attachMap={};    // {project_id: {group_id: {item_slug: [{id, name, url, siz
 let propertyMap={};  // {project_id: {client_name, lot_size, living_area, year_built, ...}}
 let listingMap={};   // {project_id: { listing checklist data }}
 let clients=[];      // [{id, name, address, email, phone, tax_id, notes, created_at}]
+let vendors=[];      // [{id, name, specialty, address, email, phone, tax_id, notes, created_at}]
+let vendorDocs={};   // {vendor_id: [{id, vendor_id, doc_type, name, storage_path, expiration_date, ...}]}
 let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
 
@@ -1338,6 +1411,8 @@ async function loadAllData(){
   });
   // Load clients (CEO-only)
   await loadClients();
+  // Load vendors (CEO-only)
+  await loadVendors();
   // Populate dropdowns (after both clients and projects loaded)
   populateClientDropdowns();
 }
@@ -1576,8 +1651,10 @@ function rowHTML(type,gid,item,islug){
         <option value="other">📌 Other</option>
       </select>
     </td>
-    <td><input class="ci" type="text" id="bsup-${type}-${gid}-${islug}"
-      oninput="onBSup('${type}','${gid}','${islug}',this)" placeholder="Supplier..."></td>
+    <td>${type==='act'
+      ? `<select class="ci" id="bsup-${type}-${gid}-${islug}" onchange="onBSup('${type}','${gid}','${islug}',this)" style="padding:5px 6px;font-size:11px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">${populateVendorDropdowns()}</select>`
+      : `<input class="ci" type="text" id="bsup-${type}-${gid}-${islug}" oninput="onBSup('${type}','${gid}','${islug}',this)" placeholder="Supplier...">`
+    }</td>
     <td><input class="ni" type="number" min="0" step="1" id="bq-${type}-${gid}-${islug}"
       oninput="onBQ('${type}','${gid}','${islug}',this)" placeholder="0"></td>
     <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
@@ -2544,6 +2621,349 @@ function generateReport(){
   w.document.close();
 }
 
+// ═══ FORNECEDORES (CEO ONLY) ═══════════════════════════════════════════
+async function loadVendors(){
+  if(!isCEO()){vendors=[];vendorDocs={};return;}
+  const [vRes,dRes]=await Promise.all([
+    sb.from('vendors').select('*').order('name'),
+    sb.from('vendor_docs').select('*').order('created_at',{ascending:false})
+  ]);
+  if(vRes.error){console.error('vendors load',vRes.error);return;}
+  vendors=vRes.data||[];
+  vendorDocs={};
+  (dRes.data||[]).forEach(d=>{
+    if(!vendorDocs[d.vendor_id]) vendorDocs[d.vendor_id]=[];
+    vendorDocs[d.vendor_id].push(d);
+  });
+}
+
+function _vendorById(id){return vendors.find(v=>v.id===id);}
+
+function populateVendorDropdowns(){
+  // Used in Actual Costs supplier dropdowns
+  // We don't have a single dropdown — multiple per row, so just expose a helper that renders <options>
+  return '<option value="">— Selecionar —</option>'+
+    vendors.map(v=>`<option value="${v.id}">${(v.name||'').replace(/"/g,'&quot;')}</option>`).join('');
+}
+
+function vendorName(value){
+  if(!value) return '';
+  if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)){
+    const v=_vendorById(value);
+    return v?v.name:value;
+  }
+  return value;
+}
+
+function _vendorDocCounts(vid){
+  const docs=vendorDocs[vid]||[];
+  return {
+    contracts:docs.filter(d=>d.doc_type==='contract').length,
+    insurances:docs.filter(d=>d.doc_type==='insurance').length,
+  };
+}
+
+function _expiringInsurance(vid){
+  // Returns the closest insurance expiration date if it's within 60 days or expired
+  const docs=(vendorDocs[vid]||[]).filter(d=>d.doc_type==='insurance'&&d.expiration_date);
+  if(docs.length===0) return null;
+  const today=new Date();
+  let closest=null,closestDays=Infinity;
+  docs.forEach(d=>{
+    const exp=new Date(d.expiration_date+'T00:00:00');
+    const days=Math.floor((exp-today)/86400000);
+    if(days<closestDays){closestDays=days;closest=d;}
+  });
+  return closestDays<=60?{doc:closest,days:closestDays}:null;
+}
+
+function renderVendors(){
+  const tbody=document.getElementById('vn-tbody');
+  if(!tbody) return;
+  const q=(document.getElementById('vn-search')?.value||'').toLowerCase().trim();
+  let list=vendors.slice();
+  if(q){
+    list=list.filter(v=>
+      (v.name||'').toLowerCase().includes(q)||
+      (v.specialty||'').toLowerCase().includes(q)||
+      (v.email||'').toLowerCase().includes(q)||
+      (v.phone||'').toLowerCase().includes(q)
+    );
+  }
+  document.getElementById('vn-count').textContent='— '+list.length+' fornecedor(es)';
+  if(list.length===0){
+    tbody.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">Nenhum fornecedor cadastrado. Clique em <strong>+ Novo Fornecedor</strong> para começar.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=list.map(v=>{
+    const cnt=_vendorDocCounts(v.id);
+    const exp=_expiringInsurance(v.id);
+    let insLabel='';
+    if(cnt.insurances===0){
+      insLabel=`<span style="color:var(--gray3)">0</span>`;
+    } else if(exp){
+      const warnColor=exp.days<0?'var(--p1)':'var(--p2)';
+      const warnText=exp.days<0?'⚠ vencido':`⏰ ${exp.days}d`;
+      insLabel=`<span>${cnt.insurances}</span> <span style="font-size:10px;color:${warnColor};font-weight:700;margin-left:4px">${warnText}</span>`;
+    } else {
+      insLabel=`<span style="color:var(--p3);font-weight:700">${cnt.insurances}</span> <span style="font-size:10px;color:var(--p3)">✓</span>`;
+    }
+    return `<tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${v.name||''}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.specialty||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.phone||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.email||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="openVendorDocsModal('${v.id}','contract')" style="padding:4px 10px;font-size:11px;background:#FAF7F3;border:1px solid var(--gray2);border-radius:5px;cursor:pointer">${cnt.contracts} 📄</button>
+      </td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="openVendorDocsModal('${v.id}','insurance')" style="padding:4px 10px;font-size:11px;background:#FAF7F3;border:1px solid var(--gray2);border-radius:5px;cursor:pointer">${insLabel} 🛡️</button>
+      </td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="openVendorModal('${v.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue);margin-right:4px">✏️</button>
+        <button onclick="deleteVendor('${v.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openVendorModal(id){
+  document.getElementById('vm-id').value=id||'';
+  const title=document.getElementById('vm-title');
+  if(id){
+    const v=_vendorById(id);
+    if(!v) return;
+    title.textContent='✏️ Editar Fornecedor';
+    document.getElementById('vm-name').value=v.name||'';
+    document.getElementById('vm-specialty').value=v.specialty||'';
+    document.getElementById('vm-address').value=v.address||'';
+    document.getElementById('vm-phone').value=v.phone||'';
+    document.getElementById('vm-email').value=v.email||'';
+    document.getElementById('vm-tax').value=v.tax_id||'';
+    document.getElementById('vm-notes').value=v.notes||'';
+  } else {
+    title.textContent='➕ Novo Fornecedor';
+    ['vm-name','vm-specialty','vm-address','vm-phone','vm-email','vm-tax','vm-notes'].forEach(k=>{
+      const el=document.getElementById(k);if(el) el.value='';
+    });
+  }
+  document.getElementById('modal-vendor').classList.add('active');
+  setTimeout(()=>document.getElementById('vm-name').focus(),50);
+}
+
+function closeVendorModal(){
+  document.getElementById('modal-vendor').classList.remove('active');
+}
+
+async function saveVendor(){
+  if(!isCEO()){toast('Apenas CEO pode gerenciar fornecedores',false);return;}
+  const name=(document.getElementById('vm-name').value||'').trim();
+  if(!name){toast('Nome do fornecedor é obrigatório',false);return;}
+  const id=document.getElementById('vm-id').value;
+  const payload={
+    name,
+    specialty:document.getElementById('vm-specialty').value||'',
+    address:document.getElementById('vm-address').value||'',
+    phone:document.getElementById('vm-phone').value||'',
+    email:document.getElementById('vm-email').value||'',
+    tax_id:document.getElementById('vm-tax').value||'',
+    notes:document.getElementById('vm-notes').value||'',
+  };
+  let result;
+  if(id){
+    result=await sb.from('vendors').update(payload).eq('id',id).select().single();
+  } else {
+    result=await sb.from('vendors').insert(payload).select().single();
+  }
+  if(result.error){console.error('vendor save',result.error);toast('Erro ao salvar fornecedor',false);return;}
+  if(id){
+    const i=vendors.findIndex(v=>v.id===id);
+    if(i>=0) vendors[i]=result.data;
+  } else {
+    vendors.push(result.data);
+  }
+  vendors.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  renderVendors();
+  // Refresh any open Actual Costs supplier dropdowns
+  refreshActualCostsVendorDropdowns();
+  closeVendorModal();
+  showSaved();
+}
+
+async function deleteVendor(id){
+  if(!isCEO()) return;
+  const v=_vendorById(id);
+  if(!v) return;
+  // Safety: check if any budget_items.actual_supplier uses this vendor
+  let inUseCount=0;
+  Object.keys(budgetMap).forEach(pid=>{
+    Object.keys(budgetMap[pid]||{}).forEach(grp=>{
+      Object.values(budgetMap[pid][grp]||{}).forEach(item=>{
+        if(item.actual_supplier===id) inUseCount++;
+      });
+    });
+  });
+  if(inUseCount>0){
+    alert('Não é possível excluir "'+v.name+'": está em uso em '+inUseCount+' lançamento(s) de Actual Costs.');
+    return;
+  }
+  if(!confirm('Excluir fornecedor "'+v.name+'"?\n\nTodos os documentos (contratos e seguros) também serão removidos. Essa ação não pode ser desfeita.')) return;
+  // Delete docs from storage first
+  const docs=vendorDocs[id]||[];
+  if(docs.length>0){
+    const paths=docs.map(d=>d.storage_path).filter(Boolean);
+    if(paths.length>0) await sb.storage.from('vendor-docs').remove(paths);
+  }
+  // Delete vendor row (vendor_docs cascade automatically via FK)
+  const {error}=await sb.from('vendors').delete().eq('id',id);
+  if(error){console.error('vendor delete',error);toast('Erro ao excluir fornecedor',false);return;}
+  vendors=vendors.filter(v=>v.id!==id);
+  delete vendorDocs[id];
+  renderVendors();
+  refreshActualCostsVendorDropdowns();
+  showSaved();
+}
+
+// ═══ Vendor Documents (contracts + insurance) ══════════════════════════
+function openVendorDocsModal(vendorId,docType){
+  if(!isCEO()) return;
+  const v=_vendorById(vendorId);
+  if(!v) return;
+  document.getElementById('vdm-vendor-id').value=vendorId;
+  document.getElementById('vdm-doc-type').value=docType;
+  const typeLabel=docType==='contract'?'📄 Contratos':'🛡️ Seguros';
+  document.getElementById('vdm-title').textContent=typeLabel+' — '+v.name;
+  document.getElementById('vdm-subtitle').textContent=docType==='contract'?'Contratos assinados com este fornecedor':'Apólices de seguro vigentes';
+  // Show/hide expiration date field (only for insurance)
+  document.getElementById('vdm-expiry-wrap').style.display=docType==='insurance'?'block':'none';
+  document.getElementById('vdm-file').value='';
+  document.getElementById('vdm-expiry').value='';
+  document.getElementById('vdm-progress').style.display='none';
+  renderVendorDocsList(vendorId,docType);
+  document.getElementById('modal-vendor-docs').classList.add('active');
+}
+
+function closeVendorDocsModal(){
+  document.getElementById('modal-vendor-docs').classList.remove('active');
+  // Refresh main table to reflect new counts
+  renderVendors();
+}
+
+function renderVendorDocsList(vendorId,docType){
+  const wrap=document.getElementById('vdm-list');
+  const docs=(vendorDocs[vendorId]||[]).filter(d=>d.doc_type===docType);
+  if(docs.length===0){
+    wrap.innerHTML=`<div style="padding:24px;text-align:center;color:var(--gray3);font-style:italic;font-size:13px;background:#FAF7F3;border-radius:8px">Nenhum ${docType==='contract'?'contrato':'seguro'} enviado ainda.</div>`;
+    return;
+  }
+  wrap.innerHTML=docs.map(d=>{
+    let expWarn='';
+    if(docType==='insurance'&&d.expiration_date){
+      const exp=new Date(d.expiration_date+'T00:00:00');
+      const days=Math.floor((exp-new Date())/86400000);
+      const expStr=exp.toLocaleDateString('pt-BR');
+      let color='var(--gray3)',label=expStr;
+      if(days<0){color='var(--p1)';label=expStr+' ⚠ VENCIDO';}
+      else if(days<=30){color='var(--p1)';label=expStr+` (vence em ${days}d)`;}
+      else if(days<=60){color='var(--p2)';label=expStr+` (vence em ${days}d)`;}
+      else {color='var(--p3)';label=expStr+' ✓';}
+      expWarn=`<div style="font-size:11px;color:${color};font-weight:600;margin-top:2px">📅 ${label}</div>`;
+    }
+    const sizeKb=d.size_bytes?Math.round(d.size_bytes/1024)+' KB':'';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid #F0EAE2">
+      <div style="font-size:22px">${docType==='contract'?'📄':'🛡️'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name||'document'}</div>
+        <div style="font-size:11px;color:var(--gray3)">${sizeKb} · ${new Date(d.created_at).toLocaleDateString('pt-BR')}</div>
+        ${expWarn}
+      </div>
+      <button onclick="downloadVendorDoc('${d.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue)">⬇</button>
+      <button onclick="deleteVendorDoc('${d.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+async function uploadVendorDoc(){
+  if(!isCEO()) return;
+  const fileEl=document.getElementById('vdm-file');
+  const file=fileEl.files[0];
+  if(!file){toast('Selecione um arquivo',false);return;}
+  if(file.size>10*1024*1024){toast('Arquivo maior que 10MB',false);return;}
+  const vendorId=document.getElementById('vdm-vendor-id').value;
+  const docType=document.getElementById('vdm-doc-type').value;
+  const expiry=docType==='insurance'?document.getElementById('vdm-expiry').value:null;
+  const progEl=document.getElementById('vdm-progress');
+  progEl.style.display='block';
+  progEl.textContent='Enviando '+file.name+'...';
+  // Build a unique storage path
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const ts=Date.now();
+  const storagePath=`${vendorId}/${docType}/${ts}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  // Upload to Storage
+  const up=await sb.storage.from('vendor-docs').upload(storagePath,file,{contentType:file.type||'application/octet-stream'});
+  if(up.error){console.error('upload',up.error);toast('Erro no upload',false);progEl.style.display='none';return;}
+  // Insert row in vendor_docs
+  const payload={
+    vendor_id:vendorId,
+    doc_type:docType,
+    name:file.name,
+    storage_path:storagePath,
+    mime:file.type||'',
+    size_bytes:file.size,
+    expiration_date:expiry||null,
+  };
+  const {data,error}=await sb.from('vendor_docs').insert(payload).select().single();
+  if(error){console.error('doc insert',error);toast('Erro ao registrar documento',false);progEl.style.display='none';return;}
+  if(!vendorDocs[vendorId]) vendorDocs[vendorId]=[];
+  vendorDocs[vendorId].unshift(data);
+  fileEl.value='';
+  document.getElementById('vdm-expiry').value='';
+  progEl.style.display='none';
+  renderVendorDocsList(vendorId,docType);
+  showSaved();
+}
+
+async function downloadVendorDoc(docId){
+  // Find the doc
+  let doc=null;
+  Object.values(vendorDocs).forEach(list=>{
+    const d=list.find(x=>x.id===docId);
+    if(d) doc=d;
+  });
+  if(!doc) return;
+  // Generate a signed URL (valid for 60s) and open it
+  const {data,error}=await sb.storage.from('vendor-docs').createSignedUrl(doc.storage_path,60);
+  if(error){console.error('signed url',error);toast('Erro ao gerar link',false);return;}
+  window.open(data.signedUrl,'_blank');
+}
+
+async function deleteVendorDoc(docId){
+  if(!isCEO()) return;
+  let doc=null,vendorId=null;
+  Object.entries(vendorDocs).forEach(([vid,list])=>{
+    const d=list.find(x=>x.id===docId);
+    if(d){doc=d;vendorId=vid;}
+  });
+  if(!doc) return;
+  if(!confirm('Excluir documento "'+doc.name+'"?')) return;
+  // Remove from storage
+  await sb.storage.from('vendor-docs').remove([doc.storage_path]);
+  // Remove DB row
+  const {error}=await sb.from('vendor_docs').delete().eq('id',docId);
+  if(error){console.error('doc delete',error);toast('Erro ao excluir',false);return;}
+  vendorDocs[vendorId]=vendorDocs[vendorId].filter(x=>x.id!==docId);
+  renderVendorDocsList(vendorId,doc.doc_type);
+  showSaved();
+}
+
+// Refresh supplier dropdowns currently rendered in Actual Costs (if any)
+function refreshActualCostsVendorDropdowns(){
+  // Re-render currently visible Actual Costs tables
+  if(CID){
+    GROUPS.forEach(g=>renderItems('act',g.id));
+  }
+}
+
 // ═══ CLIENTES (CEO ONLY) ═══════════════════════════════════════════════
 async function loadClients(){
   if(!isCEO()){clients=[];return;}
@@ -3507,6 +3927,7 @@ function sp(id,el,cls){
   if(id==='listing' && isCEO()) loadListingForm();
   if(id==='recurring' && isCEO()) loadRecurringDetail();
   if(id==='clients' && isCEO()) renderClients();
+  if(id==='vendors' && isCEO()) renderVendors();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -3551,6 +3972,8 @@ function toast(msg,ok=true){
 
 document.getElementById('modal-new').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('modal-client').addEventListener('click',e=>{if(e.target===e.currentTarget)closeClientModal();});
+document.getElementById('modal-vendor').addEventListener('click',e=>{if(e.target===e.currentTarget)closeVendorModal();});
+document.getElementById('modal-vendor-docs').addEventListener('click',e=>{if(e.target===e.currentTarget)closeVendorDocsModal();});
 document.getElementById('modal-add-item').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddItemModal();});
 document.getElementById('modal-add-task').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddTaskModal();});
 document.getElementById('modal-att').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAttachModal();});
