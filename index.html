@@ -576,15 +576,6 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div id="ec-he-list"></div>
         </div>
 
-        <!-- Card 9: Refund (read-only, auto-calculated from Refund invoices) -->
-        <div class="card" style="margin-top:16px">
-          <div class="card-title">💸 Refund <span style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:8px">auto-calculated from Refund invoices (paid)</span></div>
-          <div class="fg"><label>Refund value ($)</label>
-            <input id="pi-refund" type="text" readonly style="background:#FAF7F3;color:var(--p3);font-weight:700;cursor:not-allowed" value="$0">
-          </div>
-          <div style="font-size:11px;color:var(--gray3);margin-top:6px;font-style:italic">💡 Create invoices of type <strong>💸 Refund</strong> for this project. The amount is summed here automatically (regardless of status).</div>
-        </div>
-
         <!-- Card 10: Profit Summary + Distribution -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">📊 Profit Summary &amp; Distribution</div>
@@ -611,15 +602,10 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
                 <input id="pi-pct-dec" type="number" min="0" max="100" step="0.1" placeholder="50" value="50" oninput="onPctChange('dec')">
               </div>
             </div>
-            <div class="fgrid" style="margin-top:6px">
-              <div class="fg"><label>Refund <span style="font-size:10px;color:var(--gray3)">— from above</span></label>
-                <input id="pi-refund-mirror" type="text" disabled style="background:#FAF7F3;color:var(--gray3)" value="$0">
-              </div>
-              <div class="fg"></div>
-            </div>
-            <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px">
-              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l">👤 Client recebe</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Client do lucro</div></div>
-              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l">🏢 DEC recebe</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC do lucro + Refund</div></div>
+            <div class="dgrid" style="grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px">
+              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l">👤 Client receives</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Client of profit</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l">🏢 DEC receives</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC of profit</div></div>
+              <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l">💸 Refund</div><div class="kpi-v" id="pft-refund">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">From Refund invoices · info only (not summed)</div></div>
             </div>
             <div style="margin-top:14px;padding:12px 14px;background:#FAF7F3;border-left:3px solid var(--gray3);border-radius:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <span style="color:var(--navy);font-weight:700;font-size:13px">📋 DEC Invoice #:</span>
@@ -2693,12 +2679,9 @@ function recalcProfit(){
   const lenderSale=+p.lender_costs_sale||0;
   // Refund agora é auto-calculado das invoices tipo "refund" (apenas as pagas)
   const refund=calcProjectInvoicesRefund(CID);
-  // Update read-only display
-  const refEl=document.getElementById('pi-refund');
-  if(refEl) refEl.value=fmt(refund);
-  // Mirror refund display in the distribution card
-  const refMirror=document.getElementById('pi-refund-mirror');
-  if(refMirror) refMirror.value=fmt(refund);
+  // Update Refund KPI (info only — not summed into DEC's share anymore)
+  const refundKpi=document.getElementById('pft-refund');
+  if(refundKpi) refundKpi.textContent=fmt(refund);
   // Extra costs subtotals
   const decTotal=calcExtraSubtotal('dec_invoice');
   const recTotal=calcExtraSubtotal('recurring');
@@ -2745,8 +2728,7 @@ function recalcProfit(){
   const pctClient=parseFloat(v('pi-pct-client'))||0;
   const pctDec=parseFloat(v('pi-pct-dec'))||0;
   const cliShare=actProfit*pctClient/100;
-  const decShareRaw=actProfit*pctDec/100;
-  const decShare=decShareRaw+refund; // DEC recebe = % do lucro + Refund
+  const decShare=actProfit*pctDec/100; // DEC receives = % of profit ONLY (refund is no longer added)
   const cliEl=document.getElementById('pft-client');
   const decEl=document.getElementById('pft-dec');
   if(cliEl){
