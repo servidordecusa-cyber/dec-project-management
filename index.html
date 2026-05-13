@@ -521,17 +521,6 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           </div>
         </div>
 
-        <!-- Card 3: Renovation (auto-pulled) -->
-        <div class="card" style="margin-top:16px;background:#FAF7F3;border:1px solid #E1E8F0">
-          <div class="card-title">🔨 Renovation <span style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:8px">auto-calculated from Estimate &amp; Actual Costs</span></div>
-          <div class="dgrid" style="grid-template-columns:repeat(4,1fr)">
-            <div class="kpi" style="border-left-color:var(--blue)"><div class="kpi-l">📋 Estimated</div><div class="kpi-v" id="rn-est">$0</div></div>
-            <div class="kpi" style="border-left-color:var(--p2)"><div class="kpi-l">💰 Actual Spent</div><div class="kpi-v" id="rn-act">$0</div></div>
-            <div class="kpi" style="border-left-color:var(--gray3)"><div class="kpi-l">📊 Variance</div><div class="kpi-v" id="rn-var">$0</div></div>
-            <div class="kpi" style="border-left-color:var(--p4)"><div class="kpi-l">📅 Days under construction</div><div class="kpi-v" id="rn-days">—</div></div>
-          </div>
-        </div>
-
         <!-- Card 4: Sale & Profit -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">💵 Sale &amp; Profit</div>
@@ -2549,24 +2538,31 @@ function onPctChange(which){
 function recalcProfit(){
   if(!CID) return;
   const p=propertyMap[CID]||{};
-  // Renovation card — pulled from budgetMap
+  // Renovation card — pulled from budgetMap (Dashboard só — cliente não vê isso na Property & Finance)
   const totEst=calcRoomTotal(CID,'est');
   const totAct=calcRoomTotal(CID,'actual');
   const variance=totAct-totEst;
-  document.getElementById('rn-est').textContent=fmt(totEst);
-  document.getElementById('rn-act').textContent=fmt(totAct);
+  const rnEstEl=document.getElementById('rn-est');
+  if(rnEstEl) rnEstEl.textContent=fmt(totEst);
+  const rnActEl=document.getElementById('rn-act');
+  if(rnActEl) rnActEl.textContent=fmt(totAct);
   const varEl=document.getElementById('rn-var');
-  varEl.textContent=(variance>=0?'+':'')+fmt(Math.abs(variance));
-  varEl.style.color=variance>0?'var(--p1)':variance<0?'var(--p3)':'var(--gray3)';
+  if(varEl){
+    varEl.textContent=(variance>=0?'+':'')+fmt(Math.abs(variance));
+    varEl.style.color=variance>0?'var(--p1)':variance<0?'var(--p3)':'var(--gray3)';
+  }
   // Days under construction
   const proj=projects.find(x=>x.id===CID);
-  if(proj&&proj.start_date){
-    const startD=new Date(proj.start_date);
-    const endD=proj.end_date?new Date(proj.end_date):new Date();
-    const days=Math.max(0,Math.round((endD-startD)/86400000));
-    document.getElementById('rn-days').textContent=days+' days'+(proj.end_date?'':' (ongoing)');
-  } else {
-    document.getElementById('rn-days').textContent='—';
+  const rnDaysEl=document.getElementById('rn-days');
+  if(rnDaysEl){
+    if(proj&&proj.start_date){
+      const startD=new Date(proj.start_date);
+      const endD=proj.end_date?new Date(proj.end_date):new Date();
+      const days=Math.max(0,Math.round((endD-startD)/86400000));
+      rnDaysEl.textContent=days+' days'+(proj.end_date?'':' (ongoing)');
+    } else {
+      rnDaysEl.textContent='—';
+    }
   }
   // Acquisition totals (live from inputs)
   const {wholesaler, salesTotal}=recalcAcquisition();
