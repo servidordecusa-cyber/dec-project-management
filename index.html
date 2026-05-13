@@ -548,7 +548,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Actual Spent + Costs + Recurring + Documents + High End</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Invoices Operacionais + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
         </div>
@@ -1313,6 +1313,15 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="fg"><label>Projeto (opcional)</label>
         <select id="im-project"></select>
       </div>
+    </div>
+    <div class="fgrid">
+      <div class="fg"><label>Tipo *</label>
+        <select id="im-kind">
+          <option value="operational">🔨 Operacional (durante a obra)</option>
+          <option value="final_roi">💎 Final ROI (após a venda)</option>
+        </select>
+      </div>
+      <div class="fg"></div>
     </div>
     <div class="fg"><label>Descrição *</label><input id="im-description" placeholder="e.g. On-site supervision of pool construction"></div>
     <div class="fg"><label>Endereço da propriedade</label><input id="im-property-address" placeholder="e.g. Lot 407 / Bolsena Dr, Montverde, FL 34576"></div>
@@ -2578,10 +2587,12 @@ function recalcProfit(){
   const docTotal=calcExtraSubtotal('documents');
   const heTotal=calcExtraSubtotal('high_end');
   const extraTotal=decTotal+recTotal+docTotal+heTotal;
-  // Total Investido = EMD + Cash + Actual Spent + Costs + Recurring + Documents + High End
+  // Total Investido = EMD + Cash + INVOICES OPERACIONAIS + Costs + Recurring + Documents + High End
+  // (mudou de "Actual Spent" para soma das invoices Operacionais emitidas ao cliente)
   const emd=+p.emd_cash||0;
   const cash=+p.cash||0;
-  const totalInvested=emd+cash+totAct+decTotal+recTotal+docTotal+heTotal;
+  const invoicesOp=calcProjectInvoicesOperational(CID);
+  const totalInvested=emd+cash+invoicesOp+decTotal+recTotal+docTotal+heTotal;
   const tiEl=document.getElementById('pi-total-invested');
   if(tiEl) tiEl.textContent=fmt(totalInvested);
   // Estimated profit (legacy formula, just shows expectation)
@@ -2897,42 +2908,68 @@ function _initDreSelectors(){
 // Calcular DRE de um período (mês ou range)
 // startKey, endKey = 'YYYY-MM' inclusive
 function calcDREPeriod(startKey,endKey){
-  // RECEITAS
-  // 1) Invoices (cliente) - status 'paid' OR 'open', usar invoice.date
-  let invoicesPaid=0,invoicesOpen=0;
+  // ═══ DRE DA DEC (modelo de margem operacional + ROI final) ═══
+  // RECEITAS:
+  //   Frente 1 — Invoices operacionais PAGAS (cliente paga DEC durante a obra)
+  //   Frente 2 — Invoices Final ROI PAGAS (cliente paga DEC após a venda — 50% do lucro)
+  // CUSTOS da DEC:
+  //   Actual Costs (fornecedores) + Costs (DEC Invoice items)
+  //   + Documents + High End  (alocados ao mês baseado em invoice.date do projeto)
+  // DESPESAS:
+  //   Recurring (Energy, Water, etc.) — alocadas no mês exato
+  // Refund: NUNCA entra como receita
+
+  // 1) Invoices paid filtered by date range
+  let opPaid=0,opOpen=0,roiPaid=0,roiOpen=0;
   invoices.forEach(inv=>{
     if(inv.status==='cancelled') return;
     const key=(inv.date||'').slice(0,7);
     if(!key||key<startKey||key>endKey) return;
-    if(inv.status==='paid') invoicesPaid+=(+inv.amount||0);
-    else if(inv.status==='open') invoicesOpen+=(+inv.amount||0);
+    const k=inv.kind||'operational';
+    const isPaid=inv.status==='paid';
+    const v=+inv.amount||0;
+    if(k==='final_roi'){
+      if(isPaid) roiPaid+=v; else if(inv.status==='open') roiOpen+=v;
+    } else {
+      if(isPaid) opPaid+=v; else if(inv.status==='open') opOpen+=v;
+    }
   });
-  // 2) Vendas de imóveis - usar property_info.sale_date
-  let salesRevenue=0,salesProjects=[];
-  projects.forEach(p=>{
-    const prop=propertyMap[p.id]||{};
-    if(!prop.sale_date) return;
-    const key=prop.sale_date.slice(0,7);
-    if(key<startKey||key>endKey) return;
-    salesRevenue+=(+prop.final_sale_price||0);
-    salesProjects.push(p);
+
+  // 2) DEC's direct costs — allocated by project, based on which projects had invoices in the period
+  // Pegar projetos únicos que tiveram invoice no período
+  const projectsInPeriod=new Set();
+  invoices.forEach(inv=>{
+    if(inv.status==='cancelled') return;
+    const key=(inv.date||'').slice(0,7);
+    if(!key||key<startKey||key>endKey) return;
+    if(inv.project_id) projectsInPeriod.add(inv.project_id);
   });
-  // CUSTOS DIRETOS (apenas dos projetos vendidos no período — regime de competência)
-  let renovCost=0,emdCash=0,hardMoney=0,sellingCosts=0,lenderSale=0,decInvoiceCost=0,docCost=0,heCost=0;
-  salesProjects.forEach(p=>{
-    const prop=propertyMap[p.id]||{};
-    renovCost+=calcRoomTotal(p.id,'actual');
-    emdCash+=(+prop.emd_cash||0);
-    hardMoney+=(+prop.cash||0);
-    sellingCosts+=(+prop.selling_costs||0);
-    lenderSale+=(+prop.lender_costs_sale||0);
-    decInvoiceCost+=(extraCostsMap[p.id]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    docCost+=(extraCostsMap[p.id]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    heCost+=(extraCostsMap[p.id]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  // For each project, sum its actual costs + DEC Invoice + docs + high end
+  // (Proportional allocation: this period gets what was invoiced, but we count FULL cost only when project is closed/sold in the period)
+  // SIMPLIFICAÇÃO: como o modelo da DEC é "invoice = receita do mês", o custo precisa também ser alocado mensalmente.
+  // Por enquanto, distribuímos os custos do projeto proporcionalmente ao % de invoices emitidas no período vs total de invoices do projeto.
+  let actualCosts=0,decInvoiceCost=0,docCost=0,heCost=0;
+  projectsInPeriod.forEach(pid=>{
+    const projAllInvoices=invoices
+      .filter(i=>i.project_id===pid && i.status!=='cancelled')
+      .reduce((s,i)=>s+(+i.amount||0),0);
+    const projPeriodInvoices=invoices
+      .filter(i=>i.project_id===pid && i.status!=='cancelled' && (i.date||'').slice(0,7)>=startKey && (i.date||'').slice(0,7)<=endKey)
+      .reduce((s,i)=>s+(+i.amount||0),0);
+    if(projAllInvoices<=0) return;
+    const ratio=projPeriodInvoices/projAllInvoices;
+    const totAct=calcRoomTotal(pid,'actual');
+    const totDec=(extraCostsMap[pid]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const totDoc=(extraCostsMap[pid]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const totHe=(extraCostsMap[pid]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    actualCosts+=totAct*ratio;
+    decInvoiceCost+=totDec*ratio;
+    docCost+=totDoc*ratio;
+    heCost+=totHe*ratio;
   });
-  // DESPESAS RECORRENTES — mês a mês (alocadas no mês correspondente)
+
+  // 3) Recurring expenses — exact months
   let recurringExpense=0;
-  // Build set of months in range
   const monthsInRange=[];
   const [sY,sM]=startKey.split('-').map(Number);
   const [eY,eM]=endKey.split('-').map(Number);
@@ -2941,7 +2978,6 @@ function calcDREPeriod(startKey,endKey){
     monthsInRange.push({y,m});
     m++; if(m>12){m=1;y++;}
   }
-  // For each project's recurring_detail, sum amounts of matching months
   Object.entries(recurringMap).forEach(([pid,items])=>{
     const proj=projects.find(p=>p.id===pid);
     if(!proj) return;
@@ -2962,16 +2998,25 @@ function calcDREPeriod(startKey,endKey){
       });
     });
   });
-  const receitaBruta=invoicesPaid+salesRevenue;
-  const totalCustosDirecto=renovCost+decInvoiceCost+docCost+heCost+sellingCosts+lenderSale;
-  const lucroBruto=receitaBruta-totalCustosDirecto;
-  const lucroLiquido=lucroBruto-recurringExpense;
+
+  // Compute fronts and totals
+  const totalCusto=actualCosts+decInvoiceCost+docCost+heCost+recurringExpense;
+  const margemOperacional=opPaid-(actualCosts+decInvoiceCost+docCost+heCost);
+  const receitaTotal=opPaid+roiPaid;
+  const lucroBruto=opPaid-(actualCosts+decInvoiceCost+docCost+heCost);
+  // Lucro líquido DEC = (op + roi) - todos os custos - recurring
+  const lucroLiquido=receitaTotal-totalCusto;
+
   return {
     startKey,endKey,
-    invoicesPaid,invoicesOpen,salesRevenue,salesProjectsCount:salesProjects.length,
-    receitaBruta,
-    renovCost,decInvoiceCost,docCost,heCost,sellingCosts,lenderSale,
-    totalCustosDirecto,lucroBruto,recurringExpense,lucroLiquido
+    opPaid,opOpen,roiPaid,roiOpen,
+    receitaTotal,
+    actualCosts,decInvoiceCost,docCost,heCost,
+    totalCustosDiretosDec:actualCosts+decInvoiceCost+docCost+heCost,
+    margemOperacional,
+    recurringExpense,
+    totalCusto,
+    lucroLiquido,
   };
 }
 
@@ -2980,30 +3025,32 @@ function _fmtSignedNeg(n){return (n>=0?'':'-')+fmt(Math.abs(n));}
 function _dreSectionHTML(d,title){
   return `
     <div class="card" style="margin-bottom:14px">
-      <div style="background:#3D271A;color:#D5C9BC;padding:10px 14px;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:8px 8px 0 0;margin:-15px -15px 14px">${title}</div>
+      <div style="background:#3D271A;color:#D5C9BC;padding:10px 14px;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:8px 8px 0 0;margin:-15px -15px 14px">${title} — DRE da DEC</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px">RECEITA BRUTA</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🧾 Faturamento (Invoices pagas)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600">${fmt(d.invoicesPaid)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🏠 Vendas de imóveis ${d.salesProjectsCount>0?'('+d.salesProjectsCount+' projeto(s))':''}</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600">${fmt(d.salesRevenue)}</td></tr>
-        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p3);text-transform:uppercase;font-size:11px">TOTAL RECEITA</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p3);font-size:14px">${fmt(d.receitaBruta)}</td></tr>
 
-        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) CUSTOS DIRETOS (projetos vendidos no período)</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🔨 Reforma (Actual Costs)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.renovCost)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📋 DEC Invoice (custos terceirizados)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.decInvoiceCost)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📄 Documentos</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.docCost)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">✨ High End</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.heCost)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💸 Selling costs</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.sellingCosts)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🏦 Lender costs (venda)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.lenderSale)}</td></tr>
-        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL CUSTOS DIRETOS</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.totalCustosDirecto)}</td></tr>
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px">FRENTE 1 — MARGEM OPERACIONAL</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🧾 Invoices Operacionais (pagas)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--p3)">${fmt(d.opPaid)}</td></tr>
+        ${d.opOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Em aberto (não conta)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.opOpen)}</td></tr>`:''}
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🔨 (−) Actual Costs (fornecedores)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.actualCosts)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📋 (−) Costs (DEC Invoice items)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.decInvoiceCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📄 (−) Documentos</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.docCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">✨ (−) High End</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.heCost)}</td></tr>
+        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:${d.margemOperacional>=0?'var(--p3)':'var(--p1)'};text-transform:uppercase;font-size:11px">= MARGEM OPERACIONAL</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:${d.margemOperacional>=0?'var(--p3)':'var(--p1)'};font-size:14px">${_fmtSignedNeg(d.margemOperacional)}</td></tr>
 
-        <tr style="background:#FAF3E0"><td style="padding:10px 12px;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:12px;letter-spacing:.5px">(=) LUCRO BRUTO</td><td style="padding:10px 12px;text-align:right;font-weight:800;color:var(--gold);font-size:15px">${_fmtSignedNeg(d.lucroBruto)}</td></tr>
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">FRENTE 2 — ROI FINAL (50% projetos vendidos)</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💎 Invoices Final ROI (pagas)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--gold)">${fmt(d.roiPaid)}</td></tr>
+        ${d.roiOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Em aberto (não conta)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.roiOpen)}</td></tr>`:''}
+
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF3E0;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:12px;letter-spacing:.5px;border-top:8px solid #fff">RECEITA TOTAL DA DEC (F1 + F2)</td></tr>
+        <tr style="background:#FAF3E0"><td style="padding:9px 12px;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:11px">= TOTAL RECEITA</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--gold);font-size:14px">${fmt(d.receitaTotal)}</td></tr>
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) DESPESAS RECORRENTES</td></tr>
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📅 Energy, Water, HOA, Loan, Taxes, etc.</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.recurringExpense)}</td></tr>
         <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL DESPESAS</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.recurringExpense)}</td></tr>
 
-        <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) LUCRO LÍQUIDO</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#B8860B">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
+        <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) LUCRO LÍQUIDO DA DEC</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#B8860B">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
       </table>
+      <div style="font-size:10px;color:var(--gray3);font-style:italic;margin-top:10px;padding:8px 12px;background:#FAF7F3;border-left:3px solid var(--gold);border-radius:0 6px 6px 0">💡 Refund não entra como faturamento (é apenas repasse). Apenas invoices <strong>pagas</strong> contam.</div>
     </div>`;
 }
 
@@ -3045,18 +3092,16 @@ function renderDRE(){
     months.forEach(m=>{html+=`<th style="padding:8px 6px;background:#FAF7F3;text-align:right;border-bottom:2px solid var(--gray2);font-size:10px;min-width:80px">${m.label}</th>`;});
     html+=`</tr></thead><tbody>`;
     const rows=[
-      ['🧾 Faturamento','invoicesPaid','#3D271A'],
-      ['🏠 Vendas imóveis','salesRevenue','#3D271A'],
-      ['📈 RECEITA BRUTA','receitaBruta','var(--p3)'],
-      ['🔨 Reforma','renovCost','#655A4E'],
-      ['📋 DEC Invoice','decInvoiceCost','#655A4E'],
+      ['🧾 Op. (pagas)','opPaid','#3D271A'],
+      ['💎 ROI Final','roiPaid','var(--gold)'],
+      ['📈 RECEITA TOTAL','receitaTotal','var(--p3)'],
+      ['🔨 Actual Costs','actualCosts','#655A4E'],
+      ['📋 Costs','decInvoiceCost','#655A4E'],
       ['📄 Documentos','docCost','#655A4E'],
       ['✨ High End','heCost','#655A4E'],
-      ['💸 Selling','sellingCosts','#655A4E'],
-      ['🏦 Lender venda','lenderSale','#655A4E'],
-      ['📉 TOTAL CUSTOS','totalCustosDirecto','var(--p1)'],
+      ['📉 TOTAL CUSTOS','totalCustosDiretosDec','var(--p1)'],
       ['📅 Recorrentes','recurringExpense','#655A4E'],
-      ['💎 LUCRO LÍQUIDO','lucroLiquido','var(--gold)'],
+      ['💎 LUCRO LÍQUIDO DEC','lucroLiquido','var(--gold)'],
     ];
     rows.forEach((r,idx)=>{
       const [label,key,color]=r;
@@ -3077,6 +3122,17 @@ function renderDRE(){
 }
 
 // ═══ FINANCEIRO (CEO ONLY) ═════════════════════════════════════════════
+// Sum invoices of a given project filtered by kind
+// kind: 'operational' (default) | 'final_roi' | 'all'
+function calcProjectInvoices(pid,kind){
+  if(!pid) return 0;
+  return invoices
+    .filter(i=>i.project_id===pid && i.status!=='cancelled' && (kind==='all'||((i.kind||'operational')===kind)))
+    .reduce((s,i)=>s+(+i.amount||0),0);
+}
+function calcProjectInvoicesOperational(pid){return calcProjectInvoices(pid,'operational');}
+function calcProjectInvoicesFinalROI(pid){return calcProjectInvoices(pid,'final_roi');}
+
 // Returns full financial breakdown for a single project
 function calcProjectFinancials(pid){
   const prop=propertyMap[pid]||{};
@@ -3085,16 +3141,19 @@ function calcProjectFinancials(pid){
   const sale=+prop.final_sale_price||0;
   const selling=+prop.selling_costs||0;
   const lenderSale=+prop.lender_costs_sale||0;
-  const actCosts=calcRoomTotal(pid,'actual');
+  const actCosts=calcRoomTotal(pid,'actual'); // What DEC actually spent on vendors
   const dec=(extraCostsMap[pid]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
   const doc=(extraCostsMap[pid]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
   const he=(extraCostsMap[pid]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
   const rec=calcRCDTotal(pid);
-  const totalInvested=emd+cash+actCosts+dec+doc+he+rec;
+  // Operational invoices = what client paid DEC for the project (= client's investment)
+  const invoicesOp=calcProjectInvoicesOperational(pid);
+  // Total Investido (client's perspective): EMD + Cash + Invoices Op + Costs + Recurring + Docs + High End
+  const totalInvested=emd+cash+invoicesOp+dec+doc+he+rec;
   const grossProfit=sale-selling-lenderSale;
   const netProfit=sale>0?(grossProfit-totalInvested):0;
   const roi=totalInvested>0&&sale>0?(netProfit/totalInvested*100):0;
-  return {emd,cash,sale,selling,lenderSale,actCosts,dec,doc,he,rec,totalInvested,grossProfit,netProfit,roi};
+  return {emd,cash,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
 }
 
 function renderFinancial(){
@@ -3401,11 +3460,12 @@ function renderInvoices(){
     const meta=INVOICE_STATUS_META[i.status]||INVOICE_STATUS_META.open;
     const dateBR=i.date?new Date(i.date+'T00:00:00').toLocaleDateString('pt-BR'):'—';
     const rowStyle=i.status==='cancelled'?'opacity:.6;text-decoration:line-through':'';
+    const kindIcon=i.kind==='final_roi'?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#B8860B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>':'<span title="Operacional" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowStyle}">
       <td style="padding:10px 12px;font-weight:700;color:var(--navy)">#${i.invoice_number}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${cName}</td>
-      <td style="padding:10px 12px;color:var(--text);font-size:12px">${(i.description||'').slice(0,60)}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${kindIcon}${(i.description||'').slice(0,55)}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--gold)">${fmt(i.amount||0)}</td>
       <td style="padding:10px 12px;text-align:center">
         <span style="background:${meta.bg};color:${meta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${meta.label}</span>
@@ -3442,6 +3502,7 @@ function openInvoiceModal(id){
     document.getElementById('im-property-address').value=inv.property_address||'';
     document.getElementById('im-amount').value=inv.amount||'';
     document.getElementById('im-status').value=inv.status||'open';
+    document.getElementById('im-kind').value=inv.kind||'operational';
     document.getElementById('im-payment-method').value=inv.payment_method||'';
     document.getElementById('im-paid-date').value=inv.paid_date||'';
     document.getElementById('im-notes').value=inv.notes||'';
@@ -3453,6 +3514,7 @@ function openInvoiceModal(id){
       const el=document.getElementById(k);if(el) el.value='';
     });
     document.getElementById('im-status').value='open';
+    document.getElementById('im-kind').value='operational';
   }
   onInvoiceStatusChange();
   document.getElementById('modal-invoice').classList.add('open');
@@ -3482,6 +3544,7 @@ async function saveInvoice(){
     if(!confirm('Já existe uma invoice #'+num+'. Deseja continuar mesmo assim?')) return;
   }
   const status=document.getElementById('im-status').value||'open';
+  const kind=document.getElementById('im-kind').value||'operational';
   const payload={
     invoice_number:num,
     date,
@@ -3491,6 +3554,7 @@ async function saveInvoice(){
     property_address:document.getElementById('im-property-address').value||'',
     amount:Math.round(amount*100)/100,
     status,
+    kind,
     payment_method:status==='paid'?(document.getElementById('im-payment-method').value||''):'',
     paid_date:status==='paid'?(document.getElementById('im-paid-date').value||null):null,
     notes:document.getElementById('im-notes').value||'',
