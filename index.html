@@ -68,7 +68,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 /* PORTFOLIO */
 #view-portfolio{padding:26px}
-#view-home,#view-clients,#view-vendors,#view-invoices,#view-financial,#view-dre{padding:26px;display:none}
+#view-home,#view-clients,#view-vendors,#view-invoices,#view-fixed,#view-financial,#view-dre{padding:26px;display:none}
 /* Global tabs bar */
 .gtabs{background:#fff;border-bottom:1.5px solid var(--gray2);padding:0 26px;display:flex;gap:4px;flex-wrap:wrap;align-items:stretch;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .gtab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray3);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;font-family:inherit;background:transparent;border-left:0;border-right:0;border-top:0}
@@ -253,7 +253,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 @media(max-width:900px){.kpi-row{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}.trb{grid-template-columns:1fr 1fr}}
 @media print{
-  #login-screen,#app-loading,.topnav,.gtabs,#view-portfolio,#view-home,#view-clients,#view-vendors,#view-invoices,#view-financial,#view-dre,.sidebar,.btn,.no-print{display:none!important}
+  #login-screen,#app-loading,.topnav,.gtabs,#view-portfolio,#view-home,#view-clients,#view-vendors,#view-invoices,#view-fixed,#view-financial,#view-dre,.sidebar,.btn,.no-print{display:none!important}
   #view-project{display:block!important}.proj-layout{display:block}.proj-content{padding:10px}
   .page{display:block!important}.page:not(#page-dash){display:none!important}#page-dash{display:block!important}
   .card{box-shadow:none;border:1px solid #ddd}
@@ -311,6 +311,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   <button class="gtab" data-view="clients" onclick="goView('clients')"><span class="ico">👥</span>Clients</button>
   <button class="gtab" data-view="vendors" onclick="goView('vendors')"><span class="ico">🔨</span>Vendors</button>
   <button class="gtab" data-view="invoices" onclick="goView('invoices')"><span class="ico">🧾</span>Invoices</button>
+  <button class="gtab" data-view="fixed" onclick="goView('fixed')"><span class="ico">💼</span>Fixed Costs</button>
   <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico">💰</span>Financial</button>
   <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico">📊</span>DRE</button>
 </div>
@@ -1158,7 +1159,45 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   </div>
 </div>
 
-<!-- FINANCEIRO -->
+<!-- FIXED COSTS -->
+<div id="view-fixed">
+  <div class="port-hdr"><div><h2>💼 Fixed Costs</h2><p style="color:var(--gray3);margin-top:4px">Company administrative expenses · not project-related</p></div></div>
+  <div class="home-grid" id="fc-kpis"></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+      <div class="card-title" style="margin:0;border:0;padding:0">📋 Fixed Cost Entries
+        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="fc-count">— 0 entries</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="fc-flt-category" onchange="renderFixedCosts()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+          <option value="">All categories</option>
+        </select>
+        <input id="fc-flt-month" type="month" onchange="renderFixedCosts()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="document.getElementById('fc-flt-month').value='';renderFixedCosts()">Clear</button>
+        <input id="fc-search" type="text" placeholder="🔍 Search..." oninput="renderFixedCosts()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openFixedCostModal()">+ New Entry</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:900px">
+        <thead>
+          <tr style="background:#FAF7F3">
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px;width:110px">Date</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px;width:170px">Category</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Description</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:12px;width:120px">Amount</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Notes</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:100px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="fc-tbody"></tbody>
+        <tfoot id="fc-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCIAL -->
 <div id="view-financial">
   <div class="port-hdr"><div><h2>💰 Financial</h2><p style="color:var(--gray3);margin-top:4px">Management summary · all projects</p></div></div>
   <div class="home-grid" id="fin-kpis"></div>
@@ -1372,6 +1411,29 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   </div>
 </div>
 
+<!-- FIXED COST MODAL (create / edit) -->
+<div class="modal-overlay" id="modal-fixed">
+  <div class="modal">
+    <h2 id="fcm-title">➕ New Fixed Cost</h2>
+    <input type="hidden" id="fcm-id">
+    <div class="fgrid">
+      <div class="fg"><label>Date *</label><input id="fcm-date" type="date"></div>
+      <div class="fg"><label>Category *</label>
+        <select id="fcm-category">
+          <option value="">— Select —</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Description *</label><input id="fcm-description" placeholder="e.g. Office rent — May 2026"></div>
+    <div class="fgrid">
+      <div class="fg"><label>Amount *</label><input id="fcm-amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="fg"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="fcm-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Additional notes..."></textarea></div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="closeFixedCostModal()">Cancel</button><button class="btn btn-primary" onclick="saveFixedCost()">Save →</button></div>
+  </div>
+</div>
+
 <!-- ADD ITEM MODAL -->
 <div class="modal-overlay" id="modal-add-item">
   <div class="modal" style="max-width:440px">
@@ -1456,6 +1518,7 @@ let vendors=[];      // [{id, name, specialty, address, email, phone, tax_id, no
 let vendorDocs={};   // {vendor_id: [{id, vendor_id, doc_type, name, storage_path, expiration_date, ...}]}
 let invoices=[];     // [{id, invoice_number, client_id, date, amount, ...}]
 let invoiceItems={}; // {invoice_id: [{id, description, amount, position}]}
+let fixedCosts=[];   // [{id, date, category, description, amount, notes}]
 let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
 
@@ -1674,24 +1737,26 @@ async function loadAllData(){
   await loadVendors();
   // Load invoices (CEO-only)
   await loadInvoices();
+  // Load fixed costs (CEO-only)
+  await loadFixedCosts();
   // Populate dropdowns (after both clients and projects loaded)
   populateClientDropdowns();
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','vendors','invoices','financial','dre'];
+const GLOBAL_VIEWS=['home','portfolio','clients','vendors','invoices','fixed','financial','dre'];
 
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','vendors','invoices','financial','dre'];
+  const ceoOnly=['home','clients','vendors','invoices','fixed','financial','dre'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-vendors','view-invoices','view-financial','view-dre'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-vendors','view-invoices','view-fixed','view-financial','view-dre'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -1714,6 +1779,7 @@ function goView(view){
   else if(view==='clients' && isCEO()) renderClients();
   else if(view==='vendors' && isCEO()) renderVendors();
   else if(view==='invoices' && isCEO()) renderInvoices();
+  else if(view==='fixed' && isCEO()) renderFixedCosts();
   else if(view==='financial' && isCEO()) renderFinancial();
   else if(view==='dre' && isCEO()) renderDRE();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1879,7 +1945,7 @@ function openProject(id){
   const p=projects.find(x=>x.id===id);
   if(!p) return;
   // Hide ALL global views
-  ['view-portfolio','view-home','view-clients','view-vendors','view-invoices','view-financial','view-dre'].forEach(v=>{
+  ['view-portfolio','view-home','view-clients','view-vendors','view-invoices','view-fixed','view-financial','view-dre'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -3054,12 +3120,15 @@ function calcDREPeriod(startKey,endKey){
     });
   });
 
+  // Company-level fixed costs (Office, Salaries, etc.) — also allocated to period
+  const fixedCostsTotal=calcFixedCostsInPeriod(startKey,endKey);
+
   // Compute fronts and totals
-  const totalCusto=actualCosts+decInvoiceCost+docCost+heCost+recurringExpense;
+  const totalCusto=actualCosts+decInvoiceCost+docCost+heCost+recurringExpense+fixedCostsTotal;
   const margemOperacional=opPaid-(actualCosts+decInvoiceCost+docCost+heCost);
   const receitaTotal=opPaid+roiPaid;
   const lucroBruto=opPaid-(actualCosts+decInvoiceCost+docCost+heCost);
-  // Lucro líquido DEC = (op + roi) - todos os custos - recurring
+  // Lucro líquido DEC = (op + roi) - todos os custos - recurring - fixed
   const lucroLiquido=receitaTotal-totalCusto;
 
   return {
@@ -3070,6 +3139,7 @@ function calcDREPeriod(startKey,endKey){
     totalCostsDiretosDec:actualCosts+decInvoiceCost+docCost+heCost,
     margemOperacional,
     recurringExpense,
+    fixedCostsTotal,
     totalCusto,
     lucroLiquido,
   };
@@ -3099,9 +3169,10 @@ function _dreSectionHTML(d,title){
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF3E0;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:12px;letter-spacing:.5px;border-top:8px solid #fff">DEC TOTAL REVENUE (F1 + F2)</td></tr>
         <tr style="background:#FAF3E0"><td style="padding:9px 12px;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:11px">= TOTAL RECEITA</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--gold);font-size:14px">${fmt(d.receitaTotal)}</td></tr>
 
-        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) RECURRING EXPENSES</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📅 Energy, Water, HOA, Loan, Taxes, etc.</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.recurringExpense)}</td></tr>
-        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL EXPENSES</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.recurringExpense)}</td></tr>
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) EXPENSES</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📅 Project recurring (Energy, Water, HOA, Loan, Taxes, etc.)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.recurringExpense)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💼 Company fixed costs (Office, Salaries, Marketing, etc.)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.fixedCostsTotal)}</td></tr>
+        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL EXPENSES</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.recurringExpense+d.fixedCostsTotal)}</td></tr>
 
         <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) DEC NET PROFIT</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#B8860B">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
       </table>
@@ -3156,6 +3227,7 @@ function renderDRE(){
       ['✨ High End','heCost','#655A4E'],
       ['📉 TOTAL COSTS','totalCostsDiretosDec','var(--p1)'],
       ['📅 Recurring','recurringExpense','#655A4E'],
+      ['💼 Fixed Costs','fixedCostsTotal','#655A4E'],
       ['💎 DEC NET PROFIT','lucroLiquido','var(--gold)'],
     ];
     rows.forEach((r,idx)=>{
@@ -3436,6 +3508,202 @@ function renderHomeAlerts(){
     return;
   }
   wrap.innerHTML=alerts.map(a=>`<div style="padding:9px 12px;margin-bottom:6px;background:#FAF7F3;border-left:3px solid ${a.color};border-radius:5px;font-size:12px">${a.html}</div>`).join('');
+}
+
+// ═══ FIXED COSTS (CEO ONLY) ════════════════════════════════════════════
+const FIXED_COST_CATEGORIES=[
+  {key:'office',     label:'🏢 Office',                   color:'#3D271A'},
+  {key:'salaries',   label:'👥 Salaries',                 color:'#5C7A3F'},
+  {key:'professional',label:'💼 Professional services',   color:'#B85450'},
+  {key:'software',   label:'📱 Software & Tools',         color:'#7B5C8C'},
+  {key:'marketing',  label:'📢 Marketing',                color:'#C68A4A'},
+  {key:'insurance',  label:'🛡️ Insurance',                color:'#655A4E'},
+  {key:'travel',     label:'✈️ Travel',                   color:'#A86A2C'},
+  {key:'other',      label:'📌 Other',                    color:'#15120E'},
+];
+
+function _fcCategoryMeta(key){
+  return FIXED_COST_CATEGORIES.find(c=>c.key===key)||{label:key,color:'#655A4E'};
+}
+
+async function loadFixedCosts(){
+  if(!isCEO()){fixedCosts=[];return;}
+  const {data,error}=await sb.from('fixed_costs').select('*').order('date',{ascending:false});
+  if(error){console.error('fixed_costs load',error);return;}
+  fixedCosts=data||[];
+}
+
+function _populateFixedCostCategoryDropdowns(){
+  // Filter dropdown
+  const flt=document.getElementById('fc-flt-category');
+  if(flt && flt.options.length<=1){
+    FIXED_COST_CATEGORIES.forEach(c=>{
+      const opt=document.createElement('option');
+      opt.value=c.key;opt.textContent=c.label;
+      flt.appendChild(opt);
+    });
+  }
+  // Modal dropdown
+  const sel=document.getElementById('fcm-category');
+  if(sel && sel.options.length<=1){
+    FIXED_COST_CATEGORIES.forEach(c=>{
+      const opt=document.createElement('option');
+      opt.value=c.key;opt.textContent=c.label;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+function renderFixedCosts(){
+  if(!isCEO()) return;
+  _populateFixedCostCategoryDropdowns();
+  const q=(document.getElementById('fc-search')?.value||'').toLowerCase().trim();
+  const catFlt=document.getElementById('fc-flt-category')?.value||'';
+  const monthFlt=document.getElementById('fc-flt-month')?.value||''; // YYYY-MM
+  let list=fixedCosts.slice();
+  if(catFlt) list=list.filter(f=>f.category===catFlt);
+  if(monthFlt) list=list.filter(f=>(f.date||'').slice(0,7)===monthFlt);
+  if(q){
+    list=list.filter(f=>
+      (f.description||'').toLowerCase().includes(q)||
+      (f.notes||'').toLowerCase().includes(q)
+    );
+  }
+  // KPIs
+  const total=list.reduce((s,f)=>s+(+f.amount||0),0);
+  // Aggregate by category for top-3 display
+  const byCat={};
+  list.forEach(f=>{byCat[f.category]=(byCat[f.category]||0)+(+f.amount||0);});
+  const sortedCats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const kpisEl=document.getElementById('fc-kpis');
+  if(kpisEl){
+    let html=`
+      <div class="home-card gold"><div class="lbl">💰 Total in view</div><div class="val">${fmt(total)}</div><div class="sub">${list.length} entries</div></div>`;
+    sortedCats.forEach(([cat,sum])=>{
+      const meta=_fcCategoryMeta(cat);
+      html+=`<div class="home-card"><div class="lbl">${meta.label}</div><div class="val">${fmt(sum)}</div></div>`;
+    });
+    kpisEl.innerHTML=html;
+  }
+  // Table
+  const tbody=document.getElementById('fc-tbody');
+  document.getElementById('fc-count').textContent='— '+list.length+' entries';
+  if(list.length===0){
+    tbody.innerHTML=`<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No entries. Click on <strong>+ New Entry</strong> to start.</td></tr>`;
+    document.getElementById('fc-tfoot').innerHTML='';
+    return;
+  }
+  tbody.innerHTML=list.map(f=>{
+    const meta=_fcCategoryMeta(f.category);
+    const dateBR=f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):'—';
+    return `<tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
+      <td style="padding:10px 12px"><span style="background:#FAF7F3;color:${meta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${meta.label}</span></td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px;font-weight:600">${(f.description||'').slice(0,80)}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--p1)">${fmt(f.amount||0)}</td>
+      <td style="padding:10px 12px;color:var(--gray3);font-size:11px">${(f.notes||'').slice(0,50)}</td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="openFixedCostModal('${f.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue);margin-right:4px">✏️</button>
+        <button onclick="deleteFixedCost('${f.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+  // Footer total
+  document.getElementById('fc-tfoot').innerHTML=`
+    <tr style="background:#3D271A;color:#D5C9BC">
+      <td colspan="3" style="padding:11px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px">TOTAL (${list.length} entries)</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#B8860B">${fmt(total)}</td>
+      <td colspan="2"></td>
+    </tr>`;
+}
+
+function _fixedCostById(id){return fixedCosts.find(f=>f.id===id);}
+
+function openFixedCostModal(id){
+  _populateFixedCostCategoryDropdowns();
+  document.getElementById('fcm-id').value=id||'';
+  const title=document.getElementById('fcm-title');
+  if(id){
+    const f=_fixedCostById(id);
+    if(!f) return;
+    title.textContent='✏️ Edit Fixed Cost';
+    document.getElementById('fcm-date').value=f.date||'';
+    document.getElementById('fcm-category').value=f.category||'';
+    document.getElementById('fcm-description').value=f.description||'';
+    document.getElementById('fcm-amount').value=f.amount||'';
+    document.getElementById('fcm-notes').value=f.notes||'';
+  } else {
+    title.textContent='➕ New Fixed Cost';
+    document.getElementById('fcm-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('fcm-category').value='';
+    ['fcm-description','fcm-amount','fcm-notes'].forEach(k=>{
+      const el=document.getElementById(k);if(el) el.value='';
+    });
+  }
+  document.getElementById('modal-fixed').classList.add('open');
+  setTimeout(()=>document.getElementById('fcm-description').focus(),50);
+}
+
+function closeFixedCostModal(){
+  document.getElementById('modal-fixed').classList.remove('open');
+}
+
+async function saveFixedCost(){
+  if(!isCEO()){toast('CEO only',false);return;}
+  const date=document.getElementById('fcm-date').value;
+  const category=document.getElementById('fcm-category').value;
+  const description=document.getElementById('fcm-description').value.trim();
+  const amount=parseFloat(document.getElementById('fcm-amount').value);
+  if(!date){toast('Date is required',false);return;}
+  if(!category){toast('Category is required',false);return;}
+  if(!description){toast('Description is required',false);return;}
+  if(isNaN(amount)||amount<0){toast('Invalid amount',false);return;}
+  const id=document.getElementById('fcm-id').value;
+  const payload={
+    date,category,description,
+    amount:Math.round(amount*100)/100,
+    notes:document.getElementById('fcm-notes').value||'',
+  };
+  let result;
+  if(id){
+    result=await sb.from('fixed_costs').update(payload).eq('id',id).select().single();
+  } else {
+    result=await sb.from('fixed_costs').insert(payload).select().single();
+  }
+  if(result.error){console.error('fixed cost save',result.error);toast('Error saving',false);return;}
+  if(id){
+    const i=fixedCosts.findIndex(x=>x.id===id);
+    if(i>=0) fixedCosts[i]=result.data;
+  } else {
+    fixedCosts.push(result.data);
+  }
+  fixedCosts.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  renderFixedCosts();
+  closeFixedCostModal();
+  showSaved();
+}
+
+async function deleteFixedCost(id){
+  if(!isCEO()) return;
+  const f=_fixedCostById(id);
+  if(!f) return;
+  if(!confirm('Delete this entry?\n\n'+f.description+'\n'+fmt(f.amount)+'\n\nThis action cannot be undone.')) return;
+  const {error}=await sb.from('fixed_costs').delete().eq('id',id);
+  if(error){console.error('fixed cost delete',error);toast('Error deleting',false);return;}
+  fixedCosts=fixedCosts.filter(x=>x.id!==id);
+  renderFixedCosts();
+  showSaved();
+}
+
+// Sum of fixed costs in a date range (for DRE)
+function calcFixedCostsInPeriod(startKey,endKey){
+  // startKey/endKey are YYYY-MM strings (inclusive on both ends)
+  return fixedCosts.reduce((sum,f)=>{
+    const key=(f.date||'').slice(0,7);
+    if(!key) return sum;
+    if(key>=startKey && key<=endKey) return sum+(+f.amount||0);
+    return sum;
+  },0);
 }
 
 // ═══ INVOICES (CEO ONLY) ════════════════════════════════════════════════
@@ -5362,6 +5630,7 @@ document.getElementById('modal-client').addEventListener('click',e=>{if(e.target
 document.getElementById('modal-vendor').addEventListener('click',e=>{if(e.target===e.currentTarget)closeVendorModal();});
 document.getElementById('modal-vendor-docs').addEventListener('click',e=>{if(e.target===e.currentTarget)closeVendorDocsModal();});
 document.getElementById('modal-invoice').addEventListener('click',e=>{if(e.target===e.currentTarget)closeInvoiceModal();});
+document.getElementById('modal-fixed').addEventListener('click',e=>{if(e.target===e.currentTarget)closeFixedCostModal();});
 document.getElementById('modal-add-item').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddItemModal();});
 document.getElementById('modal-add-task').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddTaskModal();});
 document.getElementById('modal-att').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAttachModal();});
