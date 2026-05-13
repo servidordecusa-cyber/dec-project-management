@@ -336,6 +336,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="sb-lnk ceo-only" id="snav-property" onclick="sp('property',this,'')" style="display:none">💎 Property &amp; Finance</div>
         <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
         <div class="sb-lnk ceo-only" id="snav-recurring" onclick="sp('recurring',this,'')" style="display:none">🔄 Recurring Costs</div>
+        <div class="sb-lnk ceo-only" id="snav-clients" onclick="sp('clients',this,'')" style="display:none">👥 Clientes</div>
       </div>
       <div class="sb-sync"><div class="sync-dot"></div>Live · Auto-saved</div>
     </div>
@@ -397,7 +398,12 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="page-title">⚙️ Project Info</div><div class="page-sub">Edit project details · Changes save automatically</div>
         <div class="card">
           <div class="card-title">Details</div>
-          <div class="fgrid"><div class="fg"><label>Project Name *</label><input id="pf-name" oninput="debouncePF()"></div><div class="fg"><label>Customer</label><input id="pf-customer" oninput="debouncePF()"></div></div>
+          <div class="fgrid"><div class="fg"><label>Project Name *</label><input id="pf-name" oninput="debouncePF()"></div><div class="fg"><label>Customer *</label>
+            <div style="display:flex;gap:6px">
+              <select id="pf-customer" onchange="debouncePF()" style="flex:1"></select>
+              <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;white-space:nowrap" onclick="openClientModal()">+ Novo</button>
+            </div>
+          </div></div>
           <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="pf-pm" oninput="debouncePF()"></div><div class="fg"><label>Address</label><input id="pf-address" oninput="debouncePF()"></div></div>
           <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
@@ -998,6 +1004,39 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           </div>
         </div>
       </div>
+
+      <!-- Clientes (CEO ONLY) -->
+      <div class="page" id="page-clients">
+        <div class="page-title">👥 Clientes <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-sub">Base de clientes · usado em projetos e invoices</div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+            <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Clientes
+              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="cl-count">— 0 cliente(s)</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <input id="cl-search" type="text" placeholder="🔍 Buscar..." oninput="renderClients()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
+              <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openClientModal()">+ Novo Cliente</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:800px">
+              <thead>
+                <tr style="background:#FAF7F3">
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Nome</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Endereço</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Telefone</th>
+                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">EIN/Tax</th>
+                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:90px">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="cl-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1008,10 +1047,32 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 <div class="modal-overlay" id="modal-new">
   <div class="modal">
     <h2>➕ New Project</h2>
-    <div class="fgrid"><div class="fg"><label>Project Name *</label><input id="np-name" placeholder="e.g. 123 Oak Street"></div><div class="fg"><label>Customer</label><input id="np-customer"></div></div>
+    <div class="fgrid">
+      <div class="fg"><label>Project Name *</label><input id="np-name" placeholder="e.g. 123 Oak Street"></div>
+      <div class="fg"><label>Customer *</label>
+        <div style="display:flex;gap:6px">
+          <select id="np-customer" style="flex:1"></select>
+          <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;white-space:nowrap" onclick="openClientModal()">+ Novo</button>
+        </div>
+      </div>
+    </div>
     <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="np-pm"></div><div class="fg"><label>Address</label><input id="np-address"></div></div>
     <div class="fgrid"><div class="fg"><label>Start Date</label><input id="np-start" type="date"></div><div class="fg"><label>End Date</label><input id="np-end" type="date"></div></div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="createProject()">Create →</button></div>
+  </div>
+</div>
+
+<!-- CLIENT MODAL (create / edit) -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <h2 id="cm-title">➕ Novo Cliente</h2>
+    <input type="hidden" id="cm-id">
+    <div class="fgrid"><div class="fg"><label>Nome / Razão social *</label><input id="cm-name" placeholder="e.g. Avena Investments LLC"></div></div>
+    <div class="fgrid"><div class="fg"><label>Endereço (Bill To)</label><input id="cm-address" placeholder="e.g. 2365 Rapollo Dr, Kissimmee, FL 34741"></div></div>
+    <div class="fgrid"><div class="fg"><label>Email</label><input id="cm-email" type="email" placeholder="email@example.com"></div><div class="fg"><label>Telefone</label><input id="cm-phone" placeholder="(407) 000-0000"></div></div>
+    <div class="fgrid"><div class="fg"><label>EIN / Tax ID</label><input id="cm-tax" placeholder="00-0000000"></div><div class="fg"></div></div>
+    <div class="fg"><label>Notas</label><textarea id="cm-notes" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Observações adicionais..."></textarea></div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="closeClientModal()">Cancel</button><button class="btn btn-primary" onclick="saveClient()">Salvar →</button></div>
   </div>
 </div>
 
@@ -1094,6 +1155,7 @@ let itemsMap={};     // {project_id: {group_id: [{slug, name}]}} — dynamic ite
 let attachMap={};    // {project_id: {group_id: {item_slug: [{id, name, url, size}]}}}
 let propertyMap={};  // {project_id: {client_name, lot_size, living_area, year_built, ...}}
 let listingMap={};   // {project_id: { listing checklist data }}
+let clients=[];      // [{id, name, address, email, phone, tax_id, notes, created_at}]
 let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
 
@@ -1274,6 +1336,10 @@ async function loadAllData(){
     if(!recurringMap[r.project_id]) recurringMap[r.project_id]={};
     recurringMap[r.project_id][r.item_name]=r;
   });
+  // Load clients (CEO-only)
+  await loadClients();
+  // Populate dropdowns (after both clients and projects loaded)
+  populateClientDropdowns();
 }
 
 // ═══ PORTFOLIO ════════════════════════════════════════════════════════
@@ -1375,7 +1441,7 @@ function buildProjectCard(p,statusMeta){
   const card=document.createElement('div');
   card.className='proj-card';
   card.innerHTML=`
-    <div class="pc-hdr"><div><div class="pc-name">${p.name}</div><div class="pc-sub">${p.customer||'No client'}${p.address?' · '+p.address:''}</div></div>
+    <div class="pc-hdr"><div><div class="pc-name">${p.name}</div><div class="pc-sub">${customerName(p.customer)||'No client'}${p.address?' · '+p.address:''}</div></div>
       <span style="background:${statusMeta.bg};color:${statusMeta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${statusMeta.icon} ${statusMeta.label}</span></div>
     <div class="pc-body">
       <div class="pc-pl"><span>Schedule</span><span>${pct}%</span></div>
@@ -1829,7 +1895,7 @@ function loadPropertyForm(){
   // Auto-fill client name from project customer (read-only mirror)
   const proj=projects.find(x=>x.id===CID);
   const clientEl=document.getElementById('pi-client');
-  if(clientEl) clientEl.value=(proj&&proj.customer)||'';
+  if(clientEl) clientEl.value=customerName(proj&&proj.customer)||'';
   const pairs=[
     ['pi-year','year_built'],
     ['pi-lot','lot_size'],
@@ -2332,7 +2398,7 @@ function generateReport(){
   // Build HTML
   const projName=proj.name||'(sem nome)';
   const address=proj.address||'';
-  const clientName=proj.customer||p.client_name||'';
+  const clientName=customerName(proj.customer)||p.client_name||'';
   const today=new Date().toLocaleDateString('pt-BR');
   const purchDate=p.purchase_date?dateBR(p.purchase_date):'';
   const saleDate=p.sale_date?dateBR(p.sale_date):'';
@@ -2476,6 +2542,170 @@ function generateReport(){
   if(!w){toast('Permita pop-ups pra gerar o relatório',false);return;}
   w.document.write(reportHTML);
   w.document.close();
+}
+
+// ═══ CLIENTES (CEO ONLY) ═══════════════════════════════════════════════
+async function loadClients(){
+  if(!isCEO()){clients=[];return;}
+  const {data,error}=await sb.from('clients').select('*').order('name');
+  if(error){console.error('clients load',error);return;}
+  clients=data||[];
+}
+
+function _clientById(id){return clients.find(c=>c.id===id);}
+
+// Returns the human-friendly client name from a project.customer value
+// (which is now an UUID after the migration, but might still be a raw name for legacy data)
+function customerName(value){
+  if(!value) return '';
+  // If value looks like an UUID, look it up
+  if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)){
+    const c=_clientById(value);
+    return c?c.name:value; // fallback to UUID if not found
+  }
+  // Otherwise it's a legacy name string
+  return value;
+}
+
+function populateClientDropdowns(){
+  // Populates BOTH #pf-customer (Project Info) and #np-customer (New Project modal)
+  // Each <option> has value=client.id, label=client.name
+  const opts='<option value="">— Selecionar cliente —</option>'+
+    clients.map(c=>`<option value="${c.id}">${(c.name||'').replace(/"/g,'&quot;')}</option>`).join('');
+  const pfEl=document.getElementById('pf-customer');
+  const npEl=document.getElementById('np-customer');
+  if(pfEl){
+    const cur=pfEl.value;
+    pfEl.innerHTML=opts;
+    pfEl.value=cur;
+  }
+  if(npEl){
+    const cur=npEl.value;
+    npEl.innerHTML=opts;
+    npEl.value=cur;
+  }
+}
+
+function renderClients(){
+  const tbody=document.getElementById('cl-tbody');
+  if(!tbody) return;
+  const q=(document.getElementById('cl-search')?.value||'').toLowerCase().trim();
+  let list=clients.slice();
+  if(q){
+    list=list.filter(c=>
+      (c.name||'').toLowerCase().includes(q)||
+      (c.address||'').toLowerCase().includes(q)||
+      (c.email||'').toLowerCase().includes(q)||
+      (c.phone||'').toLowerCase().includes(q)
+    );
+  }
+  document.getElementById('cl-count').textContent='— '+list.length+' cliente(s)';
+  if(list.length===0){
+    tbody.innerHTML=`<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">Nenhum cliente cadastrado. Clique em <strong>+ Novo Cliente</strong> para começar.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=list.map(c=>`
+    <tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${c.name||''}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.address||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.email||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.phone||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.tax_id||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="openClientModal('${c.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue);margin-right:4px">✏️</button>
+        <button onclick="deleteClient('${c.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openClientModal(id){
+  document.getElementById('cm-id').value=id||'';
+  const title=document.getElementById('cm-title');
+  if(id){
+    const c=_clientById(id);
+    if(!c) return;
+    title.textContent='✏️ Editar Cliente';
+    document.getElementById('cm-name').value=c.name||'';
+    document.getElementById('cm-address').value=c.address||'';
+    document.getElementById('cm-email').value=c.email||'';
+    document.getElementById('cm-phone').value=c.phone||'';
+    document.getElementById('cm-tax').value=c.tax_id||'';
+    document.getElementById('cm-notes').value=c.notes||'';
+  } else {
+    title.textContent='➕ Novo Cliente';
+    ['cm-name','cm-address','cm-email','cm-phone','cm-tax','cm-notes'].forEach(k=>{
+      const el=document.getElementById(k);if(el) el.value='';
+    });
+  }
+  document.getElementById('modal-client').classList.add('active');
+  setTimeout(()=>document.getElementById('cm-name').focus(),50);
+}
+
+function closeClientModal(){
+  document.getElementById('modal-client').classList.remove('active');
+}
+
+async function saveClient(){
+  if(!isCEO()){toast('Apenas CEO pode gerenciar clientes',false);return;}
+  const name=(document.getElementById('cm-name').value||'').trim();
+  if(!name){toast('Nome do cliente é obrigatório',false);return;}
+  const id=document.getElementById('cm-id').value;
+  const payload={
+    name,
+    address:document.getElementById('cm-address').value||'',
+    email:document.getElementById('cm-email').value||'',
+    phone:document.getElementById('cm-phone').value||'',
+    tax_id:document.getElementById('cm-tax').value||'',
+    notes:document.getElementById('cm-notes').value||'',
+  };
+  let result;
+  if(id){
+    result=await sb.from('clients').update(payload).eq('id',id).select().single();
+  } else {
+    result=await sb.from('clients').insert(payload).select().single();
+  }
+  if(result.error){console.error('client save',result.error);toast('Erro ao salvar cliente',false);return;}
+  // Update in-memory list
+  if(id){
+    const i=clients.findIndex(c=>c.id===id);
+    if(i>=0) clients[i]=result.data;
+  } else {
+    clients.push(result.data);
+  }
+  clients.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  renderClients();
+  populateClientDropdowns();
+  // If we just created a new client and a project modal is open, select it automatically
+  if(!id){
+    const npEl=document.getElementById('np-customer');
+    const pfEl=document.getElementById('pf-customer');
+    const modalNewOpen=document.getElementById('modal-new')?.classList.contains('active');
+    const pageInfoOpen=document.getElementById('page-info')?.classList.contains('active');
+    if(modalNewOpen && npEl) npEl.value=result.data.id;
+    else if(pageInfoOpen && pfEl){pfEl.value=result.data.id;debouncePF();}
+  }
+  closeClientModal();
+  showSaved();
+}
+
+async function deleteClient(id){
+  if(!isCEO()) return;
+  const c=_clientById(id);
+  if(!c) return;
+  // Safety: check if any project uses this client
+  const inUse=projects.filter(p=>p.customer===id);
+  if(inUse.length>0){
+    alert('Não é possível excluir "'+c.name+'": está em uso em '+inUse.length+' projeto(s).');
+    return;
+  }
+  if(!confirm('Excluir cliente "'+c.name+'"?\n\nEssa ação não pode ser desfeita.')) return;
+  const {error}=await sb.from('clients').delete().eq('id',id);
+  if(error){console.error('client delete',error);toast('Erro ao excluir cliente',false);return;}
+  clients=clients.filter(c=>c.id!==id);
+  renderClients();
+  populateClientDropdowns();
+  showSaved();
 }
 
 // ═══ RECURRING COSTS DETAIL (CEO ONLY) ════════════════════════════════
@@ -2778,7 +3008,7 @@ function loadListingForm(){
     const pcoEl=document.getElementById('lc-power-co'); if(pcoEl) pcoEl.value=proj.power_company||'';
   }
   const propI=propertyMap[CID]||{};
-  const cliEl=document.getElementById('lc-client'); if(cliEl) cliEl.value=(proj&&proj.customer)||propI.client_name||'';
+  const cliEl=document.getElementById('lc-client'); if(cliEl) cliEl.value=customerName(proj&&proj.customer)||propI.client_name||'';
   // Hydrate editable fields from listingMap
   const data=listingMap[CID]||{};
   LC_FIELDS.forEach(([elId,k,t])=>{
@@ -3122,7 +3352,7 @@ function showSaved(){
 function renderDashboard(){
   if(!CID) return;
   const p=projects.find(x=>x.id===CID); if(!p) return;
-  document.getElementById('dash-sub').textContent=(p.customer||'')+(p.address?' · '+p.address:'')+(p.pm?' · PM: '+p.pm:'');
+  document.getElementById('dash-sub').textContent=(customerName(p.customer)||'')+(p.address?' · '+p.address:'')+(p.pm?' · PM: '+p.pm:'');
   const sched=calcSched(CID);
   const est=calcRoomTotal(CID,'est');
   const act=calcRoomTotal(CID,'actual');
@@ -3276,6 +3506,7 @@ function sp(id,el,cls){
   if(id==='property' && isCEO()) recalcProfit();
   if(id==='listing' && isCEO()) loadListingForm();
   if(id==='recurring' && isCEO()) loadRecurringDetail();
+  if(id==='clients' && isCEO()) renderClients();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -3290,7 +3521,9 @@ function closeModal(){document.getElementById('modal-new').classList.remove('ope
 async function createProject(){
   const name=v('np-name').trim();
   if(!name){toast('Project name required',false);return;}
-  const payload={name,customer:v('np-customer'),pm:v('np-pm'),address:v('np-address'),
+  const customer=v('np-customer');
+  if(!customer){toast('Cliente é obrigatório. Cadastre primeiro!',false);return;}
+  const payload={name,customer,pm:v('np-pm'),address:v('np-address'),
     start_date:v('np-start'),end_date:v('np-end'),notes:''};
   const {data,error}=await sb.from('projects').insert(payload).select().single();
   if(error){toast('Error creating project',false);return;}
@@ -3317,6 +3550,7 @@ function toast(msg,ok=true){
 }
 
 document.getElementById('modal-new').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('modal-client').addEventListener('click',e=>{if(e.target===e.currentTarget)closeClientModal();});
 document.getElementById('modal-add-item').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddItemModal();});
 document.getElementById('modal-add-task').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddTaskModal();});
 document.getElementById('modal-att').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAttachModal();});
