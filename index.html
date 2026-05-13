@@ -1409,9 +1409,9 @@ function calcPhasePct(pid,ph){
 // Returns one of: 'in_progress' | 'completed' | 'for_sale' | 'sold'
 // Priority: sold > for_sale > completed > in_progress
 function projectStatus(pid){
-  // 1) SOLD: final_sale_price is set (CEO data, fallback to false if not loaded)
+  // 1) SOLD: sale_date is set (venda foi de fato concluída)
   const prop=(propertyMap||{})[pid]||{};
-  if((+prop.final_sale_price||0)>0) return 'sold';
+  if(prop.sale_date) return 'sold';
   // 2) FOR SALE: listing_checklist.listed = 'yes'
   const lc=(listingMap||{})[pid]||{};
   if(lc.listed==='yes') return 'for_sale';
