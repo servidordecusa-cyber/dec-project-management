@@ -1327,10 +1327,22 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       </div>
       <div class="fg"></div>
     </div>
-    <div class="fg"><label>Description *</label><input id="im-description" placeholder="e.g. On-site supervision of pool construction"></div>
     <div class="fg"><label>Property address</label><input id="im-property-address" placeholder="e.g. Lot 407 / Bolsena Dr, Montverde, FL 34576"></div>
+
+    <!-- Items editor -->
+    <div style="margin-top:6px;border:1.5px solid var(--gray2);border-radius:8px;padding:14px;background:#FAF7F3">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px">📋 Items *</div>
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addInvoiceItem()">+ Add item</button>
+      </div>
+      <div id="im-items"></div>
+      <div style="display:flex;justify-content:flex-end;gap:14px;align-items:center;padding-top:10px;margin-top:8px;border-top:2px solid var(--gray2)">
+        <div style="font-size:12px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.4px">Total</div>
+        <div id="im-items-total" style="font-size:18px;font-weight:800;color:var(--gold);min-width:130px;text-align:right">$0.00</div>
+      </div>
+    </div>
+
     <div class="fgrid">
-      <div class="fg"><label>Amount *</label><input id="im-amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
       <div class="fg"><label>Status</label>
         <select id="im-status" onchange="onInvoiceStatusChange()">
           <option value="open">Pending</option>
@@ -1338,6 +1350,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <option value="cancelled">Cancelled</option>
         </select>
       </div>
+      <div class="fg"></div>
     </div>
     <div class="fgrid" id="im-paid-wrap" style="display:none">
       <div class="fg"><label>Payment method</label>
@@ -1441,7 +1454,8 @@ let listingMap={};   // {project_id: { listing checklist data }}
 let clients=[];      // [{id, name, address, email, phone, tax_id, notes, created_at}]
 let vendors=[];      // [{id, name, specialty, address, email, phone, tax_id, notes, created_at}]
 let vendorDocs={};   // {vendor_id: [{id, vendor_id, doc_type, name, storage_path, expiration_date, ...}]}
-let invoices=[];     // [{id, invoice_number, client_id, date, description, amount, ...}]
+let invoices=[];     // [{id, invoice_number, client_id, date, amount, ...}]
+let invoiceItems={}; // {invoice_id: [{id, description, amount, position}]}
 let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
 
@@ -3423,10 +3437,18 @@ const DEC_COMPANY={
 };
 
 async function loadInvoices(){
-  if(!isCEO()){invoices=[];return;}
-  const {data,error}=await sb.from('invoices').select('*').order('invoice_number',{ascending:false});
-  if(error){console.error('invoices load',error);return;}
-  invoices=data||[];
+  if(!isCEO()){invoices=[];invoiceItems={};return;}
+  const [invRes,itemsRes]=await Promise.all([
+    sb.from('invoices').select('*').order('invoice_number',{ascending:false}),
+    sb.from('invoice_items').select('*').order('position')
+  ]);
+  if(invRes.error){console.error('invoices load',invRes.error);return;}
+  invoices=invRes.data||[];
+  invoiceItems={};
+  (itemsRes.data||[]).forEach(it=>{
+    if(!invoiceItems[it.invoice_id]) invoiceItems[it.invoice_id]=[];
+    invoiceItems[it.invoice_id].push(it);
+  });
 }
 
 function _suggestNextInvoiceNumber(){
@@ -3486,18 +3508,29 @@ function renderInvoices(){
       ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#B8860B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>'
       :i.kind==='refund'
         ?'<span title="Refund" style="display:inline-block;background:#FFE5D9;color:#C62B2B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💸 REF</span>'
-        :'<span title="Operacional" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
+        :'<span title="Operational" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
+    // Build description summary from items
+    const items=invoiceItems[i.id]||[];
+    let descSummary;
+    if(items.length>1){
+      descSummary=`${(items[0].description||'').slice(0,40)} <span style="color:var(--gray3);font-size:10px">(+${items.length-1} more)</span>`;
+    } else if(items.length===1){
+      descSummary=(items[0].description||'').slice(0,55);
+    } else {
+      // Legacy
+      descSummary=(i.description||'').slice(0,55);
+    }
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowStyle}">
       <td style="padding:10px 12px;font-weight:700;color:var(--navy)">#${i.invoice_number}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${cName}</td>
-      <td style="padding:10px 12px;color:var(--text);font-size:12px">${kindIcon}${(i.description||'').slice(0,55)}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${kindIcon}${descSummary}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--gold)">${fmt(i.amount||0)}</td>
       <td style="padding:10px 12px;text-align:center">
         <span style="background:${meta.bg};color:${meta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${meta.label}</span>
       </td>
       <td style="padding:10px 12px;text-align:center">
-        <button onclick="generateInvoicePDF('${i.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--gold);margin-right:4px" title="Gerar PDF">📄</button>
+        <button onclick="generateInvoicePDF('${i.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--gold);margin-right:4px" title="Generate PDF">📄</button>
         <button onclick="openInvoiceModal('${i.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue);margin-right:4px">✏️</button>
         <button onclick="deleteInvoice('${i.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
       </td>
@@ -3512,6 +3545,51 @@ function onInvoiceStatusChange(){
   document.getElementById('im-paid-wrap').style.display=status==='paid'?'grid':'none';
 }
 
+// In-memory items being edited in the modal
+let _imItems=[];
+
+function renderInvoiceItemsEditor(){
+  const wrap=document.getElementById('im-items');
+  if(!wrap) return;
+  if(_imItems.length===0){
+    wrap.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic;background:#fff;border:1px dashed var(--gray2);border-radius:6px">No items yet. Click <strong>+ Add item</strong> to start.</div>`;
+    document.getElementById('im-items-total').textContent='$0.00';
+    return;
+  }
+  wrap.innerHTML=_imItems.map((it,idx)=>`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;padding:6px;background:#fff;border:1px solid var(--gray2);border-radius:5px">
+      <input type="text" placeholder="Description (e.g. On-site supervision)" value="${(it.description||'').replace(/"/g,'&quot;')}" oninput="onInvoiceItemChange(${idx},'description',this.value)" style="flex:1;padding:6px 8px;font-size:12px;border:1px solid var(--gray2);border-radius:4px;outline:none">
+      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--gray3)">$</span>
+        <input type="number" min="0" step="0.01" placeholder="0.00" value="${it.amount||''}" oninput="onInvoiceItemChange(${idx},'amount',this.value)" style="width:110px;padding:6px 8px;font-size:12px;border:1px solid var(--gray2);border-radius:4px;outline:none;text-align:right">
+      </div>
+      <button onclick="removeInvoiceItem(${idx})" style="padding:5px 9px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:4px;cursor:pointer;color:var(--p1)" title="Remove">🗑</button>
+    </div>
+  `).join('');
+  recalcInvoiceItemsTotal();
+}
+
+function addInvoiceItem(){
+  _imItems.push({description:'',amount:0});
+  renderInvoiceItemsEditor();
+}
+
+function removeInvoiceItem(idx){
+  _imItems.splice(idx,1);
+  renderInvoiceItemsEditor();
+}
+
+function onInvoiceItemChange(idx,field,value){
+  if(field==='amount') value=parseFloat(value)||0;
+  _imItems[idx][field]=value;
+  recalcInvoiceItemsTotal();
+}
+
+function recalcInvoiceItemsTotal(){
+  const tot=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
+  const el=document.getElementById('im-items-total');
+  if(el) el.textContent=fmt(tot);
+}
+
 function openInvoiceModal(id){
   populateInvoiceModalDropdowns();
   document.getElementById('im-id').value=id||'';
@@ -3524,25 +3602,35 @@ function openInvoiceModal(id){
     document.getElementById('im-date').value=inv.date||'';
     document.getElementById('im-client').value=inv.client_id||'';
     document.getElementById('im-project').value=inv.project_id||'';
-    document.getElementById('im-description').value=inv.description||'';
     document.getElementById('im-property-address').value=inv.property_address||'';
-    document.getElementById('im-amount').value=inv.amount||'';
     document.getElementById('im-status').value=inv.status||'open';
     document.getElementById('im-kind').value=inv.kind||'operational';
     document.getElementById('im-payment-method').value=inv.payment_method||'';
     document.getElementById('im-paid-date').value=inv.paid_date||'';
     document.getElementById('im-notes').value=inv.notes||'';
+    // Load items
+    const existing=invoiceItems[id]||[];
+    if(existing.length>0){
+      _imItems=existing.map(i=>({description:i.description||'',amount:+i.amount||0,id:i.id}));
+    } else {
+      // Legacy invoice: use description + amount as single item
+      _imItems=inv.description||inv.amount
+        ? [{description:inv.description||'',amount:+inv.amount||0}]
+        : [];
+    }
   } else {
     title.textContent='➕ New Invoice';
     document.getElementById('im-number').value=_suggestNextInvoiceNumber();
     document.getElementById('im-date').value=new Date().toISOString().slice(0,10);
-    ['im-client','im-project','im-description','im-property-address','im-amount','im-payment-method','im-paid-date','im-notes'].forEach(k=>{
+    ['im-client','im-project','im-property-address','im-payment-method','im-paid-date','im-notes'].forEach(k=>{
       const el=document.getElementById(k);if(el) el.value='';
     });
     document.getElementById('im-status').value='open';
     document.getElementById('im-kind').value='operational';
+    _imItems=[{description:'',amount:0}];
   }
   onInvoiceStatusChange();
+  renderInvoiceItemsEditor();
   document.getElementById('modal-invoice').classList.add('open');
   setTimeout(()=>document.getElementById('im-number').focus(),50);
 }
@@ -3556,29 +3644,35 @@ async function saveInvoice(){
   const num=parseInt(document.getElementById('im-number').value);
   const date=document.getElementById('im-date').value;
   const client_id=document.getElementById('im-client').value;
-  const description=document.getElementById('im-description').value.trim();
-  const amount=parseFloat(document.getElementById('im-amount').value);
   if(!num||num<1){toast('Invoice number is required',false);return;}
   if(!date){toast('Date is required',false);return;}
-  if(!client_id){toast('Client é obrigatório',false);return;}
-  if(!description){toast('Description é obrigatória',false);return;}
-  if(isNaN(amount)||amount<0){toast('Invalid amount',false);return;}
+  if(!client_id){toast('Client is required',false);return;}
+  // Validate items
+  const validItems=_imItems
+    .map(it=>({description:(it.description||'').trim(),amount:Math.round((+it.amount||0)*100)/100}))
+    .filter(it=>it.description||it.amount>0);
+  if(validItems.length===0){toast('Add at least one item',false);return;}
+  if(validItems.some(it=>!it.description)){toast('All items need a description',false);return;}
+  if(validItems.some(it=>it.amount<0)){toast('Amount cannot be negative',false);return;}
+  const totalAmount=validItems.reduce((s,i)=>s+i.amount,0);
   const id=document.getElementById('im-id').value;
   // Check duplicate invoice_number (unless editing the same)
   const dupe=invoices.find(i=>i.invoice_number===num && i.id!==id);
   if(dupe){
-    if(!confirm('Invoice already exists #'+num+'. Continue anyway?')) return;
+    if(!confirm('Invoice #'+num+' already exists. Continue anyway?')) return;
   }
   const status=document.getElementById('im-status').value||'open';
   const kind=document.getElementById('im-kind').value||'operational';
+  // The invoice 'description' column stores a short summary (first item description for legacy display)
+  const summary=validItems.length===1?validItems[0].description:`${validItems.length} items`;
   const payload={
     invoice_number:num,
     date,
     client_id,
     project_id:document.getElementById('im-project').value||null,
-    description,
+    description:summary,
     property_address:document.getElementById('im-property-address').value||'',
-    amount:Math.round(amount*100)/100,
+    amount:Math.round(totalAmount*100)/100,
     status,
     kind,
     payment_method:status==='paid'?(document.getElementById('im-payment-method').value||''):'',
@@ -3592,6 +3686,29 @@ async function saveInvoice(){
     result=await sb.from('invoices').insert(payload).select().single();
   }
   if(result.error){console.error('invoice save',result.error);toast('Error saving invoice',false);return;}
+  const invoiceId=result.data.id;
+  // Save items: delete all existing for this invoice, then insert fresh
+  if(id){
+    await sb.from('invoice_items').delete().eq('invoice_id',invoiceId);
+  }
+  const itemsPayload=validItems.map((it,idx)=>({
+    invoice_id:invoiceId,
+    description:it.description,
+    amount:it.amount,
+    position:idx,
+  }));
+  if(itemsPayload.length>0){
+    const itemsRes=await sb.from('invoice_items').insert(itemsPayload).select();
+    if(itemsRes.error){
+      console.error('items save',itemsRes.error);
+      toast('Error saving items',false);
+      return;
+    }
+    invoiceItems[invoiceId]=itemsRes.data||[];
+  } else {
+    invoiceItems[invoiceId]=[];
+  }
+  // Update local state
   if(id){
     const i=invoices.findIndex(x=>x.id===id);
     if(i>=0) invoices[i]=result.data;
@@ -3630,8 +3747,21 @@ function generateInvoicePDF(id){
   const inv=_invoiceById(id);
   if(!inv){toast('Invoice not found',false);return;}
   const client=_clientById(inv.client_id);
-  if(!client){toast('Client da invoice não encontrado',false);return;}
+  if(!client){toast('Invoice client not found',false);return;}
   const $$=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  // Get items for this invoice (fallback to single legacy item if no items table entry)
+  const items=invoiceItems[id]||[];
+  let itemsList;
+  if(items.length>0){
+    itemsList=items.slice().sort((a,b)=>(a.position||0)-(b.position||0));
+  } else {
+    // Legacy invoice: render as single item from description+amount
+    itemsList=[{description:inv.description||'',amount:+inv.amount||0}];
+  }
+  const itemsTotal=itemsList.reduce((s,it)=>s+(+it.amount||0),0);
+  const itemsRowsHTML=itemsList.map(it=>
+    `<tr><td>${(it.description||'').replace(/</g,'&lt;')}</td><td class="val">${$$(it.amount)}</td></tr>`
+  ).join('');
   const dateBR=(d)=>{
     if(!d) return '';
     const dt=new Date(d+'T00:00:00');
@@ -3716,7 +3846,7 @@ function generateInvoicePDF(id){
       <div class="inv-date">${invDateStr}</div>
       <div class="total-box">
         <div class="lbl">TOTAL</div>
-        <div class="val">${$$(inv.amount)}</div>
+        <div class="val">${$$(itemsTotal)}</div>
       </div>
       <div class="status-pill">${statusMeta.label}</div>
       ${inv.status==='paid'&&paymentLabel?`<div class="payment-info">via ${paymentLabel}${inv.paid_date?' · '+dateBR(inv.paid_date):''}</div>`:''}
@@ -3726,7 +3856,7 @@ function generateInvoicePDF(id){
   <table class="items">
     <thead><tr><th>DESCRIPTION</th><th class="val">AMOUNT</th></tr></thead>
     <tbody>
-      <tr><td>${inv.description||''}</td><td class="val">${$$(inv.amount)}</td></tr>
+      ${itemsRowsHTML}
     </tbody>
   </table>
 
@@ -3735,7 +3865,7 @@ function generateInvoicePDF(id){
   <div class="totals-area">
     <div class="totals-tbl">
       <div class="row"><span>TOTAL TAX</span><span></span></div>
-      <div class="row final"><span>TOTAL</span><span class="v">${$$(inv.amount)}</span></div>
+      <div class="row final"><span>TOTAL</span><span class="v">${$$(itemsTotal)}</span></div>
     </div>
   </div>
 
