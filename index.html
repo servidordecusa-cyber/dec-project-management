@@ -1488,13 +1488,23 @@ const EC_DEFAULTS={
 };
 let CURRENT_USER=null;
 
-// CEO list — only these emails can access Property & Finance module
+// CEO list — full access (Property & Finance, DRE, Financial, all CEO-only items)
 const CEO_EMAILS=['fabiana@decgroupusa.com'];
+// Supervisor list — limited access: Projects + Estimate + Actual Costs + Project Info only
+// To add a supervisor: 1) Create user in Supabase Auth · 2) Add email below
+const SUPERVISOR_EMAILS=[
+  'ope@decgroupusa.com',
+];
 function isCEO(){
   return !!(CURRENT_USER&&CURRENT_USER.email&&CEO_EMAILS.includes(CURRENT_USER.email.toLowerCase()));
 }
+function isSupervisor(){
+  return !!(CURRENT_USER&&CURRENT_USER.email&&SUPERVISOR_EMAILS.includes(CURRENT_USER.email.toLowerCase()));
+}
 function applyCEOVisibility(){
   const ceo=isCEO();
+  const sup=isSupervisor();
+  // CEO-only items
   document.querySelectorAll('.ceo-only').forEach(el=>{
     if(el.id==='gtabs'){
       el.style.display=ceo?'flex':'none';
@@ -1502,6 +1512,22 @@ function applyCEOVisibility(){
       el.style.display=ceo?'':'none';
     }
   });
+  // Supervisor visibility — show a limited gtabs bar
+  if(sup && !ceo){
+    const gtabs=document.getElementById('gtabs');
+    if(gtabs){
+      gtabs.style.display='flex';
+      // Hide ALL tabs except 'projects'
+      gtabs.querySelectorAll('.gtab').forEach(t=>{
+        t.style.display=t.dataset.view==='portfolio'?'inline-flex':'none';
+      });
+    }
+  }
+  // Hide + New Project button for supervisor
+  const newProjBtn=document.querySelector('button[onclick="openNewModal()"]');
+  if(newProjBtn) newProjBtn.style.display=sup&&!ceo?'none':'';
+  // Hide delete project button for supervisor (delBtn is hidden by default, this just makes sure)
+  // The button only shows inside project view, will handle via openProject
 }
 
 // ═══ AUTH ════════════════════════════════════════════════════════════
@@ -1861,7 +1887,8 @@ function openProject(id){
   document.getElementById('back-btn').style.display='flex';
   document.getElementById('tn-pname').style.display='block';
   document.getElementById('tn-pname').textContent=p.name;
-  document.getElementById('del-btn').style.display='inline-flex';
+  // Only CEO can delete projects
+  document.getElementById('del-btn').style.display=isCEO()?'inline-flex':'none';
   document.getElementById('proj-count-lbl').textContent='← Projects';
   // Deactivate all global tabs (since we're inside a project)
   document.querySelectorAll('.gtab').forEach(b=>b.classList.remove('active'));
@@ -3974,20 +4001,24 @@ function generateInvoicePDF(id){
   };
 }
 
-// ═══ FORNECEDORES (CEO ONLY) ═══════════════════════════════════════════
+// ═══ FORNECEDORES ═══════════════════════════════════════════
+// CEO can manage everything; Supervisors can only read vendor list (to use in Actual Costs dropdown)
 async function loadVendors(){
-  if(!isCEO()){vendors=[];vendorDocs={};return;}
-  const [vRes,dRes]=await Promise.all([
-    sb.from('vendors').select('*').order('name'),
-    sb.from('vendor_docs').select('*').order('created_at',{ascending:false})
-  ]);
+  vendors=[];
+  vendorDocs={};
+  if(!isCEO() && !isSupervisor()) return;
+  // Always load vendors (needed for Actual Costs supplier dropdown)
+  const vRes=await sb.from('vendors').select('*').order('name');
   if(vRes.error){console.error('vendors load',vRes.error);return;}
   vendors=vRes.data||[];
-  vendorDocs={};
-  (dRes.data||[]).forEach(d=>{
-    if(!vendorDocs[d.vendor_id]) vendorDocs[d.vendor_id]=[];
-    vendorDocs[d.vendor_id].push(d);
-  });
+  // Vendor docs (contracts/insurance) only for CEO
+  if(isCEO()){
+    const dRes=await sb.from('vendor_docs').select('*').order('created_at',{ascending:false});
+    (dRes.data||[]).forEach(d=>{
+      if(!vendorDocs[d.vendor_id]) vendorDocs[d.vendor_id]=[];
+      vendorDocs[d.vendor_id].push(d);
+    });
+  }
 }
 
 function _vendorById(id){return vendors.find(v=>v.id===id);}
@@ -4322,7 +4353,7 @@ function refreshActualCostsVendorDropdowns(){
 
 // ═══ CLIENTES (CEO ONLY) ═══════════════════════════════════════════════
 async function loadClients(){
-  if(!isCEO()){clients=[];return;}
+  if(!isCEO() && !isSupervisor()){clients=[];return;}
   const {data,error}=await sb.from('clients').select('*').order('name');
   if(error){console.error('clients load',error);return;}
   clients=data||[];
