@@ -448,41 +448,27 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="card" style="margin-top:16px">
           <div class="card-title">💰 Acquisition (Purchase)</div>
 
-          <!-- Wholesaler price (auto-calc) -->
+          <!-- Wholesaler price (auto-calc) — EMD + Cash + Hard Money -->
           <div style="margin-bottom:18px">
             <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Cash + Hard money</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
             <div class="fgrid">
+              <div class="fg"><label>EMD - Cash ($)</label><input id="pi-emd-cash" type="number" min="0" step="0.01" placeholder="e.g. 5000.00" oninput="onAcqInput()"></div>
               <div class="fg"><label>Cash ($)</label><input id="pi-cash" type="number" min="0" step="0.01" placeholder="e.g. 50000.00" oninput="onAcqInput()"></div>
+            </div>
+            <div class="fgrid">
               <div class="fg"><label>Hard money ($)</label><input id="pi-hard-money" type="number" min="0" step="0.01" placeholder="e.g. 130000.00" oninput="onAcqInput()"></div>
-            </div>
-          </div>
-
-          <!-- Sales total price (auto-calc) -->
-          <div style="margin-bottom:18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;background:#FAF7F3;border:1.5px solid #C5D9E8;border-radius:8px;padding:12px 16px;margin-bottom:10px">
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.4px">💵 Sales total price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Closing + Lender + Other</span></div>
-                <div style="font-size:22px;font-weight:800;color:var(--blue);margin-top:2px" id="pi-sales-total">$0</div>
-              </div>
-            </div>
-            <div class="fgrid">
-              <div class="fg"><label>Closing costs ($)</label><input id="pi-closing" type="number" min="0" step="0.01" placeholder="e.g. 5500.00" oninput="onAcqInput()"></div>
-              <div class="fg"><label>Lender costs ($)</label><input id="pi-lender" type="number" min="0" step="0.01" placeholder="e.g. 2200.00" oninput="onAcqInput()"></div>
-            </div>
-            <div class="fgrid">
-              <div class="fg"><label>Other costs ($)</label><input id="pi-other-costs" type="number" min="0" step="0.01" placeholder="e.g. 800.00" oninput="onAcqInput()"></div>
               <div class="fg"></div>
             </div>
           </div>
 
           <div class="fgrid">
+            <div class="fg"><label>Other costs ($)</label><input id="pi-other-costs" type="number" min="0" step="0.01" placeholder="e.g. 800.00" oninput="onAcqInput()"></div>
             <div class="fg"><label>Purchase date</label><input id="pi-purch-date" type="date" onchange="savePI()"></div>
-            <div class="fg"></div>
           </div>
         </div>
 
@@ -513,7 +499,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— Cash + Actual Spent + Costs + Recurring + Documents + High End</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Actual Spent + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
         </div>
@@ -1751,10 +1737,9 @@ function loadPropertyForm(){
     ['pi-water-heater','water_heater'],
     ['pi-other','other_info'],
     // Acquisition
+    ['pi-emd-cash','emd_cash'],
     ['pi-cash','cash'],
     ['pi-hard-money','hard_money'],
-    ['pi-closing','closing_costs'],
-    ['pi-lender','lender_costs'],
     ['pi-other-costs','other_costs'],
     ['pi-purch-date','purchase_date'],
     ['pi-arv','arv'],
@@ -1872,10 +1857,9 @@ async function savePI(){
     water_heater:v('pi-water-heater'),
     other_info:v('pi-other'),
     // Acquisition
+    emd_cash:num('pi-emd-cash'),
     cash:num('pi-cash'),
     hard_money:num('pi-hard-money'),
-    closing_costs:num('pi-closing'),
-    lender_costs:num('pi-lender'),
     other_costs:num('pi-other-costs'),
     purchase_date:v('pi-purch-date')||null,
     // Sale
@@ -1900,18 +1884,13 @@ async function savePI(){
 }
 
 function recalcAcquisition(){
-  // Wholesaler price = Cash + Hard money
+  // Wholesaler price = EMD + Cash + Hard money
+  const emd=parseFloat(v('pi-emd-cash'))||0;
   const cash=parseFloat(v('pi-cash'))||0;
   const hard=parseFloat(v('pi-hard-money'))||0;
-  const wholesaler=Math.round((cash+hard)*100)/100;
+  const wholesaler=Math.round((emd+cash+hard)*100)/100;
   document.getElementById('pi-wholesaler-total').textContent=fmt(wholesaler);
-  // Sales total price = Closing + Lender + Other
-  const closing=parseFloat(v('pi-closing'))||0;
-  const lender=parseFloat(v('pi-lender'))||0;
-  const other=parseFloat(v('pi-other-costs'))||0;
-  const salesTotal=Math.round((closing+lender+other)*100)/100;
-  document.getElementById('pi-sales-total').textContent=fmt(salesTotal);
-  return {wholesaler, salesTotal};
+  return {wholesaler};
 }
 
 let _debAcq=null;
@@ -2103,9 +2082,10 @@ function recalcProfit(){
   const docTotal=calcExtraSubtotal('documents');
   const heTotal=calcExtraSubtotal('high_end');
   const extraTotal=decTotal+recTotal+docTotal+heTotal;
-  // Total Investido = Cash + Actual Spent + Costs + Recurring + Documents + High End
+  // Total Investido = EMD + Cash + Actual Spent + Costs + Recurring + Documents + High End
+  const emd=+p.emd_cash||0;
   const cash=+p.cash||0;
-  const totalInvested=cash+totAct+decTotal+recTotal+docTotal+heTotal;
+  const totalInvested=emd+cash+totAct+decTotal+recTotal+docTotal+heTotal;
   const tiEl=document.getElementById('pi-total-invested');
   if(tiEl) tiEl.textContent=fmt(totalInvested);
   // Estimated profit (legacy formula, just shows expectation)
@@ -2172,12 +2152,11 @@ function generateReport(){
   };
 
   // Acquisition values
+  const emd=+p.emd_cash||0;
   const cash=+p.cash||0;
   const hardMoney=+p.hard_money||0;
-  const closing=+p.closing_costs||0; // Escrow
-  const lenderAcq=+p.lender_costs||0;
   const otherAcq=+p.other_costs||0;
-  const total1=cash+hardMoney+closing+lenderAcq+otherAcq;
+  const total1=emd+cash+hardMoney+otherAcq;
 
   // Project costs (Total 2)
   const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale) — ainda lido para Gross Profit
@@ -2227,8 +2206,8 @@ function generateReport(){
   const sale=+p.final_sale_price||0;
   const refund=+p.refund_value||0;
   const sellingCosts=+p.selling_costs||0;
-  // Total Investido = Cash + Actual Spent + Costs (DEC Invoice) + Recurring + Documents + High End
-  const totalInvestido=cash+totAct+decExtraTotal+recTotal+docTotal+heTotal;
+  // Total Investido = EMD + Cash + Actual Spent + Costs (DEC Invoice) + Recurring + Documents + High End
+  const totalInvestido=emd+cash+totAct+decExtraTotal+recTotal+docTotal+heTotal;
   // Gross Profit = Final Sale − Selling − Lender(sale)
   const grossProfit=sale-sellingCosts-lenderSale;
   // Lucro Líquido = Gross Profit − Total Investido (= Actual Profit)
@@ -2339,12 +2318,11 @@ function generateReport(){
       <tr><th>Descrição</th><th class="docs">Documentos</th><th class="val">Valor</th></tr>
     </thead>
     <tbody>
-      ${closing>0?`<tr><td>Escrow / Closing costs</td><td class="docs"></td><td class="val">${$$(closing)}</td></tr>`:''}
+      ${emd>0?`<tr><td>EMD - Cash</td><td class="docs"></td><td class="val">${$$(emd)}</td></tr>`:''}
       ${cash>0?`<tr><td>Cash</td><td class="docs"></td><td class="val">${$$(cash)}</td></tr>`:''}
       ${hardMoney>0?`<tr><td>Hard Money</td><td class="docs"></td><td class="val">${$$(hardMoney)}</td></tr>`:''}
-      ${lenderAcq>0?`<tr><td>Lender costs (compra)</td><td class="docs"></td><td class="val">${$$(lenderAcq)}</td></tr>`:''}
       ${otherAcq>0?`<tr><td>Outros custos (compra)</td><td class="docs"></td><td class="val">${$$(otherAcq)}</td></tr>`:''}
-      ${(closing+cash+hardMoney+lenderAcq+otherAcq)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem valores lançados</td></tr>`:''}
+      ${(emd+cash+hardMoney+otherAcq)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem valores lançados</td></tr>`:''}
       <tr class="total-row"><td colspan="2">Total 1</td><td class="val">${$$(total1)}</td></tr>
     </tbody>
   </table>
