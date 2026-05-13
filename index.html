@@ -84,6 +84,14 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 /* PROJECT CARDS */
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.port-flt{padding:8px 14px;border:1.5px solid var(--gray2);background:#fff;color:var(--gray3);border-radius:22px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.port-flt:hover{border-color:var(--blue);color:var(--blue)}
+.port-flt.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.proj-section{margin-bottom:28px}
+.proj-section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:6px 0;border-bottom:1.5px solid var(--gray2)}
+.proj-section-hdr h3{font-size:14px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin:0}
+.proj-section-hdr .cnt{font-size:11px;color:var(--gray3);background:#F0EAE2;padding:2px 8px;border-radius:10px;font-weight:700}
+.proj-section-empty{padding:18px;text-align:center;color:var(--gray3);font-size:13px;font-style:italic;background:#FAF7F3;border-radius:8px;border:1px dashed var(--gray2)}
 .proj-card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;
   cursor:pointer;transition:all .2s;border:2px solid transparent}
 .proj-card:hover{transform:translateY(-3px);box-shadow:0 6px 24px rgba(11,37,69,.14);border-color:var(--light)}
@@ -283,13 +291,21 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 <div id="view-portfolio">
   <div class="port-hdr"><div><h2>All Projects</h2><p id="port-sub">Loading projects...</p></div></div>
   <div class="kpi-row">
-    <div class="kpi"><label>📁 Projects</label><div class="val" id="pk-total">—</div></div>
-    <div class="kpi kg"><label>✅ Complete</label><div class="val" id="pk-done">—</div></div>
-    <div class="kpi ko"><label>🔄 In Progress</label><div class="val" id="pk-prog">—</div></div>
-    <div class="kpi kr"><label>📋 Estimated</label><div class="val" id="pk-est">—</div><small>total budget</small></div>
-    <div class="kpi kp"><label>💰 Actual</label><div class="val" id="pk-actual">—</div><small>total spent</small></div>
+    <div class="kpi"><label>📁 Total</label><div class="val" id="pk-total">—</div></div>
+    <div class="kpi ko"><label>🔄 Em andamento</label><div class="val" id="pk-prog">—</div></div>
+    <div class="kpi kg"><label>✅ Completos</label><div class="val" id="pk-done">—</div></div>
+    <div class="kpi" style="border-left-color:var(--blue)"><label>🏷️ À venda</label><div class="val" id="pk-sale">—</div></div>
+    <div class="kpi" style="border-left-color:var(--gold)"><label>💰 Vendidos</label><div class="val" id="pk-sold">—</div></div>
   </div>
-  <div class="proj-grid" id="proj-grid"></div>
+  <!-- Filtros de status -->
+  <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px">
+    <button class="port-flt active" data-flt="all" onclick="setPortFilter('all')">📁 Todos</button>
+    <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')">🔄 Em andamento</button>
+    <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Completos</button>
+    <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ À venda</button>
+    <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')">💰 Vendidos</button>
+  </div>
+  <div id="proj-sections"></div>
 </div>
 
 <!-- PROJECT DETAIL -->
@@ -934,6 +950,22 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <input id="lc-lockbox" placeholder="e.g. 1234" oninput="debounceLC()" style="font-family:monospace;letter-spacing:2px">
           </div>
         </div>
+
+        <!-- Status: Casa Listada -->
+        <div class="card" style="margin-top:16px;border-left:4px solid var(--gold)">
+          <div class="card-title">🏠 Status de Listagem</div>
+          <div class="fgrid">
+            <div class="fg"><label>Casa listada?</label>
+              <select id="lc-listed" onchange="debounceLC()">
+                <option value="">— Selecionar —</option>
+                <option value="no">Não</option>
+                <option value="yes">Sim</option>
+              </select>
+            </div>
+            <div class="fg"></div>
+          </div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:8px;font-style:italic">💡 Quando marcar "Sim", o projeto aparece na seção <strong>"À venda"</strong> do Portfolio</div>
+        </div>
       </div>
 
       <!-- Recurring Costs Detail (CEO ONLY) -->
@@ -1256,63 +1288,113 @@ function goPortfolio(){
   renderPortfolio();
 }
 
-function renderPortfolio(){
-  let done=0,prog=0,totEst=0,totAct=0;
-  projects.forEach(p=>{
-    const pct=calcSched(p.id);
-    if(pct===100)done++; else if(pct>0)prog++;
-    totEst+=calcRoomTotal(p.id,'est');
-    totAct+=calcRoomTotal(p.id,'actual');
+// Current active filter for portfolio
+let _portFilter='all';
+
+function setPortFilter(f){
+  _portFilter=f;
+  // Update button active state
+  document.querySelectorAll('.port-flt').forEach(b=>{
+    b.classList.toggle('active',b.dataset.flt===f);
   });
+  renderPortfolio();
+}
+
+function renderPortfolio(){
+  // Group projects by status
+  const groups={in_progress:[],completed:[],for_sale:[],sold:[]};
+  projects.forEach(p=>{
+    const st=projectStatus(p.id);
+    if(groups[st]) groups[st].push(p);
+  });
+  // Update KPIs (always show all counts, regardless of filter)
   document.getElementById('proj-count-lbl').textContent=projects.length+' project'+(projects.length!==1?'s':'');
   document.getElementById('port-sub').textContent='Last updated: '+new Date().toLocaleString();
   document.getElementById('pk-total').textContent=projects.length;
-  document.getElementById('pk-done').textContent=done;
-  document.getElementById('pk-prog').textContent=prog;
-  document.getElementById('pk-est').textContent=fmt(totEst);
-  document.getElementById('pk-actual').textContent=fmt(totAct);
-  const grid=document.getElementById('proj-grid');
-  grid.innerHTML='';
-  projects.forEach(p=>{
-    const pct=calcSched(p.id);
-    const est=calcRoomTotal(p.id,'est');
-    const act=calcRoomTotal(p.id,'actual');
-    const v2=act-est;
-    const stBg=pct===100?'#ECEFE3':pct>0?'#F5EBDA':'#E8E0D5';
-    const stFg=pct===100?'#5C7A3F':pct>0?'#C68A4A':'#655A4E';
-    const stTx=pct===100?'✅ Complete':pct>0?'🔄 In Progress':'⏳ Not Started';
-    const vColor=v2>0?'#B85450':v2<0?'#5C7A3F':'#3D271A';
-    const vTx=v2>0?'⚠ Over '+fmt(v2):v2<0?'✅ Under '+fmt(Math.abs(v2)):'On budget';
-    const card=document.createElement('div');
-    card.className='proj-card';
-    card.innerHTML=`
-      <div class="pc-hdr"><div><div class="pc-name">${p.name}</div><div class="pc-sub">${p.customer||'No client'}${p.address?' · '+p.address:''}</div></div>
-        <span style="background:${stBg};color:${stFg};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${stTx}</span></div>
-      <div class="pc-body">
-        <div class="pc-pl"><span>Schedule</span><span>${pct}%</span></div>
-        <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#5C7A3F':pct>50?'#C68A4A':'#3D271A'}"></div></div>
-        <div class="pc-br"><span>Estimated</span><strong style="color:#3D271A">${fmt(est)}</strong></div>
-        <div class="pc-br"><span>Actual</span><strong style="color:#C68A4A">${fmt(act)}</strong></div>
-        <div class="pc-br"><span>Variance</span><strong style="color:${vColor}">${vTx}</strong></div>
+  document.getElementById('pk-prog').textContent=groups.in_progress.length;
+  document.getElementById('pk-done').textContent=groups.completed.length;
+  document.getElementById('pk-sale').textContent=groups.for_sale.length;
+  document.getElementById('pk-sold').textContent=groups.sold.length;
+  // Render sections (filtered)
+  const wrap=document.getElementById('proj-sections');
+  wrap.innerHTML='';
+  const order=['in_progress','completed','for_sale','sold'];
+  const visible=_portFilter==='all'?order:[_portFilter];
+  visible.forEach(st=>{
+    const meta=STATUS_META[st];
+    const list=groups[st];
+    const section=document.createElement('div');
+    section.className='proj-section';
+    section.innerHTML=`
+      <div class="proj-section-hdr">
+        <h3>${meta.icon} ${meta.label}</h3>
+        <span class="cnt">${list.length}</span>
       </div>
-      <div class="pc-ftr"><span>${p.start_date||'No date'} → ${p.end_date||'No end'}</span><strong>PM: ${p.pm||'—'}</strong></div>`;
-    card.onclick=()=>openProject(p.id);
-    grid.appendChild(card);
+      <div class="proj-grid" id="grid-${st}"></div>`;
+    wrap.appendChild(section);
+    const grid=section.querySelector('#grid-'+st);
+    if(list.length===0){
+      grid.parentElement.innerHTML=section.querySelector('.proj-section-hdr').outerHTML+
+        `<div class="proj-section-empty">Nenhum projeto ${meta.label.toLowerCase()}</div>`;
+      return;
+    }
+    list.forEach(p=>grid.appendChild(buildProjectCard(p,meta)));
   });
-  const ac=document.createElement('div');
-  ac.className='add-card';
-  ac.innerHTML=`<div style="font-size:32px;color:var(--gray3)">＋</div><p>New Project</p>`;
-  ac.onclick=openNewModal;
-  grid.appendChild(ac);
+  // If filter is "all", also show the +New Project card at the very end of the LAST section with items
+  if(_portFilter==='all'){
+    // Find last non-empty section
+    let lastGrid=null;
+    for(let i=order.length-1;i>=0;i--){
+      if(groups[order[i]].length>0){
+        lastGrid=document.getElementById('grid-'+order[i]);
+        break;
+      }
+    }
+    // If no sections have items, append to in_progress section
+    if(!lastGrid){
+      const inProg=document.getElementById('grid-in_progress');
+      if(inProg) lastGrid=inProg;
+    }
+    if(lastGrid){
+      const ac=document.createElement('div');
+      ac.className='add-card';
+      ac.innerHTML=`<div style="font-size:32px;color:var(--gray3)">＋</div><p>New Project</p>`;
+      ac.onclick=openNewModal;
+      lastGrid.appendChild(ac);
+    }
+  }
+}
+
+function buildProjectCard(p,statusMeta){
+  const pct=calcSched(p.id);
+  const est=calcRoomTotal(p.id,'est');
+  const act=calcRoomTotal(p.id,'actual');
+  const v2=act-est;
+  const vColor=v2>0?'#B85450':v2<0?'#5C7A3F':'#3D271A';
+  const vTx=v2>0?'⚠ Over '+fmt(v2):v2<0?'✅ Under '+fmt(Math.abs(v2)):'On budget';
+  const card=document.createElement('div');
+  card.className='proj-card';
+  card.innerHTML=`
+    <div class="pc-hdr"><div><div class="pc-name">${p.name}</div><div class="pc-sub">${p.customer||'No client'}${p.address?' · '+p.address:''}</div></div>
+      <span style="background:${statusMeta.bg};color:${statusMeta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${statusMeta.icon} ${statusMeta.label}</span></div>
+    <div class="pc-body">
+      <div class="pc-pl"><span>Schedule</span><span>${pct}%</span></div>
+      <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#5C7A3F':pct>50?'#C68A4A':'#3D271A'}"></div></div>
+      <div class="pc-br"><span>Estimated</span><strong style="color:#3D271A">${fmt(est)}</strong></div>
+      <div class="pc-br"><span>Actual</span><strong style="color:#C68A4A">${fmt(act)}</strong></div>
+      <div class="pc-br"><span>Variance</span><strong style="color:${vColor}">${vTx}</strong></div>
+    </div>
+    <div class="pc-ftr"><span>${p.start_date||'No date'} → ${p.end_date||'No end'}</span><strong>PM: ${p.pm||'—'}</strong></div>`;
+  card.onclick=()=>openProject(p.id);
+  return card;
 }
 
 // ═══ CALCULATIONS ════════════════════════════════════════════════════
 function calcSched(pid){
-  const sm=schedMap[pid]||{};
-  const tm=tasksMap[pid]||{};
-  const vals=[];
-  PHASES.forEach(ph=>(tm[ph.id]||[]).forEach(t=>vals.push(+(sm[t.tid]?.pct)||0)));
-  return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
+  // Progress is the AVERAGE of the 4 phases, not all tasks pooled together.
+  // Each phase weighs 25% of the total. Empty phases count as 0%.
+  const phasePcts=PHASES.map(ph=>calcPhasePct(pid,ph));
+  return Math.round(phasePcts.reduce((a,b)=>a+b,0)/4);
 }
 function calcPhasePct(pid,ph){
   const sm=schedMap[pid]||{};
@@ -1322,6 +1404,29 @@ function calcPhasePct(pid,ph){
   const vals=tasks.map(t=>+(sm[t.tid]?.pct)||0);
   return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
 }
+
+// ═══ PROJECT STATUS ═══════════════════════════════════════════════════
+// Returns one of: 'in_progress' | 'completed' | 'for_sale' | 'sold'
+// Priority: sold > for_sale > completed > in_progress
+function projectStatus(pid){
+  // 1) SOLD: final_sale_price is set (CEO data, fallback to false if not loaded)
+  const prop=(propertyMap||{})[pid]||{};
+  if((+prop.final_sale_price||0)>0) return 'sold';
+  // 2) FOR SALE: listing_checklist.listed = 'yes'
+  const lc=(listingMap||{})[pid]||{};
+  if(lc.listed==='yes') return 'for_sale';
+  // 3) COMPLETED: schedule progress = 100%
+  if(calcSched(pid)===100) return 'completed';
+  // 4) IN PROGRESS (default)
+  return 'in_progress';
+}
+
+const STATUS_META={
+  in_progress: {label:'Em andamento', icon:'🔄', color:'#C68A4A', bg:'#F5EBDA'},
+  completed:   {label:'Completos',    icon:'✅', color:'#5C7A3F', bg:'#ECEFE3'},
+  for_sale:    {label:'À venda',      icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
+  sold:        {label:'Vendidos',     icon:'💰', color:'#B8860B', bg:'#FAF3E0'},
+};
 function calcRoomTotal(pid,type){
   const bm=budgetMap[pid]||{};
   let sum=0;
@@ -2656,6 +2761,8 @@ const LC_FIELDS=[
   // Photo & Lockbox
   ['lc-photo-notes','photo_notes','text'],
   ['lc-lockbox','lockbox_code','text'],
+  // Listing status
+  ['lc-listed','listed','text'],
 ];
 
 let _debLC=null;
