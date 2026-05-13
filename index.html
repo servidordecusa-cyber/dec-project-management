@@ -68,6 +68,23 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 /* PORTFOLIO */
 #view-portfolio{padding:26px}
+#view-home,#view-clients,#view-vendors,#view-invoices,#view-financial,#view-dre{padding:26px;display:none}
+/* Global tabs bar */
+.gtabs{background:#fff;border-bottom:1.5px solid var(--gray2);padding:0 26px;display:flex;gap:4px;flex-wrap:wrap;align-items:stretch;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.gtab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray3);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;font-family:inherit;background:transparent;border-left:0;border-right:0;border-top:0}
+.gtab:hover{color:var(--blue);background:#FAF7F3}
+.gtab.active{color:var(--blue);border-bottom-color:var(--gold);background:#FAF7F3}
+.gtab .ico{margin-right:6px}
+.gtab.hidden-tab{display:none}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px}
+.home-card{background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--blue)}
+.home-card.gold{border-left-color:var(--gold)}
+.home-card.green{border-left-color:var(--p3)}
+.home-card.orange{border-left-color:var(--p2)}
+.home-card.red{border-left-color:var(--p1)}
+.home-card .lbl{font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.home-card .val{font-size:24px;font-weight:800;color:var(--navy);line-height:1.1}
+.home-card .sub{font-size:11px;color:var(--gray3);margin-top:4px}
 #view-project{display:none}
 .port-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap;gap:12px}
 .port-hdr h2{font-size:22px;font-weight:700;color:var(--navy)}
@@ -236,7 +253,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 @media(max-width:900px){.kpi-row{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}.trb{grid-template-columns:1fr 1fr}}
 @media print{
-  #login-screen,#app-loading,.topnav,#view-portfolio,.sidebar,.btn,.no-print{display:none!important}
+  #login-screen,#app-loading,.topnav,.gtabs,#view-portfolio,#view-home,#view-clients,#view-vendors,#view-invoices,#view-financial,#view-dre,.sidebar,.btn,.no-print{display:none!important}
   #view-project{display:block!important}.proj-layout{display:block}.proj-content{padding:10px}
   .page{display:block!important}.page:not(#page-dash){display:none!important}#page-dash{display:block!important}
   .card{box-shadow:none;border:1px solid #ddd}
@@ -272,11 +289,11 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 <!-- TOP NAV -->
 <div class="topnav">
-  <div class="tn-brand" onclick="goPortfolio()">
+  <div class="tn-brand" onclick="goView('home')">
     <h1>DEC Group USA</h1>
     <span id="proj-count-lbl">Loading...</span>
   </div>
-  <div class="back-btn" id="back-btn" onclick="goPortfolio()">← All Projects</div>
+  <div class="back-btn" id="back-btn" onclick="goView('portfolio')">← All Projects</div>
   <div class="tn-center" id="tn-pname"></div>
   <div class="tn-right">
     <div class="user-chip"><div class="online-dot"></div><span id="user-email-lbl">—</span></div>
@@ -285,6 +302,17 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="doLogout()">Sign Out</button>
   </div>
+</div>
+
+<!-- GLOBAL TABS (CEO only) -->
+<div class="gtabs ceo-only" id="gtabs" style="display:none">
+  <button class="gtab" data-view="home" onclick="goView('home')"><span class="ico">🏠</span>Home</button>
+  <button class="gtab" data-view="portfolio" onclick="goView('portfolio')"><span class="ico">📁</span>Projetos</button>
+  <button class="gtab" data-view="clients" onclick="goView('clients')"><span class="ico">👥</span>Clientes</button>
+  <button class="gtab" data-view="vendors" onclick="goView('vendors')"><span class="ico">🔨</span>Fornecedores</button>
+  <button class="gtab" data-view="invoices" onclick="goView('invoices')"><span class="ico">🧾</span>Invoices</button>
+  <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico">💰</span>Financeiro</button>
+  <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico">📊</span>DRE</button>
 </div>
 
 <!-- PORTFOLIO -->
@@ -336,9 +364,6 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="sb-lnk ceo-only" id="snav-property" onclick="sp('property',this,'')" style="display:none">💎 Property &amp; Finance</div>
         <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
         <div class="sb-lnk ceo-only" id="snav-recurring" onclick="sp('recurring',this,'')" style="display:none">🔄 Recurring Costs</div>
-        <div class="sb-lnk ceo-only" id="snav-clients" onclick="sp('clients',this,'')" style="display:none">👥 Clientes</div>
-        <div class="sb-lnk ceo-only" id="snav-vendors" onclick="sp('vendors',this,'')" style="display:none">🔨 Fornecedores</div>
-        <div class="sb-lnk ceo-only" id="snav-invoices" onclick="sp('invoices',this,'')" style="display:none">🧾 Invoices</div>
       </div>
       <div class="sb-sync"><div class="sync-dot"></div>Live · Auto-saved</div>
     </div>
@@ -1007,114 +1032,195 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         </div>
       </div>
 
-      <!-- Clientes (CEO ONLY) -->
-      <div class="page" id="page-clients">
-        <div class="page-title">👥 Clientes <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
-        <div class="page-sub">Base de clientes · usado em projetos e invoices</div>
-
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
-            <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Clientes
-              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="cl-count">— 0 cliente(s)</span>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <input id="cl-search" type="text" placeholder="🔍 Buscar..." oninput="renderClients()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
-              <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openClientModal()">+ Novo Cliente</button>
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:800px">
-              <thead>
-                <tr style="background:#FAF7F3">
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Nome</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Endereço</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Telefone</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">EIN/Tax</th>
-                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:90px">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="cl-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Fornecedores (CEO ONLY) -->
-      <div class="page" id="page-vendors">
-        <div class="page-title">🔨 Fornecedores <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
-        <div class="page-sub">Base de fornecedores · contratos e seguros · usado em Actual Costs</div>
-
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
-            <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Fornecedores
-              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="vn-count">— 0 fornecedor(es)</span>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <input id="vn-search" type="text" placeholder="🔍 Buscar..." oninput="renderVendors()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
-              <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openVendorModal()">+ Novo Fornecedor</button>
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:900px">
-              <thead>
-                <tr style="background:#FAF7F3">
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Nome</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Especialidade</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Telefone</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
-                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">📄 Contratos</th>
-                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">🛡️ Seguros</th>
-                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:140px">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="vn-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Invoices (CEO ONLY) -->
-      <div class="page" id="page-invoices">
-        <div class="page-title">🧾 Invoices <span style="font-size:11px;background:#FFF3E0;color:#E65100;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
-        <div class="page-sub">Geração e gestão de invoices · cliente puxado da base</div>
-
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
-            <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Invoices
-              <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="iv-count">— 0 invoice(s)</span>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <select id="iv-flt-status" onchange="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
-                <option value="">Todos os status</option>
-                <option value="open">Em aberto</option>
-                <option value="paid">Paga</option>
-                <option value="cancelled">Cancelada</option>
-              </select>
-              <input id="iv-search" type="text" placeholder="🔍 Buscar..." oninput="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
-              <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openInvoiceModal()">+ Nova Invoice</button>
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:1000px">
-              <thead>
-                <tr style="background:#FAF7F3">
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px;width:80px">Nº</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px;width:100px">Data</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Cliente</th>
-                  <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Descrição</th>
-                  <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:12px;width:110px">Valor</th>
-                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:110px">Status</th>
-                  <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:160px">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="iv-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
+</div>
+
+<!-- ═══ GLOBAL VIEWS (CEO only) ═══ -->
+
+<!-- HOME -->
+<div id="view-home">
+  <div class="port-hdr"><div><h2>🏠 Home — Visão Geral</h2><p style="color:var(--gray3);margin-top:4px">Dashboard executivo · todos os projetos consolidados</p></div></div>
+  <div class="home-grid" id="home-kpis"></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:6px" id="home-charts-row">
+    <div class="card">
+      <div class="card-title">📈 Faturamento mensal (últimos 12 meses)</div>
+      <div class="chart-wrap" style="height:280px"><canvas id="home-revenue-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚠️ Alertas</div>
+      <div id="home-alerts" style="font-size:13px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTES (global) -->
+<div id="view-clients">
+  <div class="port-hdr"><div><h2>👥 Clientes</h2><p style="color:var(--gray3);margin-top:4px">Base de clientes da empresa</p></div></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+      <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Clientes
+        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="cl-count">— 0 cliente(s)</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="cl-search" type="text" placeholder="🔍 Buscar..." oninput="renderClients()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openClientModal()">+ Novo Cliente</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:800px">
+        <thead>
+          <tr style="background:#FAF7F3">
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Nome</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Endereço</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Telefone</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">EIN/Tax</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:90px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="cl-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FORNECEDORES (global) -->
+<div id="view-vendors">
+  <div class="port-hdr"><div><h2>🔨 Fornecedores</h2><p style="color:var(--gray3);margin-top:4px">Base de fornecedores · contratos e seguros</p></div></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+      <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Fornecedores
+        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="vn-count">— 0 fornecedor(es)</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="vn-search" type="text" placeholder="🔍 Buscar..." oninput="renderVendors()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openVendorModal()">+ Novo Fornecedor</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:900px">
+        <thead>
+          <tr style="background:#FAF7F3">
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Nome</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Especialidade</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Telefone</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">📄 Contratos</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">🛡️ Seguros</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:140px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="vn-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICES (global) -->
+<div id="view-invoices">
+  <div class="port-hdr"><div><h2>🧾 Invoices</h2><p style="color:var(--gray3);margin-top:4px">Geração e gestão de invoices</p></div></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+      <div class="card-title" style="margin:0;border:0;padding:0">📋 Cadastro de Invoices
+        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="iv-count">— 0 invoice(s)</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="iv-flt-status" onchange="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+          <option value="">Todos os status</option>
+          <option value="open">Em aberto</option>
+          <option value="paid">Paga</option>
+          <option value="cancelled">Cancelada</option>
+        </select>
+        <input id="iv-search" type="text" placeholder="🔍 Buscar..." oninput="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openInvoiceModal()">+ Nova Invoice</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:1000px">
+        <thead>
+          <tr style="background:#FAF7F3">
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px;width:80px">Nº</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px;width:100px">Data</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Cliente</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Descrição</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:12px;width:110px">Valor</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:110px">Status</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:160px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="iv-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCEIRO -->
+<div id="view-financial">
+  <div class="port-hdr"><div><h2>💰 Financeiro</h2><p style="color:var(--gray3);margin-top:4px">Resumo gerencial · todos os projetos</p></div></div>
+  <div class="home-grid" id="fin-kpis"></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+      <div class="card-title" style="margin:0;border:0;padding:0">📊 Resumo por projeto
+        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px" id="fin-count">— 0 projeto(s)</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="fin-flt-status" onchange="renderFinancial()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+          <option value="">Todos os status</option>
+          <option value="in_progress">Em andamento</option>
+          <option value="completed">Completos</option>
+          <option value="for_sale">À venda</option>
+          <option value="sold">Vendidos</option>
+        </select>
+        <input id="fin-search" type="text" placeholder="🔍 Buscar projeto..." oninput="renderFinancial()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:220px">
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px">
+        <thead>
+          <tr style="background:#FAF7F3">
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px">Projeto</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px">Cliente</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Status</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Total Investido</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Final Sale</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Gross Profit</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Lucro Líquido</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:70px">ROI %</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:70px">Sched %</th>
+          </tr>
+        </thead>
+        <tbody id="fin-tbody"></tbody>
+        <tfoot id="fin-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DRE Mensal -->
+<div id="view-dre">
+  <div class="port-hdr"><div><h2>📊 DRE — Demonstração de Resultados</h2><p style="color:var(--gray3);margin-top:4px">Receitas, custos e lucro mês a mês · regime de competência</p></div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;gap:6px">
+        <button class="port-flt active" data-dre-mode="month" onclick="setDreMode('month')">📅 Mês único</button>
+        <button class="port-flt" data-dre-mode="ytd" onclick="setDreMode('ytd')">📈 YTD (ano)</button>
+        <button class="port-flt" data-dre-mode="compare" onclick="setDreMode('compare')">📊 12 meses</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center" id="dre-month-sel">
+        <label style="font-size:12px;color:var(--gray3);font-weight:600">Mês:</label>
+        <select id="dre-month" onchange="renderDRE()">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="dre-year" onchange="renderDRE()"></select>
+      </div>
+      <button class="btn btn-primary" style="padding:8px 16px;font-size:12px;margin-left:auto" onclick="window.print()">🖨 Imprimir / PDF</button>
+    </div>
+  </div>
+  <div id="dre-content"></div>
 </div>
 
 </div><!-- /app -->
@@ -1361,8 +1467,13 @@ function isCEO(){
   return !!(CURRENT_USER&&CURRENT_USER.email&&CEO_EMAILS.includes(CURRENT_USER.email.toLowerCase()));
 }
 function applyCEOVisibility(){
+  const ceo=isCEO();
   document.querySelectorAll('.ceo-only').forEach(el=>{
-    el.style.display=isCEO()?'':'none';
+    if(el.id==='gtabs'){
+      el.style.display=ceo?'flex':'none';
+    } else {
+      el.style.display=ceo?'':'none';
+    }
   });
 }
 
@@ -1421,7 +1532,8 @@ function showApp(){
   setLoading(false);
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  goPortfolio();
+  // CEO starts in Home, others in Portfolio
+  goView(isCEO()?'home':'portfolio');
 }
 function setLoading(show,msg='Loading...'){
   const el=document.getElementById('app-loading');
@@ -1513,17 +1625,51 @@ async function loadAllData(){
   populateClientDropdowns();
 }
 
-// ═══ PORTFOLIO ════════════════════════════════════════════════════════
-function goPortfolio(){
+// ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
+const GLOBAL_VIEWS=['home','portfolio','clients','vendors','invoices','financial','dre'];
+
+function goView(view){
+  if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
+  // CEO check for restricted views
+  const ceoOnly=['home','clients','vendors','invoices','financial','dre'];
+  if(ceoOnly.includes(view) && !isCEO()){
+    toast('Apenas CEO pode acessar esta seção',false);
+    view='portfolio';
+  }
   CID=null;
-  document.getElementById('view-portfolio').style.display='block';
-  document.getElementById('view-project').style.display='none';
+  // Hide ALL views
+  ['view-portfolio','view-project','view-home','view-clients','view-vendors','view-invoices','view-financial','view-dre'].forEach(v=>{
+    const el=document.getElementById(v);
+    if(el) el.style.display='none';
+  });
+  // Show selected view
+  const target=document.getElementById('view-'+view);
+  if(target) target.style.display='block';
+  // Hide project-specific topnav buttons
   document.getElementById('back-btn').style.display='none';
   document.getElementById('tn-pname').style.display='none';
   document.getElementById('del-btn').style.display='none';
+  // Update active tab
+  document.querySelectorAll('.gtab').forEach(b=>{
+    b.classList.toggle('active',b.dataset.view===view);
+  });
+  // Update count label
   document.getElementById('proj-count-lbl').textContent=projects.length+' project'+(projects.length!==1?'s':'');
-  renderPortfolio();
+  // Per-view init
+  if(view==='portfolio') renderPortfolio();
+  else if(view==='home' && isCEO()) renderHome();
+  else if(view==='clients' && isCEO()) renderClients();
+  else if(view==='vendors' && isCEO()) renderVendors();
+  else if(view==='invoices' && isCEO()) renderInvoices();
+  else if(view==='financial' && isCEO()) renderFinancial();
+  else if(view==='dre' && isCEO()) renderDRE();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// Back-compat alias (the old code calls goPortfolio in many places)
+function goPortfolio(){goView('portfolio');}
+
+// ═══ PORTFOLIO ════════════════════════════════════════════════════════
 
 // Current active filter for portfolio
 let _portFilter='all';
@@ -1679,13 +1825,19 @@ function openProject(id){
   CID=id;
   const p=projects.find(x=>x.id===id);
   if(!p) return;
-  document.getElementById('view-portfolio').style.display='none';
+  // Hide ALL global views
+  ['view-portfolio','view-home','view-clients','view-vendors','view-invoices','view-financial','view-dre'].forEach(v=>{
+    const el=document.getElementById(v);
+    if(el) el.style.display='none';
+  });
   document.getElementById('view-project').style.display='block';
   document.getElementById('back-btn').style.display='flex';
   document.getElementById('tn-pname').style.display='block';
   document.getElementById('tn-pname').textContent=p.name;
   document.getElementById('del-btn').style.display='inline-flex';
   document.getElementById('proj-count-lbl').textContent='← Projects';
+  // Deactivate all global tabs (since we're inside a project)
+  document.querySelectorAll('.gtab').forEach(b=>b.classList.remove('active'));
   buildBudgetRooms();
   buildTaskEditors();
   loadProjectForms(p);
@@ -2715,6 +2867,453 @@ function generateReport(){
   if(!w){toast('Permita pop-ups pra gerar o relatório',false);return;}
   w.document.write(reportHTML);
   w.document.close();
+}
+
+// ═══ DRE (CEO ONLY) ════════════════════════════════════════════════════
+// Period: 'YYYY-MM' string
+let _dreMode='month';
+
+function setDreMode(mode){
+  _dreMode=mode;
+  document.querySelectorAll('[data-dre-mode]').forEach(b=>{
+    b.classList.toggle('active',b.dataset.dreMode===mode);
+  });
+  document.getElementById('dre-month-sel').style.display=mode==='compare'?'none':'flex';
+  renderDRE();
+}
+
+// Initialize year dropdown
+function _initDreSelectors(){
+  const yearSel=document.getElementById('dre-year');
+  if(!yearSel||yearSel.options.length>0) return;
+  const now=new Date();
+  for(let y=now.getFullYear()+1;y>=2020;y--){
+    yearSel.innerHTML+=`<option value="${y}">${y}</option>`;
+  }
+  yearSel.value=now.getFullYear();
+  document.getElementById('dre-month').value=now.getMonth()+1;
+}
+
+// Calcular DRE de um período (mês ou range)
+// startKey, endKey = 'YYYY-MM' inclusive
+function calcDREPeriod(startKey,endKey){
+  // RECEITAS
+  // 1) Invoices (cliente) - status 'paid' OR 'open', usar invoice.date
+  let invoicesPaid=0,invoicesOpen=0;
+  invoices.forEach(inv=>{
+    if(inv.status==='cancelled') return;
+    const key=(inv.date||'').slice(0,7);
+    if(!key||key<startKey||key>endKey) return;
+    if(inv.status==='paid') invoicesPaid+=(+inv.amount||0);
+    else if(inv.status==='open') invoicesOpen+=(+inv.amount||0);
+  });
+  // 2) Vendas de imóveis - usar property_info.sale_date
+  let salesRevenue=0,salesProjects=[];
+  projects.forEach(p=>{
+    const prop=propertyMap[p.id]||{};
+    if(!prop.sale_date) return;
+    const key=prop.sale_date.slice(0,7);
+    if(key<startKey||key>endKey) return;
+    salesRevenue+=(+prop.final_sale_price||0);
+    salesProjects.push(p);
+  });
+  // CUSTOS DIRETOS (apenas dos projetos vendidos no período — regime de competência)
+  let renovCost=0,emdCash=0,hardMoney=0,sellingCosts=0,lenderSale=0,decInvoiceCost=0,docCost=0,heCost=0;
+  salesProjects.forEach(p=>{
+    const prop=propertyMap[p.id]||{};
+    renovCost+=calcRoomTotal(p.id,'actual');
+    emdCash+=(+prop.emd_cash||0);
+    hardMoney+=(+prop.cash||0);
+    sellingCosts+=(+prop.selling_costs||0);
+    lenderSale+=(+prop.lender_costs_sale||0);
+    decInvoiceCost+=(extraCostsMap[p.id]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    docCost+=(extraCostsMap[p.id]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    heCost+=(extraCostsMap[p.id]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  });
+  // DESPESAS RECORRENTES — mês a mês (alocadas no mês correspondente)
+  let recurringExpense=0;
+  // Build set of months in range
+  const monthsInRange=[];
+  const [sY,sM]=startKey.split('-').map(Number);
+  const [eY,eM]=endKey.split('-').map(Number);
+  let y=sY,m=sM;
+  while(y<eY||(y===eY&&m<=eM)){
+    monthsInRange.push({y,m});
+    m++; if(m>12){m=1;y++;}
+  }
+  // For each project's recurring_detail, sum amounts of matching months
+  Object.entries(recurringMap).forEach(([pid,items])=>{
+    const proj=projects.find(p=>p.id===pid);
+    if(!proj) return;
+    const y1=proj.rcd_year1||(new Date()).getFullYear();
+    const y2=proj.rcd_year2||(y1+1);
+    Object.values(items).forEach(row=>{
+      RC_MONTHS_Y1.forEach((mKey,idx)=>{
+        const monthNum=idx+1;
+        if(monthsInRange.some(m=>m.y===y1&&m.m===monthNum)){
+          recurringExpense+=(+row[mKey]||0);
+        }
+      });
+      RC_MONTHS_Y2.forEach((mKey,idx)=>{
+        const monthNum=idx+1;
+        if(monthsInRange.some(m=>m.y===y2&&m.m===monthNum)){
+          recurringExpense+=(+row[mKey]||0);
+        }
+      });
+    });
+  });
+  const receitaBruta=invoicesPaid+salesRevenue;
+  const totalCustosDirecto=renovCost+decInvoiceCost+docCost+heCost+sellingCosts+lenderSale;
+  const lucroBruto=receitaBruta-totalCustosDirecto;
+  const lucroLiquido=lucroBruto-recurringExpense;
+  return {
+    startKey,endKey,
+    invoicesPaid,invoicesOpen,salesRevenue,salesProjectsCount:salesProjects.length,
+    receitaBruta,
+    renovCost,decInvoiceCost,docCost,heCost,sellingCosts,lenderSale,
+    totalCustosDirecto,lucroBruto,recurringExpense,lucroLiquido
+  };
+}
+
+function _fmtSignedNeg(n){return (n>=0?'':'-')+fmt(Math.abs(n));}
+
+function _dreSectionHTML(d,title){
+  return `
+    <div class="card" style="margin-bottom:14px">
+      <div style="background:#3D271A;color:#D5C9BC;padding:10px 14px;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:8px 8px 0 0;margin:-15px -15px 14px">${title}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px">RECEITA BRUTA</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🧾 Faturamento (Invoices pagas)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600">${fmt(d.invoicesPaid)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🏠 Vendas de imóveis ${d.salesProjectsCount>0?'('+d.salesProjectsCount+' projeto(s))':''}</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600">${fmt(d.salesRevenue)}</td></tr>
+        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p3);text-transform:uppercase;font-size:11px">TOTAL RECEITA</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p3);font-size:14px">${fmt(d.receitaBruta)}</td></tr>
+
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) CUSTOS DIRETOS (projetos vendidos no período)</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🔨 Reforma (Actual Costs)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.renovCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📋 DEC Invoice (custos terceirizados)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.decInvoiceCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📄 Documentos</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.docCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">✨ High End</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.heCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💸 Selling costs</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.sellingCosts)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🏦 Lender costs (venda)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.lenderSale)}</td></tr>
+        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL CUSTOS DIRETOS</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.totalCustosDirecto)}</td></tr>
+
+        <tr style="background:#FAF3E0"><td style="padding:10px 12px;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:12px;letter-spacing:.5px">(=) LUCRO BRUTO</td><td style="padding:10px 12px;text-align:right;font-weight:800;color:var(--gold);font-size:15px">${_fmtSignedNeg(d.lucroBruto)}</td></tr>
+
+        <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) DESPESAS RECORRENTES</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📅 Energy, Water, HOA, Loan, Taxes, etc.</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.recurringExpense)}</td></tr>
+        <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL DESPESAS</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.recurringExpense)}</td></tr>
+
+        <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) LUCRO LÍQUIDO</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#B8860B">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
+      </table>
+    </div>`;
+}
+
+function _monthLabel(m,y){
+  return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1]+'/'+String(y).slice(-2);
+}
+
+function renderDRE(){
+  if(!isCEO()) return;
+  _initDreSelectors();
+  const wrap=document.getElementById('dre-content');
+  if(!wrap) return;
+  if(_dreMode==='month'){
+    const y=parseInt(document.getElementById('dre-year').value);
+    const m=parseInt(document.getElementById('dre-month').value);
+    const key=`${y}-${String(m).padStart(2,'0')}`;
+    const d=calcDREPeriod(key,key);
+    wrap.innerHTML=_dreSectionHTML(d,`DRE — ${_monthLabel(m,y)}`);
+  } else if(_dreMode==='ytd'){
+    const y=parseInt(document.getElementById('dre-year').value);
+    const startKey=`${y}-01`;
+    const endKey=`${y}-12`;
+    const d=calcDREPeriod(startKey,endKey);
+    wrap.innerHTML=_dreSectionHTML(d,`DRE — YTD ${y} (Jan a Dez)`);
+  } else if(_dreMode==='compare'){
+    // Last 12 months side by side
+    const now=new Date();
+    const months=[];
+    for(let i=11;i>=0;i--){
+      const dt=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      const d=calcDREPeriod(key,key);
+      months.push({label:_monthLabel(dt.getMonth()+1,dt.getFullYear()),d});
+    }
+    // Build a horizontal table with months as columns
+    let html=`<div class="card"><div style="background:#3D271A;color:#D5C9BC;padding:10px 14px;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:8px 8px 0 0;margin:-15px -15px 14px">DRE — Últimos 12 meses (comparativo)</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:1400px">
+      <thead><tr><th style="padding:8px;background:#FAF7F3;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#FAF7F3;z-index:1;min-width:200px"></th>`;
+    months.forEach(m=>{html+=`<th style="padding:8px 6px;background:#FAF7F3;text-align:right;border-bottom:2px solid var(--gray2);font-size:10px;min-width:80px">${m.label}</th>`;});
+    html+=`</tr></thead><tbody>`;
+    const rows=[
+      ['🧾 Faturamento','invoicesPaid','#3D271A'],
+      ['🏠 Vendas imóveis','salesRevenue','#3D271A'],
+      ['📈 RECEITA BRUTA','receitaBruta','var(--p3)'],
+      ['🔨 Reforma','renovCost','#655A4E'],
+      ['📋 DEC Invoice','decInvoiceCost','#655A4E'],
+      ['📄 Documentos','docCost','#655A4E'],
+      ['✨ High End','heCost','#655A4E'],
+      ['💸 Selling','sellingCosts','#655A4E'],
+      ['🏦 Lender venda','lenderSale','#655A4E'],
+      ['📉 TOTAL CUSTOS','totalCustosDirecto','var(--p1)'],
+      ['📅 Recorrentes','recurringExpense','#655A4E'],
+      ['💎 LUCRO LÍQUIDO','lucroLiquido','var(--gold)'],
+    ];
+    rows.forEach((r,idx)=>{
+      const [label,key,color]=r;
+      const isHeader=color==='var(--p3)'||color==='var(--p1)'||color==='var(--gold)';
+      const bg=isHeader?'#FAF7F3':'#fff';
+      html+=`<tr style="background:${bg}">
+        <td style="padding:6px 8px;border-bottom:1px solid #F0EAE2;font-weight:${isHeader?700:500};color:${color};position:sticky;left:0;background:${bg};z-index:1">${label}</td>`;
+      months.forEach(mo=>{
+        const v=mo.d[key]||0;
+        const fmtVal=key==='lucroLiquido'?_fmtSignedNeg(v):fmt(v);
+        html+=`<td style="padding:6px 8px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:${isHeader?700:400};color:${color}">${v===0?'<span style="color:var(--gray3)">—</span>':fmtVal}</td>`;
+      });
+      html+=`</tr>`;
+    });
+    html+=`</tbody></table></div></div>`;
+    wrap.innerHTML=html;
+  }
+}
+
+// ═══ FINANCEIRO (CEO ONLY) ═════════════════════════════════════════════
+// Returns full financial breakdown for a single project
+function calcProjectFinancials(pid){
+  const prop=propertyMap[pid]||{};
+  const cash=+prop.cash||0;
+  const emd=+prop.emd_cash||0;
+  const sale=+prop.final_sale_price||0;
+  const selling=+prop.selling_costs||0;
+  const lenderSale=+prop.lender_costs_sale||0;
+  const actCosts=calcRoomTotal(pid,'actual');
+  const dec=(extraCostsMap[pid]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  const doc=(extraCostsMap[pid]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  const he=(extraCostsMap[pid]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  const rec=calcRCDTotal(pid);
+  const totalInvested=emd+cash+actCosts+dec+doc+he+rec;
+  const grossProfit=sale-selling-lenderSale;
+  const netProfit=sale>0?(grossProfit-totalInvested):0;
+  const roi=totalInvested>0&&sale>0?(netProfit/totalInvested*100):0;
+  return {emd,cash,sale,selling,lenderSale,actCosts,dec,doc,he,rec,totalInvested,grossProfit,netProfit,roi};
+}
+
+function renderFinancial(){
+  if(!isCEO()) return;
+  const q=(document.getElementById('fin-search')?.value||'').toLowerCase().trim();
+  const statusFlt=document.getElementById('fin-flt-status')?.value||'';
+  let list=projects.slice();
+  if(statusFlt) list=list.filter(p=>projectStatus(p.id)===statusFlt);
+  if(q) list=list.filter(p=>(p.name||'').toLowerCase().includes(q)||customerName(p.customer).toLowerCase().includes(q));
+  // Aggregate KPIs
+  let totInvested=0,totSale=0,totGross=0,totNet=0;
+  list.forEach(p=>{
+    const f=calcProjectFinancials(p.id);
+    totInvested+=f.totalInvested;
+    totSale+=f.sale;
+    totGross+=f.grossProfit;
+    totNet+=f.netProfit;
+  });
+  const avgROI=totInvested>0?(totNet/totInvested*100):0;
+  // Render KPIs
+  const kpisEl=document.getElementById('fin-kpis');
+  if(kpisEl){
+    kpisEl.innerHTML=`
+      <div class="home-card"><div class="lbl">📁 Projetos</div><div class="val">${list.length}</div></div>
+      <div class="home-card"><div class="lbl">💰 Total Investido</div><div class="val">${fmt(totInvested)}</div></div>
+      <div class="home-card gold"><div class="lbl">💵 Total Vendas</div><div class="val">${fmt(totSale)}</div></div>
+      <div class="home-card green"><div class="lbl">📈 Gross Profit</div><div class="val" style="color:${totGross>=0?'var(--p3)':'var(--p1)'}">${totGross>=0?'':'-'}${fmt(Math.abs(totGross))}</div></div>
+      <div class="home-card green"><div class="lbl">✅ Lucro Líquido</div><div class="val" style="color:${totNet>=0?'var(--p3)':'var(--p1)'}">${totNet>=0?'':'-'}${fmt(Math.abs(totNet))}</div></div>
+      <div class="home-card"><div class="lbl">📊 ROI Médio</div><div class="val">${avgROI.toFixed(1)}%</div></div>`;
+  }
+  // Render table
+  const tbody=document.getElementById('fin-tbody');
+  document.getElementById('fin-count').textContent='— '+list.length+' projeto(s)';
+  if(list.length===0){
+    tbody.innerHTML=`<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">Nenhum projeto.</td></tr>`;
+    document.getElementById('fin-tfoot').innerHTML='';
+    return;
+  }
+  tbody.innerHTML=list.map(p=>{
+    const f=calcProjectFinancials(p.id);
+    const st=projectStatus(p.id);
+    const meta=STATUS_META[st];
+    const sched=calcSched(p.id);
+    const netColor=f.netProfit>=0?'var(--p3)':'var(--p1)';
+    return `<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer" onclick="openProject('${p.id}')">
+      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${p.name||''}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:11px">${customerName(p.customer)||'—'}</td>
+      <td style="padding:10px 12px;text-align:center"><span style="background:${meta.bg};color:${meta.color};padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700">${meta.icon} ${meta.label}</span></td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600">${fmt(f.totalInvested)}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600;color:var(--gold)">${f.sale>0?fmt(f.sale):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600">${f.sale>0?(f.grossProfit>=0?'':'-')+fmt(Math.abs(f.grossProfit)):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${f.sale>0?netColor:'var(--gray3)'}">${f.sale>0?(f.netProfit>=0?'':'-')+fmt(Math.abs(f.netProfit)):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${f.sale>0?netColor:'var(--gray3)'}">${f.sale>0?f.roi.toFixed(1)+'%':'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600">${sched}%</td>
+    </tr>`;
+  }).join('');
+  // Totals footer
+  document.getElementById('fin-tfoot').innerHTML=`
+    <tr style="background:#3D271A;color:#D5C9BC">
+      <td colspan="3" style="padding:11px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px">TOTAIS (${list.length} projeto(s))</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totInvested)}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totSale)}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700">${totGross>=0?'':'-'}${fmt(Math.abs(totGross))}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#B8860B">${totNet>=0?'':'-'}${fmt(Math.abs(totNet))}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#B8860B">${avgROI.toFixed(1)}%</td>
+      <td></td>
+    </tr>`;
+}
+
+// ═══ HOME (CEO ONLY) ═══════════════════════════════════════════════════
+function renderHome(){
+  if(!isCEO()) return;
+  // Compute KPIs
+  const groups={in_progress:[],completed:[],for_sale:[],sold:[]};
+  projects.forEach(p=>{
+    const st=projectStatus(p.id);
+    if(groups[st]) groups[st].push(p);
+  });
+  // Invoices KPIs
+  const openInv=invoices.filter(i=>i.status==='open');
+  const paidInv=invoices.filter(i=>i.status==='paid');
+  const totalOpen=openInv.reduce((s,i)=>s+(+i.amount||0),0);
+  const totalPaid=paidInv.reduce((s,i)=>s+(+i.amount||0),0);
+  // Consolidated profit (sum of Actual Profit from sold projects)
+  let totalProfit=0,totalInvested=0;
+  groups.sold.forEach(p=>{
+    const prop=propertyMap[p.id]||{};
+    const sale=+prop.final_sale_price||0;
+    const selling=+prop.selling_costs||0;
+    const lenderSale=+prop.lender_costs_sale||0;
+    const cash=+prop.cash||0;
+    const emd=+prop.emd_cash||0;
+    const actCosts=calcRoomTotal(p.id,'actual');
+    // Extra costs subtotals
+    const dec=(extraCostsMap[p.id]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const doc=(extraCostsMap[p.id]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const he=(extraCostsMap[p.id]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const rec=calcRCDTotal(p.id);
+    const invested=emd+cash+actCosts+dec+doc+he+rec;
+    const grossProfit=sale-selling-lenderSale;
+    totalInvested+=invested;
+    totalProfit+=(grossProfit-invested);
+  });
+  // Render KPI cards
+  const kpisEl=document.getElementById('home-kpis');
+  if(kpisEl){
+    kpisEl.innerHTML=`
+      <div class="home-card gold">
+        <div class="lbl">💰 Faturamento total</div>
+        <div class="val">${fmt(totalPaid)}</div>
+        <div class="sub">${paidInv.length} invoice(s) paga(s)</div>
+      </div>
+      <div class="home-card orange">
+        <div class="lbl">🧾 Invoices em aberto</div>
+        <div class="val">${fmt(totalOpen)}</div>
+        <div class="sub">${openInv.length} pendente(s)</div>
+      </div>
+      <div class="home-card">
+        <div class="lbl">🔄 Projetos em andamento</div>
+        <div class="val">${groups.in_progress.length}</div>
+      </div>
+      <div class="home-card green">
+        <div class="lbl">✅ Projetos completos</div>
+        <div class="val">${groups.completed.length}</div>
+      </div>
+      <div class="home-card">
+        <div class="lbl">🏷️ Projetos à venda</div>
+        <div class="val">${groups.for_sale.length}</div>
+      </div>
+      <div class="home-card gold">
+        <div class="lbl">💵 Projetos vendidos</div>
+        <div class="val">${groups.sold.length}</div>
+      </div>
+      <div class="home-card green">
+        <div class="lbl">📈 Lucro consolidado</div>
+        <div class="val" style="color:${totalProfit>=0?'var(--p3)':'var(--p1)'}">${totalProfit>=0?'':'-'}${fmt(Math.abs(totalProfit))}</div>
+        <div class="sub">vendidos · invest. ${fmt(totalInvested)}</div>
+      </div>
+      <div class="home-card red">
+        <div class="lbl">📁 Total projetos</div>
+        <div class="val">${projects.length}</div>
+        <div class="sub">${clients.length} cliente(s) · ${vendors.length} fornecedor(es)</div>
+      </div>`;
+  }
+  // Render revenue chart (last 12 months from paid invoices)
+  renderHomeRevenueChart(paidInv);
+  // Render alerts
+  renderHomeAlerts();
+}
+
+function renderHomeRevenueChart(paidInv){
+  const canvas=document.getElementById('home-revenue-chart');
+  if(!canvas||typeof Chart==='undefined') return;
+  // Build last 12 months buckets
+  const months=[];
+  const now=new Date();
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({key:d.toISOString().slice(0,7),label:d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}),total:0});
+  }
+  paidInv.forEach(inv=>{
+    const dateStr=inv.paid_date||inv.date;
+    if(!dateStr) return;
+    const key=dateStr.slice(0,7);
+    const b=months.find(m=>m.key===key);
+    if(b) b.total+=(+inv.amount||0);
+  });
+  dChart('home-revenue-chart');
+  charts_['home-revenue-chart']=new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:months.map(m=>m.label),
+      datasets:[{label:'Faturamento',data:months.map(m=>m.total),backgroundColor:'#B8860B',borderColor:'#3D271A',borderWidth:0,borderRadius:4}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}
+    }
+  });
+}
+
+function renderHomeAlerts(){
+  const wrap=document.getElementById('home-alerts');
+  if(!wrap) return;
+  const alerts=[];
+  // 1) Expiring insurances (vendor docs)
+  vendors.forEach(v=>{
+    const exp=_expiringInsurance(v.id);
+    if(exp){
+      const days=exp.days;
+      const color=days<0?'var(--p1)':'var(--p2)';
+      const label=days<0?`vencido há ${Math.abs(days)}d`:`vence em ${days}d`;
+      alerts.push({color,html:`🛡️ <strong>${v.name}</strong> — seguro ${label}`});
+    }
+  });
+  // 2) Overdue invoices (open & date > 30 days ago)
+  const now=new Date();
+  invoices.filter(i=>i.status==='open').forEach(inv=>{
+    if(!inv.date) return;
+    const days=Math.floor((now-new Date(inv.date+'T00:00:00'))/86400000);
+    if(days>30){
+      const client=_clientById(inv.client_id);
+      alerts.push({color:'var(--p1)',html:`🧾 Invoice #${inv.invoice_number} (${client?.name||'—'}) — em aberto há ${days}d`});
+    }
+  });
+  // 3) Late projects (end_date passed and not 100%)
+  projects.forEach(p=>{
+    if(!p.end_date) return;
+    const days=Math.floor((now-new Date(p.end_date+'T00:00:00'))/86400000);
+    if(days>0 && calcSched(p.id)<100 && projectStatus(p.id)==='in_progress'){
+      alerts.push({color:'var(--p2)',html:`📅 <strong>${p.name}</strong> — atrasado ${days}d`});
+    }
+  });
+  if(alerts.length===0){
+    wrap.innerHTML=`<div style="padding:18px;text-align:center;color:var(--p3);background:#ECEFE3;border-radius:8px">✓ Nenhum alerta — tudo em ordem!</div>`;
+    return;
+  }
+  wrap.innerHTML=alerts.map(a=>`<div style="padding:9px 12px;margin-bottom:6px;background:#FAF7F3;border-left:3px solid ${a.color};border-radius:5px;font-size:12px">${a.html}</div>`).join('');
 }
 
 // ═══ INVOICES (CEO ONLY) ════════════════════════════════════════════════
@@ -4353,9 +4952,7 @@ function sp(id,el,cls){
   if(id==='property' && isCEO()) recalcProfit();
   if(id==='listing' && isCEO()) loadListingForm();
   if(id==='recurring' && isCEO()) loadRecurringDetail();
-  if(id==='clients' && isCEO()) renderClients();
-  if(id==='vendors' && isCEO()) renderVendors();
-  if(id==='invoices' && isCEO()) renderInvoices();
+  // (clients/vendors/invoices moved to global views — see goView)
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
