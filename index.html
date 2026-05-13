@@ -581,7 +581,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div class="fg"><label>Refund value ($)</label>
             <input id="pi-refund" type="text" readonly style="background:#FAF7F3;color:var(--p3);font-weight:700;cursor:not-allowed" value="$0">
           </div>
-          <div style="font-size:11px;color:var(--gray3);margin-top:6px;font-style:italic">💡 Crie invoices do tipo <strong>💸 Refund</strong> para este projeto. O valor pago será somado aqui automaticamente.</div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:6px;font-style:italic">💡 Crie invoices do tipo <strong>💸 Refund</strong> para este projeto. O valor é somado aqui automaticamente (independente do status).</div>
         </div>
 
         <!-- Card 10: Profit Summary + Distribution -->
@@ -701,6 +701,19 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <!-- Card 3: Utilities & Construction -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">⚙️ Utilities &amp; Construction</div>
+          <div class="fgrid">
+            <div class="fg"><label>Type of project</label>
+              <select id="lc-project-type" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="mobile_home">Mobile home</option>
+                <option value="single_family">Single family</option>
+                <option value="apartment">Apartment</option>
+                <option value="townhome">Townhome</option>
+                <option value="commercial">Commercial</option>
+              </select>
+            </div>
+            <div class="fg"></div>
+          </div>
           <div class="fgrid">
             <div class="fg"><label>Water company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-water-co" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
             <div class="fg"><label>Electric company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-power-co" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
@@ -1118,7 +1131,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <select id="iv-flt-status" onchange="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
           <option value="">Todos os status</option>
-          <option value="open">Em aberto</option>
+          <option value="open">Pending</option>
           <option value="paid">Paga</option>
           <option value="cancelled">Cancelada</option>
         </select>
@@ -1320,7 +1333,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="fg"><label>Valor *</label><input id="im-amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
       <div class="fg"><label>Status</label>
         <select id="im-status" onchange="onInvoiceStatusChange()">
-          <option value="open">Em aberto</option>
+          <option value="open">Pending</option>
           <option value="paid">Paga</option>
           <option value="cancelled">Cancelada</option>
         </select>
@@ -1899,10 +1912,7 @@ function rowHTML(type,gid,item,islug){
         <option value="other">📌 Other</option>
       </select>
     </td>
-    <td>${type==='act'
-      ? `<select class="ci" id="bsup-${type}-${gid}-${islug}" onchange="onBSup('${type}','${gid}','${islug}',this)" style="padding:5px 6px;font-size:11px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">${populateVendorDropdowns()}</select>`
-      : `<input class="ci" type="text" id="bsup-${type}-${gid}-${islug}" oninput="onBSup('${type}','${gid}','${islug}',this)" placeholder="Supplier...">`
-    }</td>
+    <td><select class="ci" id="bsup-${type}-${gid}-${islug}" onchange="onBSup('${type}','${gid}','${islug}',this)" style="padding:5px 6px;font-size:11px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">${populateVendorDropdowns()}</select></td>
     <td><input class="ni" type="number" min="0" step="1" id="bq-${type}-${gid}-${islug}"
       oninput="onBQ('${type}','${gid}','${islug}',this)" placeholder="0"></td>
     <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
@@ -3034,7 +3044,7 @@ function _dreSectionHTML(d,title){
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px">FRENTE 1 — MARGEM OPERACIONAL</td></tr>
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🧾 Invoices Operacionais (pagas)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--p3)">${fmt(d.opPaid)}</td></tr>
-        ${d.opOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Em aberto (não conta)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.opOpen)}</td></tr>`:''}
+        ${d.opOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Pending (não conta)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.opOpen)}</td></tr>`:''}
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🔨 (−) Actual Costs (fornecedores)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.actualCosts)}</td></tr>
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📋 (−) Costs (DEC Invoice items)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.decInvoiceCost)}</td></tr>
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📄 (−) Documentos</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.docCost)}</td></tr>
@@ -3043,7 +3053,7 @@ function _dreSectionHTML(d,title){
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">FRENTE 2 — ROI FINAL (50% projetos vendidos)</td></tr>
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💎 Invoices Final ROI (pagas)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--gold)">${fmt(d.roiPaid)}</td></tr>
-        ${d.roiOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Em aberto (não conta)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.roiOpen)}</td></tr>`:''}
+        ${d.roiOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Pending (não conta)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.roiOpen)}</td></tr>`:''}
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF3E0;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:12px;letter-spacing:.5px;border-top:8px solid #fff">RECEITA TOTAL DA DEC (F1 + F2)</td></tr>
         <tr style="background:#FAF3E0"><td style="padding:9px 12px;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:11px">= TOTAL RECEITA</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--gold);font-size:14px">${fmt(d.receitaTotal)}</td></tr>
@@ -3137,10 +3147,11 @@ function calcProjectInvoices(pid,kind){
 function calcProjectInvoicesOperational(pid){return calcProjectInvoices(pid,'operational');}
 function calcProjectInvoicesFinalROI(pid){return calcProjectInvoices(pid,'final_roi');}
 function calcProjectInvoicesRefund(pid){
-  // Sum only PAID refund invoices (open refunds don't count - client hasn't paid back yet)
+  // Sum ALL refund invoices (open + paid), excluding cancelled — so the value appears
+  // in Property & Finance even before the client has paid back
   if(!pid) return 0;
   return invoices
-    .filter(i=>i.project_id===pid && i.status==='paid' && (i.kind||'')==='refund')
+    .filter(i=>i.project_id===pid && i.status!=='cancelled' && (i.kind||'')==='refund')
     .reduce((s,i)=>s+(+i.amount||0),0);
 }
 
@@ -3278,7 +3289,7 @@ function renderHome(){
         <div class="sub">${paidInv.length} invoice(s) paga(s)</div>
       </div>
       <div class="home-card orange">
-        <div class="lbl">🧾 Invoices em aberto</div>
+        <div class="lbl">🧾 Invoices pending</div>
         <div class="val">${fmt(totalOpen)}</div>
         <div class="sub">${openInv.length} pendente(s)</div>
       </div>
@@ -3368,7 +3379,7 @@ function renderHomeAlerts(){
     const days=Math.floor((now-new Date(inv.date+'T00:00:00'))/86400000);
     if(days>30){
       const client=_clientById(inv.client_id);
-      alerts.push({color:'var(--p1)',html:`🧾 Invoice #${inv.invoice_number} (${client?.name||'—'}) — em aberto há ${days}d`});
+      alerts.push({color:'var(--p1)',html:`🧾 Invoice #${inv.invoice_number} (${client?.name||'—'}) — pending há ${days}d`});
     }
   });
   // 3) Late projects (end_date passed and not 100%)
@@ -3393,7 +3404,7 @@ const PAYMENT_METHOD_LABELS={
   ach:'ACH', credit_card:'Credit Card', other:'Outro',
 };
 const INVOICE_STATUS_META={
-  open: {label:'Em aberto', color:'#A86A2C', bg:'#F5EBDA'},
+  open: {label:'PENDING', color:'#A86A2C', bg:'#F5EBDA'},
   paid: {label:'Paga',      color:'#5C7A3F', bg:'#ECEFE3'},
   cancelled:{label:'Cancelada',color:'#655A4E', bg:'#E8E0D5'},
 };
@@ -4077,9 +4088,12 @@ async function deleteVendorDoc(docId){
 
 // Refresh supplier dropdowns currently rendered in Actual Costs (if any)
 function refreshActualCostsVendorDropdowns(){
-  // Re-render currently visible Actual Costs tables
+  // Re-render both Estimate and Actual Costs tables (both use vendor dropdowns now)
   if(CID){
-    GROUPS.forEach(g=>renderItems('act',g.id));
+    GROUPS.forEach(g=>{
+      renderItems('est',g.id);
+      renderItems('act',g.id);
+    });
   }
 }
 
@@ -4472,6 +4486,7 @@ const LC_FIELDS=[
   ['lc-garage','garage','text'],
   ['lc-carport','carport','text'],
   // Utilities & Construction
+  ['lc-project-type','project_type','text'],
   ['lc-private','private_utilities','text'],
   ['lc-foundation','foundation','text'],
   ['lc-exterior','exterior','text'],
