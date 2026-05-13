@@ -575,12 +575,13 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div id="ec-he-list"></div>
         </div>
 
-        <!-- Card 9: Refund -->
+        <!-- Card 9: Refund (read-only, auto-calculated from Refund invoices) -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">💸 Refund</div>
+          <div class="card-title">💸 Refund <span style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:8px">auto-calculado das invoices tipo Refund (pagas)</span></div>
           <div class="fg"><label>Refund value ($)</label>
-            <input id="pi-refund" type="number" min="0" step="0.01" placeholder="e.g. 0.00" oninput="onAcqInput()">
+            <input id="pi-refund" type="text" readonly style="background:#FAF7F3;color:var(--p3);font-weight:700;cursor:not-allowed" value="$0">
           </div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:6px;font-style:italic">💡 Crie invoices do tipo <strong>💸 Refund</strong> para este projeto. O valor pago será somado aqui automaticamente.</div>
         </div>
 
         <!-- Card 10: Profit Summary + Distribution -->
@@ -1308,6 +1309,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <select id="im-kind">
           <option value="operational">🔨 Operacional (durante a obra)</option>
           <option value="final_roi">💎 Final ROI (após a venda)</option>
+          <option value="refund">💸 Refund (reembolso de adiantamento)</option>
         </select>
       </div>
       <div class="fg"></div>
@@ -2242,7 +2244,6 @@ function loadPropertyForm(){
     ['pi-selling','selling_costs'],
     ['pi-holding','holding_costs'],
     ['pi-lender-sale','lender_costs_sale'],
-    ['pi-refund','refund_value'],
     ['pi-dec-invoice','dec_invoice_number'],
   ];
   pairs.forEach(([elId,k])=>{
@@ -2363,8 +2364,8 @@ async function savePI(){
     selling_costs:num('pi-selling'),
     holding_costs:num('pi-holding'),
     lender_costs_sale:num('pi-lender-sale'),
-    // Refund + Distribution
-    refund_value:num('pi-refund'),
+    // refund_value is now read-only, computed from invoices (do not save)
+    // Distribution
     pct_client:num('pi-pct-client'),
     pct_dec:num('pi-pct-dec'),
     dec_invoice_number:v('pi-dec-invoice'),
@@ -2573,8 +2574,11 @@ function recalcProfit(){
   const selling=+p.selling_costs||0;
   const holding=+p.holding_costs||0;
   const lenderSale=+p.lender_costs_sale||0;
-  // Live read refund (might be unsaved)
-  const refund=parseFloat(v('pi-refund'))||0;
+  // Refund agora é auto-calculado das invoices tipo "refund" (apenas as pagas)
+  const refund=calcProjectInvoicesRefund(CID);
+  // Update read-only display
+  const refEl=document.getElementById('pi-refund');
+  if(refEl) refEl.value=fmt(refund);
   // Mirror refund display in the distribution card
   const refMirror=document.getElementById('pi-refund-mirror');
   if(refMirror) refMirror.value=fmt(refund);
@@ -2708,7 +2712,7 @@ function generateReport(){
 
   // Final calculations
   const sale=+p.final_sale_price||0;
-  const refund=+p.refund_value||0;
+  const refund=calcProjectInvoicesRefund(CID);
   const sellingCosts=+p.selling_costs||0;
   // Total Investido = EMD + Cash + Actual Spent + Costs (DEC Invoice) + Recurring + Documents + High End
   const totalInvestido=emd+cash+totAct+decExtraTotal+recTotal+docTotal+heTotal;
@@ -2917,17 +2921,20 @@ function calcDREPeriod(startKey,endKey){
   // Refund: NUNCA entra como receita
 
   // 1) Invoices paid filtered by date range
+  // Refund invoices are SKIPPED — they are not DEC revenue (the corresponding cost is already in Recurring)
   let opPaid=0,opOpen=0,roiPaid=0,roiOpen=0;
   invoices.forEach(inv=>{
     if(inv.status==='cancelled') return;
     const key=(inv.date||'').slice(0,7);
     if(!key||key<startKey||key>endKey) return;
     const k=inv.kind||'operational';
+    if(k==='refund') return; // Refund não é receita
     const isPaid=inv.status==='paid';
     const v=+inv.amount||0;
     if(k==='final_roi'){
       if(isPaid) roiPaid+=v; else if(inv.status==='open') roiOpen+=v;
     } else {
+      // operational (default)
       if(isPaid) opPaid+=v; else if(inv.status==='open') opOpen+=v;
     }
   });
@@ -3129,6 +3136,13 @@ function calcProjectInvoices(pid,kind){
 }
 function calcProjectInvoicesOperational(pid){return calcProjectInvoices(pid,'operational');}
 function calcProjectInvoicesFinalROI(pid){return calcProjectInvoices(pid,'final_roi');}
+function calcProjectInvoicesRefund(pid){
+  // Sum only PAID refund invoices (open refunds don't count - client hasn't paid back yet)
+  if(!pid) return 0;
+  return invoices
+    .filter(i=>i.project_id===pid && i.status==='paid' && (i.kind||'')==='refund')
+    .reduce((s,i)=>s+(+i.amount||0),0);
+}
 
 // Returns full financial breakdown for a single project
 function calcProjectFinancials(pid){
@@ -3457,7 +3471,11 @@ function renderInvoices(){
     const meta=INVOICE_STATUS_META[i.status]||INVOICE_STATUS_META.open;
     const dateBR=i.date?new Date(i.date+'T00:00:00').toLocaleDateString('pt-BR'):'—';
     const rowStyle=i.status==='cancelled'?'opacity:.6;text-decoration:line-through':'';
-    const kindIcon=i.kind==='final_roi'?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#B8860B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>':'<span title="Operacional" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
+    const kindIcon=i.kind==='final_roi'
+      ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#B8860B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>'
+      :i.kind==='refund'
+        ?'<span title="Refund" style="display:inline-block;background:#FFE5D9;color:#C62B2B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💸 REF</span>'
+        :'<span title="Operacional" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowStyle}">
       <td style="padding:10px 12px;font-weight:700;color:var(--navy)">#${i.invoice_number}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
@@ -3571,6 +3589,11 @@ async function saveInvoice(){
   }
   invoices.sort((a,b)=>(b.invoice_number||0)-(a.invoice_number||0));
   renderInvoices();
+  // If a project is currently open and its Property & Finance is active, recompute
+  if(CID && document.getElementById('page-property')?.classList.contains('active')){
+    recalcAcquisition();
+    recomputeProfits();
+  }
   closeInvoiceModal();
   showSaved();
 }
@@ -3584,6 +3607,10 @@ async function deleteInvoice(id){
   if(error){console.error('invoice delete',error);toast('Erro ao excluir',false);return;}
   invoices=invoices.filter(x=>x.id!==id);
   renderInvoices();
+  if(CID && document.getElementById('page-property')?.classList.contains('active')){
+    recalcAcquisition();
+    recomputeProfits();
+  }
   showSaved();
 }
 
@@ -3603,8 +3630,13 @@ function generateInvoicePDF(id){
   const paymentLabel=inv.payment_method?PAYMENT_METHOD_LABELS[inv.payment_method]||inv.payment_method:'';
   const statusMeta=INVOICE_STATUS_META[inv.status]||INVOICE_STATUS_META.open;
   const isCancelled=inv.status==='cancelled';
+  const kind=inv.kind||'operational';
+  // Top-right label varies by kind
+  const docLabel=kind==='refund'?`REFUND #${inv.invoice_number}`
+    :kind==='final_roi'?`INVOICE #${inv.invoice_number} — FINAL ROI`
+    :`INVOICE #${inv.invoice_number}`;
   const html=`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Invoice #${inv.invoice_number}</title>
+<html><head><meta charset="UTF-8"><title>${kind==='refund'?'Refund':'Invoice'} #${inv.invoice_number}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:Georgia,'Times New Roman',serif;color:#15120E;padding:30px;background:#fff;font-size:13px;line-height:1.45}
@@ -3662,7 +3694,7 @@ function generateInvoicePDF(id){
       </div>
     </div>
     <div class="h-right">
-      <div class="inv-num-lbl">INVOICE #${inv.invoice_number}</div>
+      <div class="inv-num-lbl">${docLabel}</div>
       <div class="inv-date">${invDateStr}</div>
       <div class="total-box">
         <div class="lbl">TOTAL</div>
