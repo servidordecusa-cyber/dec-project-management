@@ -2856,12 +2856,12 @@ function openInvoiceModal(id){
     document.getElementById('im-status').value='open';
   }
   onInvoiceStatusChange();
-  document.getElementById('modal-invoice').classList.add('active');
+  document.getElementById('modal-invoice').classList.add('open');
   setTimeout(()=>document.getElementById('im-number').focus(),50);
 }
 
 function closeInvoiceModal(){
-  document.getElementById('modal-invoice').classList.remove('active');
+  document.getElementById('modal-invoice').classList.remove('open');
 }
 
 async function saveInvoice(){
@@ -3174,12 +3174,12 @@ function openVendorModal(id){
       const el=document.getElementById(k);if(el) el.value='';
     });
   }
-  document.getElementById('modal-vendor').classList.add('active');
+  document.getElementById('modal-vendor').classList.add('open');
   setTimeout(()=>document.getElementById('vm-name').focus(),50);
 }
 
 function closeVendorModal(){
-  document.getElementById('modal-vendor').classList.remove('active');
+  document.getElementById('modal-vendor').classList.remove('open');
 }
 
 async function saveVendor(){
@@ -3267,11 +3267,11 @@ function openVendorDocsModal(vendorId,docType){
   document.getElementById('vdm-expiry').value='';
   document.getElementById('vdm-progress').style.display='none';
   renderVendorDocsList(vendorId,docType);
-  document.getElementById('modal-vendor-docs').classList.add('active');
+  document.getElementById('modal-vendor-docs').classList.add('open');
 }
 
 function closeVendorDocsModal(){
-  document.getElementById('modal-vendor-docs').classList.remove('active');
+  document.getElementById('modal-vendor-docs').classList.remove('open');
   // Refresh main table to reflect new counts
   renderVendors();
 }
@@ -3485,12 +3485,12 @@ function openClientModal(id){
       const el=document.getElementById(k);if(el) el.value='';
     });
   }
-  document.getElementById('modal-client').classList.add('active');
+  document.getElementById('modal-client').classList.add('open');
   setTimeout(()=>document.getElementById('cm-name').focus(),50);
 }
 
 function closeClientModal(){
-  document.getElementById('modal-client').classList.remove('active');
+  document.getElementById('modal-client').classList.remove('open');
 }
 
 async function saveClient(){
@@ -3527,7 +3527,7 @@ async function saveClient(){
   if(!id){
     const npEl=document.getElementById('np-customer');
     const pfEl=document.getElementById('pf-customer');
-    const modalNewOpen=document.getElementById('modal-new')?.classList.contains('active');
+    const modalNewOpen=document.getElementById('modal-new')?.classList.contains('open');
     const pageInfoOpen=document.getElementById('page-info')?.classList.contains('active');
     if(modalNewOpen && npEl) npEl.value=result.data.id;
     else if(pageInfoOpen && pfEl){pfEl.value=result.data.id;debouncePF();}
