@@ -2767,7 +2767,8 @@ function generateReport(){
 
   // Project costs (Total 2)
   const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale) — ainda lido para Gross Profit
-  const totAct=calcRoomTotal(CID,'actual'); // Reforma
+  // Operational invoices issued to the client during the project (replaces Actual Spent in client report)
+  const invoicesOpForPDF=calcProjectInvoicesOperational(CID);
   // Recurring items (water, energy, etc.) — agora puxa do recurring_detail (24 meses)
   const rcdData=recurringMap[CID]||{};
   const recRows=RC_ITEMS.map(itemName=>{
@@ -2798,8 +2799,8 @@ function generateReport(){
   const decExtraTotal=decRows.reduce((s,r)=>s+r.val,0);
   const docTotal=docRows.reduce((s,r)=>s+r.val,0);
   const heTotal=heRows.reduce((s,r)=>s+r.val,0);
-  // Total 2 — without Juros Hard Money (lenderSale) and without Selling costs
-  const total2=totAct+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0);
+  // Total 2 — uses Operational Invoices (what the client paid) instead of Actual Spent
+  const total2=invoicesOpForPDF+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0);
 
   // Days under construction
   let daysExec='—';
@@ -2813,8 +2814,10 @@ function generateReport(){
   const sale=+p.final_sale_price||0;
   const refund=calcProjectInvoicesRefund(CID);
   const sellingCosts=+p.selling_costs||0;
-  // Total Invested = EMD + Cash + Actual Spent + Costs (DEC Invoice) + Recurring + Documents + High End
-  const totalInvestido=emd+cash+totAct+decExtraTotal+recTotal+docTotal+heTotal;
+  // Total Invested = EMD + Cash + Invoices Operacionais + Costs (DEC Invoice) + Recurring + Documents + High End
+  // (same formula used on screen — uses client-paid invoices, not Actual Spent)
+  const invoicesOp=calcProjectInvoicesOperational(CID);
+  const totalInvestido=emd+cash+invoicesOp+decExtraTotal+recTotal+docTotal+heTotal;
   // Gross Profit = Final Sale − Selling − Lender(sale)
   const grossProfit=sale-sellingCosts-lenderSale;
   // Net Profit = Gross Profit − Total Invested (= Actual Profit)
@@ -2823,7 +2826,7 @@ function generateReport(){
   const pctDec=+p.pct_dec||0;
   const lucroClient=lucroLiquido*pctClient/100;
   const lucroDec=lucroLiquido*pctDec/100;
-  const pagarADec=lucroDec+refund;
+  const pagarADec=lucroDec; // DEC receives = % DEC of profit only (refund is no longer added)
   // ROI = Net Profit / Total Invested × 100 (dividido proporcionalmente entre Client e DEC)
   const roiTotal=totalInvestido>0?(lucroLiquido/totalInvestido*100):0;
   const roiClient=roiTotal*pctClient/100;
@@ -2940,7 +2943,20 @@ function generateReport(){
       <tr><th>Description</th><th class="docs">Documents</th><th class="val">Valor</th></tr>
     </thead>
     <tbody>
-      ${totAct>0?`<tr><td>Construction (Actual Costs)</td><td class="docs">Estimate/Actual</td><td class="val">${$$(totAct)}</td></tr>`:''}
+      ${(()=>{
+        // List operational invoices (the costs the client paid via DEC invoices)
+        const opInvoices=invoices
+          .filter(i=>i.project_id===CID && i.status!=='cancelled' && (i.kind||'operational')==='operational')
+          .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+        if(opInvoices.length===0) return '';
+        return opInvoices.map(inv=>{
+          const items=invoiceItems[inv.id]||[];
+          if(items.length>0){
+            return items.map(it=>`<tr><td>${(it.description||'').replace(/</g,'&lt;')} <span style="color:#999;font-size:10px">— Invoice #${inv.invoice_number}</span></td><td class="docs">Invoice #${inv.invoice_number}</td><td class="val">${$$(it.amount)}</td></tr>`).join('');
+          }
+          return `<tr><td>${(inv.description||'Invoice').replace(/</g,'&lt;')} <span style="color:#999;font-size:10px">— Invoice #${inv.invoice_number}</span></td><td class="docs">Invoice #${inv.invoice_number}</td><td class="val">${$$(inv.amount)}</td></tr>`;
+        }).join('');
+      })()}
       ${decRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${recRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${docRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
