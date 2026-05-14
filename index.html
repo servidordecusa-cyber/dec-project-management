@@ -2807,7 +2807,7 @@ function generateReport(){
   if(proj.start_date){
     const startD=new Date(proj.start_date);
     const endD=p.sale_date?new Date(p.sale_date):(proj.end_date?new Date(proj.end_date):new Date());
-    daysExec=Math.max(0,Math.round((endD-startD)/86400000))+' dias';
+    daysExec=Math.max(0,Math.round((endD-startD)/86400000))+' days';
   }
 
   // Final calculations
@@ -2835,7 +2835,7 @@ function generateReport(){
   const $pct=n=>(n>=0?'':'-')+Math.abs(n).toFixed(1)+'%';
 
   // Build HTML
-  const projName=proj.name||'(sem nome)';
+  const projName=proj.name||'(unnamed)';
   const address=proj.address||'';
   const clientName=customerName(proj.customer)||p.client_name||'';
   const today=new Date().toLocaleDateString('pt-BR');
@@ -2905,24 +2905,24 @@ function generateReport(){
     </div>
     <div class="h-center">
       <div class="title">Financial Report</div>
-      <div class="subtitle">Consolidado de Projeto</div>
+      <div class="subtitle">Project Consolidated</div>
     </div>
     <div class="h-right">
-      <div><strong>Emitido em:</strong> ${today}</div>
+      <div><strong>Issued on:</strong> ${today}</div>
       ${clientName?`<div><strong>Client:</strong> ${clientName}</div>`:''}
     </div>
   </div>
 
   <div class="info-grid">
-    <div><strong>Projeto:</strong> ${projName}</div>
+    <div><strong>Project:</strong> ${projName}</div>
     <div><strong>Address:</strong> ${address||'—'}</div>
-    ${purchDate?`<div><strong>Data compra:</strong> ${purchDate}</div>`:''}
-    ${saleDate?`<div><strong>Data venda:</strong> ${saleDate}</div>`:''}
-    <div><strong>Tempo execução:</strong> ${daysExec}</div>
-    <div><strong>Recebimento:</strong> ${$$(sale)}</div>
+    ${purchDate?`<div><strong>Purchase date:</strong> ${purchDate}</div>`:''}
+    ${saleDate?`<div><strong>Sale date:</strong> ${saleDate}</div>`:''}
+    <div><strong>Execution time:</strong> ${daysExec}</div>
+    <div><strong>Final Sale Price:</strong> ${$$(sale)}</div>
   </div>
 
-  <div class="section-title">Total 1 — Aquisição</div>
+  <div class="section-title">Total 1 — Acquisition</div>
   <table>
     <thead>
       <tr><th>Description</th><th class="docs">Documents</th><th class="val">Valor</th></tr>
@@ -2931,13 +2931,13 @@ function generateReport(){
       ${emd>0?`<tr><td>EMD - Cash</td><td class="docs"></td><td class="val">${$$(emd)}</td></tr>`:''}
       ${cash>0?`<tr><td>Cash</td><td class="docs"></td><td class="val">${$$(cash)}</td></tr>`:''}
       ${hardMoney>0?`<tr><td>Hard Money</td><td class="docs"></td><td class="val">${$$(hardMoney)}</td></tr>`:''}
-      ${otherAcq>0?`<tr><td>Others custos (compra)</td><td class="docs"></td><td class="val">${$$(otherAcq)}</td></tr>`:''}
-      ${(emd+cash+hardMoney+otherAcq)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem valores lançados</td></tr>`:''}
+      ${otherAcq>0?`<tr><td>Other costs (purchase)</td><td class="docs"></td><td class="val">${$$(otherAcq)}</td></tr>`:''}
+      ${(emd+cash+hardMoney+otherAcq)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">No values entered</td></tr>`:''}
       <tr class="total-row"><td colspan="2">Total 1</td><td class="val">${$$(total1)}</td></tr>
     </tbody>
   </table>
 
-  <div class="section-title">Total 2 — Costs do Projeto</div>
+  <div class="section-title">Total 2 — Project Costs</div>
   <table>
     <thead>
       <tr><th>Description</th><th class="docs">Documents</th><th class="val">Valor</th></tr>
@@ -2962,7 +2962,7 @@ function generateReport(){
       ${docRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${heRows.map(r=>`<tr><td>${r.desc}</td><td class="docs"></td><td class="val">${$$(r.val)}</td></tr>`).join('')}
       ${(+p.holding_costs||0)>0?`<tr><td>Holding costs</td><td class="docs"></td><td class="val">${$$(+p.holding_costs)}</td></tr>`:''}
-      ${total2===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">Sem custos lançados</td></tr>`:''}
+      ${total2===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">No costs entered</td></tr>`:''}
       <tr class="total-row"><td colspan="2">Total 2</td><td class="val">${$$(total2)}</td></tr>
     </tbody>
   </table>
@@ -2976,11 +2976,11 @@ function generateReport(){
     <div class="summary-row"><strong>ROI Client</strong><span>${$pct(roiClient)}</span></div>
     <div class="summary-row"><strong>${pctDec}% DEC</strong><span>${$$(lucroDec)}</span></div>
     ${refund>0?`<div class="summary-row"><strong>Reembolso</strong><span>${$$(refund)}</span></div>`:''}
-    <div class="summary-row final"><strong>Paidr à DEC</strong><span>${$$(pagarADec)}</span></div>
+    <div class="summary-row final"><strong>PAID TO DEC</strong><span>${$$(pagarADec)}</span></div>
   </div>
 
   <div class="footer">
-    <strong>DEC GROUP</strong> · Documento gerado automaticamente em ${today} · ${address||projName}
+    <strong>DEC GROUP</strong> · Document automatically generated on ${today} · ${address||projName}
   </div>
 
   <script>
