@@ -968,7 +968,41 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div class="fg"><label>Fence material (if yes)</label><input id="lc-fence-material" placeholder="e.g. wood, vinyl, chain link" oninput="debounceLC()"></div>
         </div>
 
-        <!-- Card 10: Photo Notes & Lockbox -->
+        <!-- Card 10: Pool -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🏊 Pool</div>
+          <div class="fgrid">
+            <div class="fg"><label>Has pool?</label>
+              <select id="lc-pool" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="yes">✓ Yes</option>
+                <option value="no">✗ No</option>
+                <option value="na">N/A</option>
+              </select>
+            </div>
+            <div class="fg"><label>Pool type</label>
+              <select id="lc-pool-type" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="in_ground">In-ground</option>
+                <option value="above_ground">Above-ground</option>
+              </select>
+            </div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Pool status</label>
+              <select id="lc-pool-status" onchange="saveLC()">
+                <option value="">— select —</option>
+                <option value="existing">Existing</option>
+                <option value="new">New</option>
+                <option value="renovated">Renovated</option>
+              </select>
+            </div>
+            <div class="fg"><label>Age (years) <span style="font-size:10px;color:var(--gray3)">— if existing</span></label><input id="lc-pool-age" type="number" min="0" step="1" placeholder="e.g. 5" oninput="debounceLC()"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Notes (equipment, warranty, recent work)</label><textarea id="lc-pool-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="e.g. New pump 2024, heated, screen enclosure, recent resurface" oninput="debounceLC()"></textarea></div></div>
+        </div>
+
+        <!-- Card 11: Photo Notes & Lockbox -->
         <div class="card" style="margin-top:16px">
           <div class="card-title">📸 Photography &amp; Access</div>
           <div class="fg"><label>Photo guidelines / things to highlight</label>
@@ -4246,6 +4280,17 @@ function generateListingPDF(){
     row('Fence',lc.fence)+
     row('Fence material',lc.fence_material);
 
+  // ─── Pool ───
+  const poolLabels={yes:'Yes',no:'No',na:'N/A'};
+  const poolTypeLabels={in_ground:'In-ground',above_ground:'Above-ground'};
+  const poolStatusLabels={existing:'Existing',new:'New',renovated:'Renovated'};
+  const poolData=
+    row('Has pool',poolLabels[lc.pool]||lc.pool)+
+    row('Pool type',poolTypeLabels[lc.pool_type]||lc.pool_type)+
+    row('Pool status',poolStatusLabels[lc.pool_status]||lc.pool_status)+
+    row('Pool age (years)',lc.pool_age)+
+    row('Notes',lc.pool_notes);
+
   // ─── Photo / Lockbox ───
   const accessData=
     row('Photo notes',lc.photo_notes)+
@@ -4319,9 +4364,10 @@ function generateListingPDF(){
   ${section('🪵 Floors',floorData)}
   ${section('🚪 Closets',closetData)}
   ${section('🌳 Outdoor / Layout',outData)}
+  ${section('🏊 Pool',poolData)}
   ${section('📷 Photos & Access',accessData)}
 
-  ${!propData&&!garageData&&!utilData&&!constData&&!roofData&&!hvacData&&!elecData&&!plumbData&&!whData&&!kitchenData&&!bathData&&!floorData&&!closetData&&!outData&&!accessData?'<div class="empty">No listing information available yet. Fill in the Listing Checklist to generate a complete report.</div>':''}
+  ${!propData&&!garageData&&!utilData&&!constData&&!roofData&&!hvacData&&!elecData&&!plumbData&&!whData&&!kitchenData&&!bathData&&!floorData&&!closetData&&!outData&&!poolData&&!accessData?'<div class="empty">No listing information available yet. Fill in the Listing Checklist to generate a complete report.</div>':''}
 
   <div class="footer">
     <strong>DEC GROUP</strong> · Document automatically generated on ${today} · ${address}
@@ -5334,6 +5380,12 @@ const LC_FIELDS=[
   ['lc-shed','shed','text'],
   ['lc-fence','fence','text'],
   ['lc-fence-material','fence_material','text'],
+  // Pool
+  ['lc-pool','pool','text'],
+  ['lc-pool-type','pool_type','text'],
+  ['lc-pool-status','pool_status','text'],
+  ['lc-pool-age','pool_age','int'],
+  ['lc-pool-notes','pool_notes','text'],
   // Photo & Lockbox
   ['lc-photo-notes','photo_notes','text'],
   ['lc-lockbox','lockbox_code','text'],
