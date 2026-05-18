@@ -621,8 +621,13 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
       <!-- Listing Checklist (CEO ONLY) -->
       <div class="page" id="page-listing">
-        <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
-        <div class="page-sub">Complete property data for listing the home for sale · Auto-saved</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+          <div>
+            <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+            <div class="page-sub">Complete property data for listing the home for sale · Auto-saved</div>
+          </div>
+          <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateListingPDF()">📄 Generate Listing PDF</button>
+        </div>
 
         <!-- Card 1: Property Data -->
         <div class="card">
@@ -4097,6 +4102,262 @@ async function deleteInvoice(id){
     recomputeProfits();
   }
   showSaved();
+}
+
+// ═══ Gerar PDF do Listing Checklist ═════════════════════════════════════
+function generateListingPDF(){
+  if(!CID){toast('No project selected',false);return;}
+  if(!isCEO()){toast('CEO only',false);return;}
+  const proj=projects.find(x=>x.id===CID);
+  if(!proj){toast('Project not found',false);return;}
+  const lc=listingMap[CID]||{};
+  const prop=propertyMap[CID]||{};
+  const address=proj.address||proj.name||'(no address)';
+  const buyerName=customerName(proj.customer)||prop.client_name||'';
+  const buyerEmail=lc.buyer_email||'';
+  const today=new Date().toLocaleDateString('en-US',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const $$=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtDate=(d)=>{if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{year:'numeric',month:'2-digit',day:'2-digit'});};
+  // Helper: render a row only if value is non-empty
+  const row=(label,value)=>{
+    if(value===null||value===undefined||value==='') return '';
+    const v=String(value).trim();
+    if(!v||v==='—'||v==='-') return '';
+    return `<tr><td class="lbl">${label}</td><td class="val">${v.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</td></tr>`;
+  };
+  const rowBool=(label,b)=>{
+    if(!b) return '';
+    return `<tr><td class="lbl">${label}</td><td class="val">✓ Yes</td></tr>`;
+  };
+  // Helper: build a section only if it has at least one non-empty row
+  const section=(title,rowsHTML)=>{
+    if(!rowsHTML||!rowsHTML.trim()) return '';
+    return `
+      <div class="section-title">${title}</div>
+      <table>
+        <tbody>${rowsHTML}</tbody>
+      </table>`;
+  };
+
+  // ─── Property Data ───
+  const propData=
+    row('Address',address)+
+    row('New owner (buyer)',buyerName)+
+    row('Buyer email',buyerEmail)+
+    row('Expected listing date',fmtDate(lc.listing_date))+
+    row('Asking price',(+lc.asking_price>0)?$$(lc.asking_price):'')+
+    row('Property tax (2025)',(+lc.property_tax_2025>0)?$$(lc.property_tax_2025):'')+
+    row('Bedrooms',lc.bedrooms)+
+    row('Full bathrooms',lc.full_baths)+
+    row('Half bathrooms',lc.half_baths)+
+    row('HOA / CDD',lc.hoa_type)+
+    row('HOA / CDD value',(+lc.hoa_value>0)?$$(lc.hoa_value):'')+
+    row('Project type',lc.project_type)+
+    row('Listing status',lc.listed);
+
+  // ─── Garage / Parking ───
+  const garageData=row('Garage',lc.garage)+row('Carport',lc.carport);
+
+  // ─── Utilities ───
+  const utilData=
+    row('Water company',proj.water_company)+
+    row('Electric company',proj.power_company)+
+    row('Private utilities (septic/well)',lc.private_utilities);
+
+  // ─── Construction ───
+  const constData=
+    row('Foundation',lc.foundation)+
+    row('Exterior',lc.exterior)+
+    row('Manufactured home',lc.manufactured);
+
+  // ─── Roof ───
+  const roofData=
+    row('Status',lc.roof_status)+
+    row('Age (years)',lc.roof_age)+
+    row('Permit',lc.roof_permit)+
+    row('Permit number',lc.roof_permit_num)+
+    row('Notes',lc.roof_notes);
+
+  // ─── HVAC ───
+  const hvacData=
+    row('Status',lc.hvac_status)+
+    row('Age (years)',lc.hvac_age)+
+    row('Permit',lc.hvac_permit)+
+    row('Permit number',lc.hvac_permit_num)+
+    row('Notes',lc.hvac_notes);
+
+  // ─── Electrical ───
+  const elecData=
+    row('Status',lc.elec_status)+
+    row('Age (years)',lc.elec_age)+
+    row('Permit',lc.elec_permit)+
+    row('Permit number',lc.elec_permit_num)+
+    row('GFI outlets',lc.gfi_outlets)+
+    row('Notes',lc.elec_notes);
+
+  // ─── Plumbing ───
+  const plumbData=
+    row('Status',lc.plumb_status)+
+    row('Age (years)',lc.plumb_age)+
+    row('Pipe type',lc.pipe_type)+
+    row('Permit number',lc.plumb_permit_num)+
+    row('Notes',lc.plumb_notes);
+
+  // ─── Water Heater ───
+  const whData=
+    row('Status',lc.wh_status)+
+    row('Age (years)',lc.wh_age)+
+    row('Permit',lc.wh_permit)+
+    row('Permit number',lc.wh_permit_num)+
+    row('Notes',lc.wh_notes);
+
+  // ─── Kitchen ───
+  const kitchenData=
+    rowBool('Full kitchen renovation',lc.kitchen_full)+
+    rowBool('New appliances',lc.kitchen_appliances)+
+    rowBool('New cabinets',lc.kitchen_cabinets)+
+    rowBool('Granite countertop',lc.kitchen_granite)+
+    rowBool('Quartz countertop',lc.kitchen_quartz)+
+    rowBool('Pantry',lc.kitchen_pantry);
+
+  // ─── Bathrooms ───
+  const bathData=
+    row('Bathroom renovation',lc.bath_renovation)+
+    row('Description',lc.bath_description);
+
+  // ─── Floors ───
+  const floorData=
+    row('Floor replaced',lc.floor_replaced)+
+    row('Floor material',lc.floor_material);
+
+  // ─── Closets ───
+  const closetData=
+    rowBool('Master closet',lc.wc_master)+
+    rowBool('Bedroom 1 closet',lc.wc_bed1)+
+    rowBool('Bedroom 2 closet',lc.wc_bed2)+
+    rowBool('Bedroom 3 closet',lc.wc_bed3)+
+    rowBool('Bedroom 4 closet',lc.wc_bed4);
+
+  // ─── Outdoor ───
+  const outData=
+    row('Floorplan',lc.floorplan)+
+    row('Shed',lc.shed)+
+    row('Fence',lc.fence)+
+    row('Fence material',lc.fence_material);
+
+  // ─── Photo / Lockbox ───
+  const accessData=
+    row('Photo notes',lc.photo_notes)+
+    row('Lockbox code',lc.lockbox_code);
+
+  const html=`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Property Listing Report — ${address}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  html,body{background:#fff}
+  body{font-family:'Century Gothic','CenturyGothic','AppleGothic',sans-serif;color:#15120E;font-size:10pt;line-height:1.45;padding:30px}
+  .wrapper{max-width:900px;margin:0 auto}
+  @media print{
+    .no-print{display:none !important}
+    body{padding:0 !important}
+    .wrapper{max-width:100% !important}
+  }
+  .hdr{display:grid;grid-template-columns:1fr 2fr 1fr;align-items:flex-start;gap:20px;padding-bottom:18px;border-bottom:3px solid #3D271A;margin-bottom:18px}
+  .hdr .logo img{height:60px;width:auto;max-width:160px}
+  .hdr .title{text-align:center}
+  .hdr .title h1{font-size:22px;color:#3D271A;letter-spacing:1.5px;font-weight:700;margin-bottom:4px}
+  .hdr .title .sub{font-size:11px;color:#655A4E;letter-spacing:1px;text-transform:uppercase}
+  .hdr .meta{text-align:right;font-size:10pt;color:#15120E}
+  .hdr .meta div{margin-bottom:3px}
+  .hdr .meta strong{color:#3D271A;font-weight:700}
+  .summary{background:#FAF7F3 !important;border-left:4px solid #B8860B;padding:14px 18px;margin-bottom:22px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .summary div{margin-bottom:4px;font-size:11pt}
+  .summary strong{color:#3D271A;font-weight:700;display:inline-block;width:170px}
+  .section-title{font-size:11pt;font-weight:700;color:#fff !important;background:#3D271A !important;text-transform:uppercase;letter-spacing:1.5px;padding:8px 14px;margin:18px 0 0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table{width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:6px}
+  td{padding:7px 14px;border-bottom:1px solid #F0EAE2;vertical-align:top}
+  td.lbl{width:32%;color:#655A4E;font-weight:600;background:#FAF7F3 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  td.val{color:#15120E;font-weight:500}
+  .empty{padding:20px;text-align:center;color:#999;font-style:italic;background:#FAF7F3 !important;border-radius:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .footer{margin-top:30px;padding-top:14px;border-top:2px solid #F0EAE2;text-align:center;font-size:9pt;color:#655A4E}
+  .footer strong{color:#3D271A;font-weight:700}
+  @page{size:A4;margin:14mm}
+</style></head>
+<body>
+<div class="wrapper">
+  <div class="hdr">
+    <div class="logo"><img src="${DEC_LOGO_B64}" alt="DEC Group"></div>
+    <div class="title">
+      <h1>PROPERTY LISTING REPORT</h1>
+      <div class="sub">Complete Listing Specification</div>
+    </div>
+    <div class="meta">
+      <div><strong>Issued on:</strong> ${today}</div>
+      ${buyerName?`<div><strong>Owner:</strong> ${buyerName}</div>`:''}
+    </div>
+  </div>
+
+  <div class="summary">
+    <div><strong>Property:</strong> ${proj.name||'—'}</div>
+    <div><strong>Address:</strong> ${address}</div>
+    ${(+lc.asking_price>0)?`<div><strong>Asking price:</strong> ${$$(lc.asking_price)}</div>`:''}
+    ${lc.listing_date?`<div><strong>Listing date:</strong> ${fmtDate(lc.listing_date)}</div>`:''}
+  </div>
+
+  ${section('🏠 Property Data',propData)}
+  ${section('🚗 Garage / Parking',garageData)}
+  ${section('💧 Utilities',utilData)}
+  ${section('🏗 Construction',constData)}
+  ${section('🏠 Roof',roofData)}
+  ${section('❄️ HVAC',hvacData)}
+  ${section('⚡ Electrical',elecData)}
+  ${section('🚰 Plumbing',plumbData)}
+  ${section('🔥 Water Heater',whData)}
+  ${section('🍳 Kitchen',kitchenData)}
+  ${section('🛁 Bathrooms',bathData)}
+  ${section('🪵 Floors',floorData)}
+  ${section('🚪 Closets',closetData)}
+  ${section('🌳 Outdoor / Layout',outData)}
+  ${section('📷 Photos & Access',accessData)}
+
+  ${!propData&&!garageData&&!utilData&&!constData&&!roofData&&!hvacData&&!elecData&&!plumbData&&!whData&&!kitchenData&&!bathData&&!floorData&&!closetData&&!outData&&!accessData?'<div class="empty">No listing information available yet. Fill in the Listing Checklist to generate a complete report.</div>':''}
+
+  <div class="footer">
+    <strong>DEC GROUP</strong> · Document automatically generated on ${today} · ${address}
+  </div>
+</div>
+</body></html>`;
+
+  // Use iframe modal preview (same approach as invoice PDF)
+  document.getElementById('listing-preview-modal')?.remove();
+  const modal=document.createElement('div');
+  modal.id='listing-preview-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;flex-direction:column';
+  const bar=document.createElement('div');
+  bar.style.cssText='background:#15120E;color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;font-family:Inter,sans-serif';
+  bar.innerHTML=`
+    <div style="font-size:14px;font-weight:600;letter-spacing:.4px">Property Listing Report — Preview</div>
+    <div style="display:flex;gap:10px">
+      <button id="lpv-close" style="background:transparent;color:#fff;border:1px solid #655A4E;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">✕ Close</button>
+      <button id="lpv-print" style="background:#B8860B;color:#fff;border:0;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🖨 Print / Save as PDF</button>
+    </div>`;
+  modal.appendChild(bar);
+  const iframe=document.createElement('iframe');
+  iframe.style.cssText='flex:1;border:0;background:#fff;width:100%';
+  iframe.srcdoc=html;
+  modal.appendChild(iframe);
+  document.body.appendChild(modal);
+  document.getElementById('lpv-close').onclick=()=>modal.remove();
+  document.getElementById('lpv-print').onclick=()=>{
+    try{
+      const win=iframe.contentWindow;
+      win.focus();
+      win.print();
+    }catch(e){
+      console.error(e);
+      alert('Print failed: '+e.message);
+    }
+  };
 }
 
 // ═══ Gerar PDF da Invoice ════════════════════════════════════════════
