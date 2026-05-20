@@ -435,6 +435,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="pf-pm" oninput="debouncePF()"></div><div class="fg"><label>Address</label><input id="pf-address" oninput="debouncePF()"></div></div>
           <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
+          <div id="pf-research" style="margin-top:14px"></div>
         </div>
         <div class="card" style="margin-top:16px">
           <div class="card-title">📍 Location &amp; Utilities</div>
@@ -640,6 +641,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           </div>
           <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateListingPDF()">📄 Generate Listing PDF</button>
         </div>
+        <div id="lc-research" style="margin-top:16px"></div>
 
         <!-- Card 1: Property Data -->
         <div class="card">
@@ -2363,6 +2365,9 @@ async function savePF(){
   if(clientEl) clientEl.value=payload.customer||'';
   const lcCliEl=document.getElementById('lc-client');
   if(lcCliEl) lcCliEl.value=payload.customer||'';
+  // Refresh property research buttons (in case address changed)
+  if(document.getElementById('page-info')?.classList.contains('active')) renderPropertyResearchButtons('pf-research');
+  if(document.getElementById('page-listing')?.classList.contains('active')) renderPropertyResearchButtons('lc-research');
   showSaved();
 }
 
@@ -3359,6 +3364,45 @@ function calcProjectInvoices(pid,kind){
     .reduce((s,i)=>s+(+i.amount||0),0);
 }
 function calcProjectInvoicesOperational(pid){return calcProjectInvoices(pid,'operational');}
+
+// ═══ PROPERTY RESEARCH BUTTONS ════════════════════════════════════════
+// Generates a row of buttons that open the property in real estate websites
+// Works for any US address (no per-county mapping needed)
+function renderPropertyResearchButtons(containerId){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  // Get address from project: prefer 'address' but fall back to 'name'
+  const proj=projects.find(p=>p.id===CID);
+  const address=proj?(proj.address||proj.name||'').trim():'';
+  if(!address){
+    container.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-style:italic;background:#FAF7F3;border:1px dashed var(--gray2);border-radius:8px;font-size:12px">💡 Add an address in <strong>Project Info</strong> to enable property research links.</div>`;
+    return;
+  }
+  const q=encodeURIComponent(address);
+  const links=[
+    {url:`https://www.zillow.com/homes/${q}_rb/`, label:'🏠 Zillow', color:'#006AFF', hint:'Estimate, comps, history'},
+    {url:`https://www.realtor.com/realestateandhomes-search?searchQueryState=%7B%22query%22%3A%7B%22search_term%22%3A%22${q}%22%7D%7D`, label:'🏡 Realtor', color:'#C00000', hint:'Listing details'},
+    {url:`https://www.redfin.com/stingray/do/location-autocomplete?location=${q}&v=2`, label:'🏘 Redfin', color:'#A02021', hint:'Market data'},
+    {url:`https://www.google.com/maps/place/${q}`, label:'🗺️ Maps', color:'#34A853', hint:'Map & area view'},
+    {url:`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=&layer=c&cbll=0,0`, label:'🛰️ Street View', color:'#1A73E8', hint:'Property exterior'},
+    {url:`https://www.google.com/search?q=${q}+property+appraiser`, label:'🏛️ Appraiser', color:'#3D271A', hint:'Official county records'},
+    {url:`https://www.google.com/search?q=${q}+property+records+tax`, label:'📋 Tax Records', color:'#655A4E', hint:'Public records & tax'},
+  ];
+  container.innerHTML=`
+    <div style="background:#FAF7F3;border-left:4px solid var(--gold);border-radius:8px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">🔍 Property Research</div>
+      <div style="font-size:11px;color:var(--gray3);margin-bottom:10px">Quick lookups for: <strong>${address.replace(/</g,'&lt;')}</strong></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${links.map(l=>`
+          <a href="${l.url}" target="_blank" rel="noopener noreferrer"
+             title="${l.hint}"
+             style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;background:#fff;border:1.5px solid var(--gray2);border-radius:6px;color:${l.color};font-size:12px;font-weight:600;text-decoration:none;font-family:inherit;transition:all .15s"
+             onmouseover="this.style.borderColor='${l.color}';this.style.background='#fff'"
+             onmouseout="this.style.borderColor='var(--gray2)';this.style.background='#fff'">${l.label}</a>
+        `).join('')}
+      </div>
+    </div>`;
+}
 function calcProjectInvoicesFinalROI(pid){return calcProjectInvoices(pid,'final_roi');}
 function calcProjectInvoicesRefund(pid){
   // Sum ALL refund invoices (open + paid), excluding cancelled — so the value appears
@@ -5964,8 +6008,9 @@ function sp(id,el,cls){
   if(id==='dash') renderDashboard();
   if(id==='gantt') renderGantt();
   if(id==='cmp') renderComparison();
+  if(id==='info') renderPropertyResearchButtons('pf-research');
   if(id==='property' && isCEO()) recalcProfit();
-  if(id==='listing' && isCEO()) loadListingForm();
+  if(id==='listing' && isCEO()) {loadListingForm();renderPropertyResearchButtons('lc-research');}
   if(id==='recurring' && isCEO()) loadRecurringDetail();
   // (clients/vendors/invoices moved to global views — see goView)
   window.scrollTo({top:0,behavior:'smooth'});
