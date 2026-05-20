@@ -3368,6 +3368,221 @@ function calcProjectInvoicesOperational(pid){return calcProjectInvoices(pid,'ope
 // ═══ PROPERTY RESEARCH BUTTONS ════════════════════════════════════════
 // Generates a row of buttons that open the property in real estate websites
 // Works for any US address (no per-county mapping needed)
+// ═══ AI RESEARCH (Anthropic Claude via Supabase Edge Function) ═══════
+async function runAIResearch(){
+  if(!CID){toast('No project selected',false);return;}
+  if(!isCEO()){toast('CEO only',false);return;}
+  const proj=projects.find(p=>p.id===CID);
+  const address=proj?(proj.address||proj.name||'').trim():'';
+  if(!address){toast('Add an address in Project Info first',false);return;}
+
+  // Disable button + show progress overlay
+  document.getElementById('ai-research-modal')?.remove();
+  const modal=document.createElement('div');
+  modal.id='ai-research-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,sans-serif';
+  modal.innerHTML=`
+    <div style="background:#fff;border-radius:14px;max-width:560px;width:100%;padding:28px;box-shadow:0 12px 48px rgba(0,0,0,.4)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <div style="font-size:30px">🤖</div>
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#15120E">AI Research in progress</div>
+          <div style="font-size:12px;color:#655A4E">Searching Zillow, Realtor, county records...</div>
+        </div>
+      </div>
+      <div style="margin:18px 0;padding:14px 16px;background:#FAF7F3;border-radius:8px;border-left:4px solid #B8860B">
+        <div style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Address</div>
+        <div style="font-size:14px;font-weight:600;color:#15120E">${address.replace(/</g,'&lt;')}</div>
+      </div>
+      <div id="ai-research-status" style="display:flex;align-items:center;gap:10px;padding:14px;background:#fff;border:1.5px solid #F0EAE2;border-radius:8px;color:#655A4E;font-size:13px">
+        <div style="width:18px;height:18px;border:2.5px solid #F0EAE2;border-top-color:#B8860B;border-radius:50%;animation:airesspin 1s linear infinite"></div>
+        <span>This usually takes 20-40 seconds. Please wait...</span>
+      </div>
+      <style>@keyframes airesspin{to{transform:rotate(360deg)}}</style>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end">
+        <button id="ai-research-cancel" style="background:transparent;color:#655A4E;border:1px solid #F0EAE2;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  let cancelled=false;
+  document.getElementById('ai-research-cancel').onclick=()=>{cancelled=true;modal.remove();};
+
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const accessToken=session?.access_token||SKEY;
+    const res=await fetch(SURL+'/functions/v1/ai-research',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+accessToken,
+        'apikey':SKEY,
+      },
+      body:JSON.stringify({address}),
+    });
+    if(cancelled) return;
+    const result=await res.json();
+    if(!res.ok || !result.success){
+      modal.remove();
+      console.error('AI research error:',result);
+      toast('AI research failed: '+(result.error||'unknown error'),false);
+      return;
+    }
+    modal.remove();
+    showAIResultsModal(result.data,result.meta||{});
+  } catch(e){
+    if(!cancelled){
+      modal.remove();
+      console.error(e);
+      toast('AI research error: '+e.message,false);
+    }
+  }
+}
+
+function showAIResultsModal(d,meta){
+  const $$=n=>(n!==null&&n!==undefined&&n!=='')?String(n):'<span style="color:#A0958A;font-style:italic">(not found)</span>';
+  const $$$=n=>(+n>0)?'$ '+(+n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):'<span style="color:#A0958A;font-style:italic">(not found)</span>';
+  const $$b=b=>(b===true)?'✓ Yes':(b===false)?'✗ No':'<span style="color:#A0958A;font-style:italic">(not found)</span>';
+  document.getElementById('ai-research-modal')?.remove();
+  const modal=document.createElement('div');
+  modal.id='ai-research-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Inter,sans-serif;overflow-y:auto';
+  const sources=(d.sources||[]).filter(Boolean);
+  modal.innerHTML=`
+    <div style="background:#fff;border-radius:14px;max-width:720px;width:100%;padding:28px;box-shadow:0 12px 48px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:30px">🤖</div>
+          <div>
+            <div style="font-size:18px;font-weight:700;color:#15120E">AI Research Results</div>
+            <div style="font-size:12px;color:#655A4E">${meta.searches_used||0} web searches used · ${meta.model||'Claude'}</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('ai-research-modal').remove()" style="background:transparent;color:#655A4E;border:1px solid #F0EAE2;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit">✕</button>
+      </div>
+
+      <div style="background:#FAF7F3;border-radius:8px;padding:14px 16px;margin-bottom:14px;border-left:4px solid #B8860B">
+        <div style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Address found</div>
+        <div style="font-size:14px;font-weight:700;color:#15120E">${(d.address_found||'').replace(/</g,'&lt;')}</div>
+        ${d.county?`<div style="font-size:11px;color:#655A4E;margin-top:4px">County: ${d.county}</div>`:''}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+        <tbody>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3;width:45%">Bedrooms</td><td style="padding:7px 10px">${$$(d.bedrooms)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Full bathrooms</td><td style="padding:7px 10px">${$$(d.full_baths)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Half bathrooms</td><td style="padding:7px 10px">${$$(d.half_baths)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Living area (sqft)</td><td style="padding:7px 10px">${$$(d.living_area_sqft)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Lot size (sqft)</td><td style="padding:7px 10px">${$$(d.lot_size_sqft)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Year built</td><td style="padding:7px 10px">${$$(d.year_built)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Property type</td><td style="padding:7px 10px">${$$(d.property_type)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Has pool</td><td style="padding:7px 10px">${$$b(d.has_pool)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Garage</td><td style="padding:7px 10px">${$$b(d.has_garage)} ${d.garage_type?'· '+d.garage_type:''}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">HOA</td><td style="padding:7px 10px">${$$b(d.has_hoa)} ${d.hoa_fee_monthly?'· '+$$$(d.hoa_fee_monthly)+'/mo':''}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Property tax (annual)</td><td style="padding:7px 10px">${$$$(d.property_tax_annual)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Estimated value</td><td style="padding:7px 10px">${$$$(d.estimated_value)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Last sale date</td><td style="padding:7px 10px">${$$(d.last_sale_date)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Last sale price</td><td style="padding:7px 10px">${$$$(d.last_sale_price)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Parcel ID</td><td style="padding:7px 10px">${$$(d.parcel_id)}</td></tr>
+        </tbody>
+      </table>
+
+      ${d.notes?`<div style="background:#FFF8E7;border-left:3px solid #B8860B;padding:10px 14px;font-size:12px;color:#15120E;margin-bottom:14px;border-radius:4px"><strong>Notes:</strong> ${d.notes.replace(/</g,'&lt;')}</div>`:''}
+
+      ${sources.length>0?`<div style="font-size:11px;color:#655A4E;margin-bottom:14px"><strong>Sources:</strong> ${sources.map(s=>`<a href="${s}" target="_blank" style="color:#006AFF;text-decoration:none;margin-right:6px">${new URL(s).hostname.replace('www.','')}</a>`).join(' · ')}</div>`:''}
+
+      <div style="background:#FFF8E7;border:1.5px solid #F5E6B8;padding:11px 14px;border-radius:6px;font-size:11px;color:#7A5C0E;margin-bottom:16px">
+        ⚠️ Review carefully before applying. AI may make mistakes. <strong>Only empty fields will be filled</strong> — existing values won't be overwritten.
+      </div>
+
+      <div style="display:flex;justify-content:space-between;gap:10px">
+        <button onclick="document.getElementById('ai-research-modal').remove()" style="background:transparent;color:#655A4E;border:1.5px solid #F0EAE2;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">Cancel</button>
+        <button onclick="applyAIResults()" style="background:#3D271A;color:#fff;border:0;padding:10px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">✓ Apply to empty fields</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Store data on window for applyAIResults
+  window._aiResearchData=d;
+}
+
+async function applyAIResults(){
+  const d=window._aiResearchData;
+  if(!d||!CID) return;
+  if(!isCEO()){toast('CEO only',false);return;}
+  let applied=0;
+
+  // Helper: only set if input is currently empty
+  const fillEmpty=(id,value)=>{
+    if(value===null||value===undefined||value==='') return false;
+    const el=document.getElementById(id);
+    if(!el) return false;
+    // Check if current value is empty
+    const cur=(el.value||'').toString().trim();
+    if(cur!=='' && cur!=='0') return false;
+    el.value=value;
+    applied++;
+    return true;
+  };
+  const setSelectIfEmpty=(id,value)=>{
+    if(value===null||value===undefined||value==='') return false;
+    const el=document.getElementById(id);
+    if(!el) return false;
+    if(el.value && el.value!=='') return false;
+    // Try to match — value as-is or lowercased
+    const opt=Array.from(el.options).find(o=>o.value===String(value)||o.value===String(value).toLowerCase());
+    if(opt){el.value=opt.value;applied++;return true;}
+    return false;
+  };
+
+  // ─── Property Info (pf-*) ───
+  // No direct field mapping from AI to Project Info (just address-related)
+
+  // ─── Property & Finance (pi-*) ───
+  // (none directly applicable from AI — these are financial fields)
+
+  // ─── Listing Checklist (lc-*) ───
+  fillEmpty('lc-bedrooms',d.bedrooms);
+  fillEmpty('lc-full-baths',d.full_baths);
+  fillEmpty('lc-half-baths',d.half_baths);
+  fillEmpty('lc-property-tax-2025',d.property_tax_annual);
+  fillEmpty('lc-asking-price',d.estimated_value);
+  // Project type mapping
+  if(d.property_type){
+    const ptMap={
+      'single_family':'Single Family',
+      'mobile':'Mobile',
+      'townhome':'Townhome',
+      'condo':'Apartment',
+      'multi_family':'Multi-family',
+      'land':'Land',
+    };
+    fillEmpty('lc-project-type',ptMap[d.property_type]||d.property_type);
+  }
+  // HOA
+  if(d.has_hoa===true){
+    setSelectIfEmpty('lc-hoa-type','HOA');
+  }
+  if(d.hoa_fee_monthly){
+    fillEmpty('lc-hoa-value',d.hoa_fee_monthly);
+  }
+  // Pool
+  if(d.has_pool===true){
+    setSelectIfEmpty('lc-pool','yes');
+  } else if(d.has_pool===false){
+    setSelectIfEmpty('lc-pool','no');
+  }
+  // Garage
+  if(d.has_garage===true && d.garage_type){
+    fillEmpty('lc-garage',d.garage_type);
+  }
+
+  // Trigger save on the listing form
+  if(typeof debounceLC==='function') debounceLC();
+
+  // Close modal
+  document.getElementById('ai-research-modal').remove();
+  toast(`✓ Applied ${applied} field(s) to empty inputs`,true);
+}
+
 function renderPropertyResearchButtons(containerId){
   const container=document.getElementById(containerId);
   if(!container) return;
@@ -3390,9 +3605,14 @@ function renderPropertyResearchButtons(containerId){
   ];
   container.innerHTML=`
     <div style="background:#FAF7F3;border-left:4px solid var(--gold);border-radius:8px;padding:14px 16px">
-      <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">🔍 Property Research</div>
-      <div style="font-size:11px;color:var(--gray3);margin-bottom:10px">Quick lookups for: <strong>${address.replace(/</g,'&lt;')}</strong></div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px">🔍 Property Research</div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:2px">Address: <strong>${address.replace(/</g,'&lt;')}</strong></div>
+        </div>
+        <button onclick="runAIResearch()" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(61,39,26,.2)" title="Use AI to auto-fill empty fields with property data">🤖 AI Research</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         ${links.map(l=>`
           <a href="${l.url}" target="_blank" rel="noopener noreferrer"
              title="${l.hint}"
