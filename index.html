@@ -457,46 +457,8 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="page-title">💎 Property &amp; Finance <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Detailed property data + flip economics · Changes save automatically</div>
 
-        <!-- Card 1: Property Information -->
-        <div class="card">
-          <div class="card-title">🏠 Property Information</div>
-          <div class="fgrid">
-            <div class="fg"><label>Client name (buyer) <span style="font-size:10px;color:var(--gray3)">— sincronizado com Customer (Project Info)</span></label><input id="pi-client" placeholder="(preencha em Project Info → Customer)" readonly style="background:#FAF7F3;color:var(--gray3);cursor:not-allowed"></div>
-            <div class="fg"><label>Year built</label><input id="pi-year" type="number" min="1800" max="2100" placeholder="e.g. 1985" oninput="debouncePI()"></div>
-          </div>
-          <div class="fgrid">
-            <div class="fg"><label>Lot size (sqft)</label><input id="pi-lot" type="number" min="0" placeholder="e.g. 7500" oninput="debouncePI()"></div>
-            <div class="fg"><label>Living area (sqft)</label><input id="pi-living" type="number" min="0" placeholder="e.g. 1800" oninput="debouncePI()"></div>
-          </div>
-          <div class="fgrid">
-            <div class="fg"><label>Pool</label>
-              <select id="pi-pool" onchange="savePI()">
-                <option value="">— select —</option>
-                <option value="yes">✓ Yes</option>
-                <option value="no">✗ No</option>
-              </select>
-            </div>
-            <div class="fg"><label>HOA</label>
-              <select id="pi-hoa-has" onchange="savePI()">
-                <option value="">— select —</option>
-                <option value="yes">✓ Yes</option>
-                <option value="no">✗ No</option>
-              </select>
-            </div>
-          </div>
-          <div class="fgrid">
-            <div class="fg"><label>HOA monthly fee ($)</label><input id="pi-hoa-fee" type="number" min="0" step="0.01" placeholder="e.g. 250.00" oninput="debouncePI()"></div>
-            <div class="fg"><label>Roof (condition / material)</label><input id="pi-roof" placeholder="e.g. Shingle, 5 years old" oninput="debouncePI()"></div>
-          </div>
-          <div class="fgrid">
-            <div class="fg"><label>AC (condition / type)</label><input id="pi-ac" placeholder="e.g. Central, 2018" oninput="debouncePI()"></div>
-            <div class="fg"><label>Water heater</label><input id="pi-water-heater" placeholder="e.g. Electric tank, 40 gal" oninput="debouncePI()"></div>
-          </div>
-          <div style="margin-top:13px"><div class="fg"><label>Other relevant info</label><textarea id="pi-other" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Termite history, easements, liens, additional details…" oninput="debouncePI()"></textarea></div></div>
-        </div>
-
         <!-- Card 2: Acquisition -->
-        <div class="card" style="margin-top:16px">
+        <div class="card">
           <div class="card-title">💰 Acquisition (Purchase)</div>
 
           <!-- Wholesaler price (auto-calc) — EMD + Cash + Hard Money -->
@@ -678,6 +640,15 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <div class="fg"><label>HOA / CDD value ($)</label><input id="lc-hoa-val" type="number" min="0" step="0.01" placeholder="e.g. 250.00" oninput="debounceLC()"></div>
             <div class="fg"></div>
           </div>
+          <div class="fgrid" style="margin-top:6px">
+            <div class="fg"><label>Year built</label><input id="lc-year-built" type="number" min="1800" max="2100" placeholder="e.g. 1985" oninput="debounceLC()"></div>
+            <div class="fg"><label>Living area (sqft)</label><input id="lc-living-area" type="number" min="0" placeholder="e.g. 1800" oninput="debounceLC()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Lot size (sqft)</label><input id="lc-lot-size" type="number" min="0" placeholder="e.g. 7500" oninput="debounceLC()"></div>
+            <div class="fg"></div>
+          </div>
+          <div style="margin-top:13px"><div class="fg"><label>Other relevant info</label><textarea id="lc-other-info" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Termite history, easements, liens, additional details…" oninput="debounceLC()"></textarea></div></div>
         </div>
 
         <!-- Card 2: Garage / Parking -->
@@ -2383,16 +2354,6 @@ function loadPropertyForm(){
   const clientEl=document.getElementById('pi-client');
   if(clientEl) clientEl.value=customerName(proj&&proj.customer)||'';
   const pairs=[
-    ['pi-year','year_built'],
-    ['pi-lot','lot_size'],
-    ['pi-living','living_area'],
-    ['pi-pool','pool'],
-    ['pi-hoa-has','hoa_has'],
-    ['pi-hoa-fee','hoa_fee'],
-    ['pi-roof','roof'],
-    ['pi-ac','ac'],
-    ['pi-water-heater','water_heater'],
-    ['pi-other','other_info'],
     // Acquisition
     ['pi-emd-cash','emd_cash'],
     ['pi-cash','cash'],
@@ -2504,16 +2465,6 @@ async function savePI(){
   const num=id=>{const x=parseFloat(v(id));return isNaN(x)?null:Math.round(x*100)/100;};
   const payload={
     project_id:CID,
-    year_built:parseInt(v('pi-year'))||null,
-    lot_size:num('pi-lot'),
-    living_area:num('pi-living'),
-    pool:v('pi-pool'),
-    hoa_has:v('pi-hoa-has'),
-    hoa_fee:num('pi-hoa-fee'),
-    roof:v('pi-roof'),
-    ac:v('pi-ac'),
-    water_heater:v('pi-water-heater'),
-    other_info:v('pi-other'),
     // Acquisition
     emd_cash:num('pi-emd-cash'),
     cash:num('pi-cash'),
@@ -3540,11 +3491,15 @@ async function applyAIResults(){
   // (none directly applicable from AI — these are financial fields)
 
   // ─── Listing Checklist (lc-*) ───
-  fillEmpty('lc-bedrooms',d.bedrooms);
+  fillEmpty('lc-beds',d.bedrooms);
   fillEmpty('lc-full-baths',d.full_baths);
   fillEmpty('lc-half-baths',d.half_baths);
-  fillEmpty('lc-property-tax-2025',d.property_tax_annual);
-  fillEmpty('lc-asking-price',d.estimated_value);
+  fillEmpty('lc-tax',d.property_tax_annual);
+  fillEmpty('lc-asking',d.estimated_value);
+  // NEW (moved from P&F)
+  fillEmpty('lc-year-built',d.year_built);
+  fillEmpty('lc-living-area',d.living_area_sqft);
+  fillEmpty('lc-lot-size',d.lot_size_sqft);
   // Project type mapping
   if(d.property_type){
     const ptMap={
@@ -3559,10 +3514,10 @@ async function applyAIResults(){
   }
   // HOA
   if(d.has_hoa===true){
-    setSelectIfEmpty('lc-hoa-type','HOA');
+    fillEmpty('lc-hoa','HOA');
   }
   if(d.hoa_fee_monthly){
-    fillEmpty('lc-hoa-value',d.hoa_fee_monthly);
+    fillEmpty('lc-hoa-val',d.hoa_fee_monthly);
   }
   // Pool
   if(d.has_pool===true){
@@ -4509,13 +4464,17 @@ function generateListingPDF(){
     row('Expected listing date',fmtDate(lc.listing_date))+
     row('Asking price',(+lc.asking_price>0)?$$(lc.asking_price):'')+
     row('Property tax (2025)',(+lc.property_tax_2025>0)?$$(lc.property_tax_2025):'')+
+    row('Year built',lc.year_built)+
+    row('Living area (sqft)',lc.living_area)+
+    row('Lot size (sqft)',lc.lot_size)+
     row('Bedrooms',lc.bedrooms)+
     row('Full bathrooms',lc.full_baths)+
     row('Half bathrooms',lc.half_baths)+
     row('HOA / CDD',lc.hoa_type)+
     row('HOA / CDD value',(+lc.hoa_value>0)?$$(lc.hoa_value):'')+
     row('Project type',lc.project_type)+
-    row('Listing status',lc.listed);
+    row('Listing status',lc.listed)+
+    row('Other relevant info',lc.other_info);
 
   // ─── Garage / Parking ───
   const garageData=row('Garage',lc.garage)+row('Carport',lc.carport);
@@ -5647,6 +5606,10 @@ const LC_FIELDS=[
   ['lc-half-baths','half_baths','int'],
   ['lc-hoa','hoa_type','text'],
   ['lc-hoa-val','hoa_value','num'],
+  ['lc-year-built','year_built','int'],
+  ['lc-living-area','living_area','int'],
+  ['lc-lot-size','lot_size','int'],
+  ['lc-other-info','other_info','text'],
   // Garage
   ['lc-garage','garage','text'],
   ['lc-carport','carport','text'],
