@@ -442,12 +442,12 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div class="fgrid"><div class="fg"><label>ZIP Code</label><input id="pf-zip" placeholder="e.g. 34711" oninput="debouncePF()"></div><div class="fg"><label>County</label><input id="pf-county" placeholder="e.g. Lake County" oninput="debouncePF()"></div></div>
           <div class="fgrid"><div class="fg"><label>Permit</label><input id="pf-permit" placeholder="e.g. BR2026-1234" oninput="debouncePF()"></div><div class="fg"></div></div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
-            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Water Utility</div>
-            <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-water-co" placeholder="e.g. City of Clermont Utilities" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-water-acc" placeholder="e.g. 12345-6789" oninput="debouncePF()"></div></div>
+            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Water Utility <span style="font-size:10px;font-weight:500;color:var(--gray3);text-transform:none;letter-spacing:0">— company name moved to Listing Checklist</span></div>
+            <div class="fgrid"><div class="fg"><label>Account number</label><input id="pf-water-acc" placeholder="e.g. 12345-6789" oninput="debouncePF()"></div><div class="fg"></div></div>
           </div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
-            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility</div>
-            <div class="fgrid"><div class="fg"><label>Company name</label><input id="pf-power-co" placeholder="e.g. Duke Energy" oninput="debouncePF()"></div><div class="fg"><label>Account number</label><input id="pf-power-acc" placeholder="e.g. 987654321" oninput="debouncePF()"></div></div>
+            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility <span style="font-size:10px;font-weight:500;color:var(--gray3);text-transform:none;letter-spacing:0">— company name moved to Listing Checklist</span></div>
+            <div class="fgrid"><div class="fg"><label>Account number</label><input id="pf-power-acc" placeholder="e.g. 987654321" oninput="debouncePF()"></div><div class="fg"></div></div>
           </div>
         </div>
       </div>
@@ -692,8 +692,8 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <div class="fg"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Water company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-water-co" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
-            <div class="fg"><label>Electric company <span style="font-size:10px;color:var(--gray3)">— from Project Info</span></label><input id="lc-power-co" disabled style="background:#FAF7F3;color:var(--gray3)"></div>
+            <div class="fg"><label>Water company</label><input id="lc-water-co" placeholder="e.g. Orange County Utilities, OUC, Toho Water" oninput="debounceLC()"></div>
+            <div class="fg"><label>Electric company</label><input id="lc-power-co" placeholder="e.g. Duke Energy, OUC, FPL" oninput="debounceLC()"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Private utilities</label>
@@ -2291,9 +2291,7 @@ function loadProjectForms(p){
     ['pf-zip','zip_code'],
     ['pf-county','county'],
     ['pf-permit','building_permit'],
-    ['pf-water-co','water_company'],
     ['pf-water-acc','water_account'],
-    ['pf-power-co','power_company'],
     ['pf-power-acc','power_account'],
   ];
   extras.forEach(([elId,key])=>{
@@ -2325,8 +2323,8 @@ async function savePF(){
   const payload={name:v('pf-name'),customer:v('pf-customer'),pm:v('pf-pm'),
     address:v('pf-address'),start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
     zip_code:v('pf-zip'),county:v('pf-county'),building_permit:v('pf-permit'),
-    water_company:v('pf-water-co'),water_account:v('pf-water-acc'),
-    power_company:v('pf-power-co'),power_account:v('pf-power-acc')};
+    water_account:v('pf-water-acc'),
+    power_account:v('pf-power-acc')};
   await sb.from('projects').update(payload).eq('id',CID);
   const i=projects.findIndex(x=>x.id===CID);
   if(i>=0) projects[i]={...projects[i],...payload};
@@ -3434,6 +3432,15 @@ function showAIResultsModal(d,meta){
           <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Last sale date</td><td style="padding:7px 10px">${$$(d.last_sale_date)}</td></tr>
           <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Last sale price</td><td style="padding:7px 10px">${$$$(d.last_sale_price)}</td></tr>
           <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Parcel ID</td><td style="padding:7px 10px">${$$(d.parcel_id)}</td></tr>
+          <tr><td colspan="2" style="padding:8px 10px;background:#F0EAE2;font-size:11px;font-weight:700;color:#15120E;text-transform:uppercase;letter-spacing:.4px">🔧 Utilities &amp; Construction</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Water company</td><td style="padding:7px 10px">${$$(d.water_company)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Electric company</td><td style="padding:7px 10px">${$$(d.electric_company)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Private utilities</td><td style="padding:7px 10px">${$$(d.private_utilities)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Foundation</td><td style="padding:7px 10px">${$$(d.foundation)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Exterior</td><td style="padding:7px 10px">${$$(d.exterior)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Manufactured home</td><td style="padding:7px 10px">${$$b(d.manufactured_home)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">Roof age (years)</td><td style="padding:7px 10px">${$$(d.roof_age_years)}</td></tr>
+          <tr><td style="padding:7px 10px;color:#655A4E;font-weight:600;background:#FAF7F3">HVAC age (years)</td><td style="padding:7px 10px">${$$(d.hvac_age_years)}</td></tr>
         </tbody>
       </table>
 
@@ -3528,6 +3535,39 @@ async function applyAIResults(){
   // Garage
   if(d.has_garage===true && d.garage_type){
     fillEmpty('lc-garage',d.garage_type);
+  }
+
+  // ─── NEW: Utilities & Construction (v8.49) ───
+  fillEmpty('lc-water-co',d.water_company);
+  fillEmpty('lc-power-co',d.electric_company);
+  // Private utilities mapping (AI returns "public"/"septic"/"well"/"septic_and_well")
+  if(d.private_utilities){
+    const puMap={'public':'none','septic':'septic','well':'well','septic_and_well':'both'};
+    setSelectIfEmpty('lc-private',puMap[d.private_utilities]||d.private_utilities);
+  }
+  // Foundation mapping
+  if(d.foundation){
+    const fdMap={'slab':'slab','crawl_space':'crawlspace','basement':'concrete','pier_and_beam':'concrete'};
+    setSelectIfEmpty('lc-foundation',fdMap[d.foundation]||d.foundation);
+  }
+  // Exterior mapping
+  if(d.exterior){
+    const exMap={'block':'block','stucco':'stucco','wood':'wood','siding':'siding','brick':'brick','vinyl_siding':'siding','fiber_cement':'siding'};
+    setSelectIfEmpty('lc-exterior',exMap[d.exterior]||d.exterior);
+  }
+  // Manufactured home
+  if(d.manufactured_home===true){
+    setSelectIfEmpty('lc-manuf','yes');
+  } else if(d.manufactured_home===false){
+    setSelectIfEmpty('lc-manuf','no');
+  }
+  // Roof age (only fill if number)
+  if(d.roof_age_years && +d.roof_age_years>0){
+    fillEmpty('lc-roof-age',d.roof_age_years);
+  }
+  // HVAC age (only fill if number)
+  if(d.hvac_age_years && +d.hvac_age_years>0){
+    fillEmpty('lc-hvac-age',d.hvac_age_years);
   }
 
   // Trigger save on the listing form
@@ -4481,8 +4521,8 @@ function generateListingPDF(){
 
   // ─── Utilities ───
   const utilData=
-    row('Water company',proj.water_company)+
-    row('Electric company',proj.power_company)+
+    row('Water company',lc.water_company)+
+    row('Electric company',lc.electric_company)+
     row('Private utilities (septic/well)',lc.private_utilities);
 
   // ─── Construction ───
@@ -5614,6 +5654,8 @@ const LC_FIELDS=[
   ['lc-garage','garage','text'],
   ['lc-carport','carport','text'],
   // Utilities & Construction
+  ['lc-water-co','water_company','text'],
+  ['lc-power-co','electric_company','text'],
   ['lc-project-type','project_type','text'],
   ['lc-private','private_utilities','text'],
   ['lc-foundation','foundation','text'],
@@ -5688,12 +5730,10 @@ function debounceLC(){clearTimeout(_debLC);_debLC=setTimeout(saveLC,600);}
 
 function loadListingForm(){
   if(!CID) return;
-  // Mirror data from project + property (these are read-only display fields)
+  // Mirror data from project (address is still read-only display)
   const proj=projects.find(x=>x.id===CID);
   if(proj){
     const addrEl=document.getElementById('lc-address'); if(addrEl) addrEl.value=proj.address||'';
-    const wcoEl=document.getElementById('lc-water-co'); if(wcoEl) wcoEl.value=proj.water_company||'';
-    const pcoEl=document.getElementById('lc-power-co'); if(pcoEl) pcoEl.value=proj.power_company||'';
   }
   const propI=propertyMap[CID]||{};
   const cliEl=document.getElementById('lc-client'); if(cliEl) cliEl.value=customerName(proj&&proj.customer)||propI.client_name||'';
