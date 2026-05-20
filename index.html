@@ -426,7 +426,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="page-title">⚙️ Project Info</div><div class="page-sub">Edit project details · Changes save automatically</div>
         <div class="card">
           <div class="card-title">Details</div>
-          <div class="fgrid"><div class="fg"><label>Project Name *</label><input id="pf-name" oninput="debouncePF()"></div><div class="fg"><label>Customer *</label>
+          <div class="fgrid"><div class="fg"><label>Project Name <span style="font-size:10px;color:var(--gray3)">— synced from Address (auto)</span></label><input id="pf-name" readonly style="background:#FAF7F3;color:var(--gray3);cursor:not-allowed"></div><div class="fg"><label>Customer *</label>
             <div style="display:flex;gap:6px">
               <select id="pf-customer" onchange="debouncePF()" style="flex:1"></select>
               <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;white-space:nowrap" onclick="openClientModal()">+ New</button>
@@ -1286,7 +1286,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   <div class="modal">
     <h2>➕ New Project</h2>
     <div class="fgrid">
-      <div class="fg"><label>Project Name *</label><input id="np-name" placeholder="e.g. 123 Oak Street"></div>
+      <div class="fg"><label>Property Address * <span style="font-size:10px;color:var(--gray3)">— this will also be the project name</span></label><input id="np-address" placeholder="e.g. 4479 Weldon Pl, Orlando, FL, 32811"></div>
       <div class="fg"><label>Customer *</label>
         <div style="display:flex;gap:6px">
           <select id="np-customer" style="flex:1"></select>
@@ -1294,7 +1294,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         </div>
       </div>
     </div>
-    <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="np-pm"></div><div class="fg"><label>Address</label><input id="np-address"></div></div>
+    <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="np-pm"></div><div class="fg"></div></div>
     <div class="fgrid"><div class="fg"><label>Start Date</label><input id="np-start" type="date"></div><div class="fg"><label>End Date</label><input id="np-end" type="date"></div></div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="createProject()">Create →</button></div>
   </div>
@@ -1367,7 +1367,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         </div>
       </div>
       <div class="fg"><label>Project (optional)</label>
-        <select id="im-project"></select>
+        <select id="im-project" onchange="onInvoiceProjectChange()"></select>
       </div>
     </div>
     <div class="fgrid">
@@ -2323,8 +2323,14 @@ function debouncePF(){clearTimeout(_debPF);_debPF=setTimeout(savePF,600);}
 
 async function savePF(){
   if(!CID) return;
-  const payload={name:v('pf-name'),customer:v('pf-customer'),pm:v('pf-pm'),
-    address:v('pf-address'),start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
+  // Project Name is auto-synced from Address (v8.51)
+  const address=v('pf-address').trim();
+  const syncedName=address || v('pf-name') || '(no address)';
+  // Reflect in the read-only Project Name field
+  const nameEl=document.getElementById('pf-name');
+  if(nameEl) nameEl.value=syncedName;
+  const payload={name:syncedName,customer:v('pf-customer'),pm:v('pf-pm'),
+    address:address,start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
     zip_code:v('pf-zip'),county:v('pf-county'),building_permit:v('pf-permit'),
     water_account:v('pf-water-acc'),
     power_account:v('pf-power-acc')};
@@ -2340,6 +2346,9 @@ async function savePF(){
   // Refresh property research buttons (in case address changed)
   if(document.getElementById('page-info')?.classList.contains('active')) renderPropertyResearchButtons('pf-research');
   if(document.getElementById('page-listing')?.classList.contains('active')) renderPropertyResearchButtons('lc-research');
+  // Sync address into the Listing Checklist read-only address field if visible
+  const lcAddrEl=document.getElementById('lc-address');
+  if(lcAddrEl) lcAddrEl.value=address;
   showSaved();
 }
 
@@ -4327,6 +4336,19 @@ function recalcInvoiceItemsTotal(){
   if(el) el.textContent=fmt(tot);
 }
 
+// v8.51: when project changes in invoice modal, auto-fill property address if empty
+function onInvoiceProjectChange(){
+  const pid=document.getElementById('im-project').value;
+  if(!pid) return;
+  const proj=projects.find(p=>p.id===pid);
+  if(!proj) return;
+  const addrEl=document.getElementById('im-property-address');
+  if(!addrEl) return;
+  // Only pre-fill if empty (don't overwrite manual edits)
+  const cur=(addrEl.value||'').trim();
+  if(cur==='') addrEl.value=proj.address||proj.name||'';
+}
+
 function openInvoiceModal(id){
   populateInvoiceModalDropdowns();
   document.getElementById('im-id').value=id||'';
@@ -6277,24 +6299,25 @@ function sp(id,el,cls){
 
 // ═══ CREATE / DELETE ══════════════════════════════════════════════════
 function openNewModal(){
-  ['np-name','np-customer','np-pm','np-address','np-start','np-end'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['np-customer','np-pm','np-address','np-start','np-end'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('np-start').value=new Date().toISOString().split('T')[0];
   document.getElementById('modal-new').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-new').classList.remove('open');}
 
 async function createProject(){
-  const name=v('np-name').trim();
-  if(!name){toast('Project name required',false);return;}
+  // v8.51: address is the source of truth — name = address
+  const address=v('np-address').trim();
+  if(!address){toast('Property address required',false);return;}
   const customer=v('np-customer');
   if(!customer){toast('Client é obrigatório. Cadastre primeiro!',false);return;}
-  const payload={name,customer,pm:v('np-pm'),address:v('np-address'),
+  const payload={name:address,customer,pm:v('np-pm'),address:address,
     start_date:v('np-start'),end_date:v('np-end'),notes:''};
   const {data,error}=await sb.from('projects').insert(payload).select().single();
   if(error){toast('Error creating project',false);return;}
   projects.push(data);
   closeModal();
-  toast('Project "'+name+'" created!');
+  toast('Project "'+address+'" created!');
   openProject(data.id);
 }
 
