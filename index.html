@@ -465,7 +465,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div style="margin-bottom:18px">
             <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Commission</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
@@ -481,7 +481,11 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
           <div class="fgrid">
             <div class="fg"><label>Other costs ($)</label><input id="pi-other-costs" type="number" min="0" step="0.01" placeholder="e.g. 800.00" oninput="onAcqInput()"></div>
+            <div class="fg"><label>Commission ($) <span style="font-size:10px;color:var(--gray3)">— broker/agent commission</span></label><input id="pi-commission" type="number" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onAcqInput()"></div>
+          </div>
+          <div class="fgrid">
             <div class="fg"><label>Purchase date</label><input id="pi-purch-date" type="date" onchange="savePI()"></div>
+            <div class="fg"></div>
           </div>
         </div>
 
@@ -501,7 +505,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Invested <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Invested <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
         </div>
@@ -2385,6 +2389,7 @@ function loadPropertyForm(){
     ['pi-cash','cash'],
     ['pi-hard-money','hard_money'],
     ['pi-other-costs','other_costs'],
+    ['pi-commission','commission'],
     ['pi-purch-date','purchase_date'],
     ['pi-arv','arv'],
     ['pi-sale','final_sale_price'],
@@ -2496,6 +2501,7 @@ async function savePI(){
     cash:num('pi-cash'),
     hard_money:num('pi-hard-money'),
     other_costs:num('pi-other-costs'),
+    commission:num('pi-commission'),
     purchase_date:v('pi-purch-date')||null,
     // Sale
     arv:num('pi-arv'),
@@ -2519,12 +2525,13 @@ async function savePI(){
 }
 
 function recalcAcquisition(){
-  // Wholesaler price = EMD + Cash + Hard money + Other costs
+  // Wholesaler price = EMD + Cash + Hard money + Other costs + Commission
   const emd=parseFloat(v('pi-emd-cash'))||0;
   const cash=parseFloat(v('pi-cash'))||0;
   const hard=parseFloat(v('pi-hard-money'))||0;
   const other=parseFloat(v('pi-other-costs'))||0;
-  const wholesaler=Math.round((emd+cash+hard+other)*100)/100;
+  const commission=parseFloat(v('pi-commission'))||0;
+  const wholesaler=Math.round((emd+cash+hard+other+commission)*100)/100;
   document.getElementById('pi-wholesaler-total').textContent=fmt(wholesaler);
   return {wholesaler};
 }
@@ -2805,13 +2812,14 @@ function recalcProfit(){
   const docTotal=calcExtraSubtotal('documents');
   const heTotal=calcExtraSubtotal('high_end');
   const extraTotal=decTotal+recTotal+docTotal+heTotal;
-  // Total Invested = EMD + Cash + Other Costs + INVOICES OPERACIONAIS + Costs + Recurring + Documents + High End
+  // Total Invested = EMD + Cash + Other Costs + Commission + INVOICES OPERACIONAIS + Costs + Recurring + Documents + High End
   // (mudou de "Actual Spent" para soma das invoices Operacionais emitidas ao cliente)
   const emd=+p.emd_cash||0;
   const cash=+p.cash||0;
   const otherAcq=+p.other_costs||0;
+  const commission=+p.commission||0;
   const invoicesOp=calcProjectInvoicesOperational(CID);
-  const totalInvested=emd+cash+otherAcq+invoicesOp+decTotal+recTotal+docTotal+heTotal;
+  const totalInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
   const tiEl=document.getElementById('pi-total-invested');
   if(tiEl) tiEl.textContent=fmt(totalInvested);
   // Estimated profit (legacy formula, just shows expectation)
@@ -2881,7 +2889,8 @@ function generateReport(){
   const cash=+p.cash||0;
   const hardMoney=+p.hard_money||0;
   const otherAcq=+p.other_costs||0;
-  const total1=emd+cash+hardMoney+otherAcq;
+  const commission=+p.commission||0;
+  const total1=emd+cash+hardMoney+otherAcq+commission;
 
   // Project costs (Total 2)
   const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale) — ainda lido para Gross Profit
@@ -2933,10 +2942,10 @@ function generateReport(){
   const sale=+p.final_sale_price||0;
   const refund=calcProjectInvoicesRefund(CID);
   const sellingCosts=+p.selling_costs||0;
-  // Total Invested = EMD + Cash + Other Costs + Operational Invoices + Costs (DEC Invoice) + Recurring + Documents + High End
+  // Total Invested = EMD + Cash + Other Costs + Commission + Operational Invoices + Costs (DEC Invoice) + Recurring + Documents + High End
   // (same formula used on screen — uses client-paid invoices, not Actual Spent)
   const invoicesOp=calcProjectInvoicesOperational(CID);
-  const totalInvestido=emd+cash+otherAcq+invoicesOp+decExtraTotal+recTotal+docTotal+heTotal;
+  const totalInvestido=emd+cash+otherAcq+commission+invoicesOp+decExtraTotal+recTotal+docTotal+heTotal;
   // Gross Profit = Final Sale − Selling − Lender(sale)
   const grossProfit=sale-sellingCosts-lenderSale;
   // Net Profit = Gross Profit − Total Invested (= Actual Profit)
@@ -3051,7 +3060,8 @@ function generateReport(){
       ${cash>0?`<tr><td>Cash</td><td class="docs"></td><td class="val">${$$(cash)}</td></tr>`:''}
       ${hardMoney>0?`<tr><td>Hard Money</td><td class="docs"></td><td class="val">${$$(hardMoney)}</td></tr>`:''}
       ${otherAcq>0?`<tr><td>Other costs (purchase)</td><td class="docs"></td><td class="val">${$$(otherAcq)}</td></tr>`:''}
-      ${(emd+cash+hardMoney+otherAcq)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">No values entered</td></tr>`:''}
+      ${commission>0?`<tr><td>Commission</td><td class="docs"></td><td class="val">${$$(commission)}</td></tr>`:''}
+      ${(emd+cash+hardMoney+otherAcq+commission)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">No values entered</td></tr>`:''}
       <tr class="total-row"><td colspan="2">Total 1</td><td class="val">${$$(total1)}</td></tr>
     </tbody>
   </table>
@@ -3700,6 +3710,7 @@ function calcProjectFinancials(pid){
   const cash=+prop.cash||0;
   const emd=+prop.emd_cash||0;
   const otherAcq=+prop.other_costs||0;
+  const commission=+prop.commission||0;
   const sale=+prop.final_sale_price||0;
   const selling=+prop.selling_costs||0;
   const lenderSale=+prop.lender_costs_sale||0;
@@ -3710,12 +3721,12 @@ function calcProjectFinancials(pid){
   const rec=calcRCDTotal(pid);
   // Operational invoices = what client paid DEC for the project (= client's investment)
   const invoicesOp=calcProjectInvoicesOperational(pid);
-  // Total Invested (client's perspective): EMD + Cash + Other Costs + Invoices Op + Costs + Recurring + Docs + High End
-  const totalInvested=emd+cash+otherAcq+invoicesOp+dec+doc+he+rec;
+  // Total Invested (client's perspective): EMD + Cash + Other Costs + Commission + Invoices Op + Costs + Recurring + Docs + High End
+  const totalInvested=emd+cash+otherAcq+commission+invoicesOp+dec+doc+he+rec;
   const grossProfit=sale-selling-lenderSale;
   const netProfit=sale>0?(grossProfit-totalInvested):0;
   const roi=totalInvested>0&&sale>0?(netProfit/totalInvested*100):0;
-  return {emd,cash,otherAcq,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
+  return {emd,cash,otherAcq,commission,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
 }
 
 function renderFinancial(){
@@ -3808,13 +3819,14 @@ function renderHome(){
     const lenderSale=+prop.lender_costs_sale||0;
     const cash=+prop.cash||0;
     const emd=+prop.emd_cash||0;
+    const commission=+prop.commission||0;
     const actCosts=calcRoomTotal(p.id,'actual');
     // Extra costs subtotals
     const dec=(extraCostsMap[p.id]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
     const doc=(extraCostsMap[p.id]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
     const he=(extraCostsMap[p.id]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
     const rec=calcRCDTotal(p.id);
-    const invested=emd+cash+actCosts+dec+doc+he+rec;
+    const invested=emd+cash+commission+actCosts+dec+doc+he+rec;
     const grossProfit=sale-selling-lenderSale;
     totalInvested+=invested;
     totalProfit+=(grossProfit-invested);
