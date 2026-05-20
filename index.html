@@ -3659,8 +3659,6 @@ function renderPropertyResearchButtons(containerId,showAIButton){
   const q=encodeURIComponent(address);
   const links=[
     {url:`https://www.zillow.com/homes/${q}_rb/`, label:'🏠 Zillow', color:'#006AFF', hint:'Estimate, comps, history'},
-    {url:`https://www.realtor.com/realestateandhomes-search?searchQueryState=%7B%22query%22%3A%7B%22search_term%22%3A%22${q}%22%7D%7D`, label:'🏡 Realtor', color:'#C00000', hint:'Listing details'},
-    {url:`https://www.redfin.com/stingray/do/location-autocomplete?location=${q}&v=2`, label:'🏘 Redfin', color:'#A02021', hint:'Market data'},
     {url:`https://www.google.com/maps/place/${q}`, label:'🗺️ Maps', color:'#34A853', hint:'Map & area view'},
     {url:`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=&layer=c&cbll=0,0`, label:'🛰️ Street View', color:'#1A73E8', hint:'Property exterior'},
     {url:`https://www.google.com/search?q=${q}+property+appraiser`, label:'🏛️ Appraiser', color:'#3D271A', hint:'Official county records'},
