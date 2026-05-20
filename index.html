@@ -2360,7 +2360,7 @@ async function savePF(){
   const lcCliEl=document.getElementById('lc-client');
   if(lcCliEl) lcCliEl.value=payload.customer||'';
   // Refresh property research buttons (in case address changed)
-  if(document.getElementById('page-info')?.classList.contains('active')) renderPropertyResearchButtons('pf-research');
+  if(document.getElementById('page-info')?.classList.contains('active')) renderPropertyResearchButtons('pf-research',false);
   if(document.getElementById('page-listing')?.classList.contains('active')) renderPropertyResearchButtons('lc-research');
   // Sync address into the Listing Checklist read-only address field if visible
   const lcAddrEl=document.getElementById('lc-address');
@@ -3645,7 +3645,8 @@ async function applyAIResults(){
   toast(`✓ Applied ${applied} field(s) to empty inputs`,true);
 }
 
-function renderPropertyResearchButtons(containerId){
+function renderPropertyResearchButtons(containerId,showAIButton){
+  if(showAIButton===undefined) showAIButton=true;
   const container=document.getElementById(containerId);
   if(!container) return;
   // Get address from project: prefer 'address' but fall back to 'name'
@@ -3672,7 +3673,7 @@ function renderPropertyResearchButtons(containerId){
           <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px">🔍 Property Research</div>
           <div style="font-size:11px;color:var(--gray3);margin-top:2px">Address: <strong>${address.replace(/</g,'&lt;')}</strong></div>
         </div>
-        <button onclick="runAIResearch()" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(61,39,26,.2)" title="Use AI to auto-fill empty fields with property data">🤖 AI Research</button>
+        <button onclick="runAIResearch()" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;display:${showAIButton?'inline-flex':'none'};align-items:center;gap:6px;box-shadow:0 2px 8px rgba(61,39,26,.2)" title="Use AI to auto-fill empty fields with property data">🤖 AI Research</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         ${links.map(l=>`
@@ -6468,7 +6469,7 @@ function sp(id,el,cls){
   if(id==='dash') renderDashboard();
   if(id==='gantt') renderGantt();
   if(id==='cmp') renderComparison();
-  if(id==='info') renderPropertyResearchButtons('pf-research');
+  if(id==='info') renderPropertyResearchButtons('pf-research',false);
   if(id==='property' && isCEO()) recalcProfit();
   if(id==='listing' && isCEO()) {loadListingForm();renderPropertyResearchButtons('lc-research');}
   if(id==='recurring' && isCEO()) loadRecurringDetail();
