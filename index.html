@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
@@ -1769,6 +1770,11 @@ const SURL = 'https://rwbxxbrkoeuerstqhvvf.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3Ynh4YnJrb2V1ZXJzdHFodnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjQzMzUsImV4cCI6MjA5MTg0MDMzNX0.WzG4lNvcSsAhXd5s1vRH8K5CX_TBF1Qk_gTe9zLvtAI';
 const sb = supabase.createClient(SURL, SKEY);
 
+// ═══ PDF.JS WORKER CONFIG ═════════════════════════════════════════════
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
 // ═══ CONFIG ══════════════════════════════════════════════════════════
 const PHASES=[
   {id:'ph1',n:1,label:'Phase 1 — Demolition',  color:'#B85450',colorL:'#F8E8E5'},
@@ -2607,6 +2613,49 @@ function _fileToBase64(file) {
   });
 }
 
+// ─── PDF → PNG rasterization (uses pdf.js) ──────────────────────────
+// Renders the FIRST page of a PDF as a high-resolution PNG image and
+// returns { base64, width, height }. Used by the Recurring agent to
+// dramatically improve Vision-based table extraction.
+async function _pdfToImage(file) {
+  if (typeof pdfjsLib === 'undefined') {
+    throw new Error('pdf.js library not loaded');
+  }
+  // 1. Read the PDF file as ArrayBuffer
+  const arrayBuffer = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  });
+  // 2. Load PDF document
+  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+  const pdf = await loadingTask.promise;
+  // 3. Get first page
+  const page = await pdf.getPage(1);
+  // 4. Render at scale 2 for good resolution (readable numbers/text)
+  const scale = 2;
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  // White background (better for Vision models)
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Render the PDF page into the canvas
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  // 5. Convert canvas to PNG base64
+  const dataUrl = canvas.toDataURL('image/png');
+  const comma = dataUrl.indexOf(',');
+  const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  return {
+    base64,
+    width: canvas.width,
+    height: canvas.height,
+  };
+}
+
 // ─── Multi-file queue state (Actual Costs) ─────────────────────────
 const VN_MAX_FILES = 10;
 let _vnQueue = [];        // array of items pending review
@@ -3242,8 +3291,25 @@ async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToke
   });
   if (upRes.error) throw new Error('Upload: ' + upRes.error.message);
 
-  // 2. Convert to base64
-  const fileBase64 = await _fileToBase64(file);
+  // 2. Convert to base64. For PDFs, rasterize the first page to PNG image
+  //    (this dramatically improves table detection by the Vision model — Haiku 4.5
+  //    sees tabular data better as a rendered image than as PDF semantic text)
+  let fileBase64;
+  let fileTypeForAI;
+  if (file.type === 'application/pdf') {
+    try {
+      const rasterized = await _pdfToImage(file);
+      fileBase64 = rasterized.base64;
+      fileTypeForAI = 'image/png';
+    } catch (rasterErr) {
+      console.warn('PDF rasterization failed, falling back to original PDF:', rasterErr);
+      fileBase64 = await _fileToBase64(file);
+      fileTypeForAI = file.type;
+    }
+  } else {
+    fileBase64 = await _fileToBase64(file);
+    fileTypeForAI = file.type;
+  }
 
   // 3. Call Edge Function
   const resp = await fetch(VN_EDGE_URL, {
@@ -3256,7 +3322,7 @@ async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToke
     body: JSON.stringify({
       mode: 'recurring_costs',
       file_base64: fileBase64,
-      file_type: file.type,
+      file_type: fileTypeForAI,
       vendors: vendorsCtx,
       recurring_items: RC_ITEMS,
       years: years,
