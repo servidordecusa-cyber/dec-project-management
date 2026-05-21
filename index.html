@@ -2614,9 +2614,11 @@ function _fileToBase64(file) {
 }
 
 // ─── PDF → PNG rasterization (uses pdf.js) ──────────────────────────
-// Renders the FIRST page of a PDF as a high-resolution PNG image and
-// returns { base64, width, height }. Used by the Recurring agent to
+// Renders the FIRST page of a PDF as a JPEG image and returns
+// { base64, width, height, mimeType }. Used by the Recurring agent to
 // dramatically improve Vision-based table extraction.
+// Uses JPEG (smaller than PNG) and a moderate scale to keep file size
+// under the Anthropic API per-image limit (~5MB).
 async function _pdfToImage(file) {
   if (typeof pdfjsLib === 'undefined') {
     throw new Error('pdf.js library not loaded');
@@ -2633,26 +2635,33 @@ async function _pdfToImage(file) {
   const pdf = await loadingTask.promise;
   // 3. Get first page
   const page = await pdf.getPage(1);
-  // 4. Render at scale 2 for good resolution (readable numbers/text)
-  const scale = 2;
+  // 4. Render at scale 1.5 (good resolution but smaller file than 2x).
+  //    The viewport at scale 1 is the natural PDF size (typically 612x792 for Letter).
+  //    1.5x = ~918x1188, which is sharp enough for Vision to read tabular data.
+  const scale = 1.5;
   const viewport = page.getViewport({ scale });
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  // White background (better for Vision models)
+  // White background (JPEG doesn't support transparency, so we paint white)
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   // Render the PDF page into the canvas
   await page.render({ canvasContext: ctx, viewport }).promise;
-  // 5. Convert canvas to PNG base64
-  const dataUrl = canvas.toDataURL('image/png');
+  // 5. Convert canvas to JPEG base64 (quality 0.85 = small + readable)
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
   const comma = dataUrl.indexOf(',');
   const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  // Estimate size to warn if still too big
+  const sizeKB = Math.round(base64.length * 0.75 / 1024);
+  console.log(`PDF rasterized: ${canvas.width}x${canvas.height} JPEG @85% — ${sizeKB} KB base64`);
   return {
     base64,
     width: canvas.width,
     height: canvas.height,
+    mimeType: 'image/jpeg',
+    sizeKB,
   };
 }
 
@@ -3291,7 +3300,7 @@ async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToke
   });
   if (upRes.error) throw new Error('Upload: ' + upRes.error.message);
 
-  // 2. Convert to base64. For PDFs, rasterize the first page to PNG image
+  // 2. Convert to base64. For PDFs, rasterize the first page as a JPEG image
   //    (this dramatically improves table detection by the Vision model — Haiku 4.5
   //    sees tabular data better as a rendered image than as PDF semantic text)
   let fileBase64;
@@ -3300,7 +3309,13 @@ async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToke
     try {
       const rasterized = await _pdfToImage(file);
       fileBase64 = rasterized.base64;
-      fileTypeForAI = 'image/png';
+      fileTypeForAI = rasterized.mimeType || 'image/jpeg';
+      // Safety check — if image still too big, fall back to original PDF
+      if (rasterized.sizeKB > 4500) {
+        console.warn('Rasterized image too big (' + rasterized.sizeKB + 'KB), falling back to PDF');
+        fileBase64 = await _fileToBase64(file);
+        fileTypeForAI = file.type;
+      }
     } catch (rasterErr) {
       console.warn('PDF rasterization failed, falling back to original PDF:', rasterErr);
       fileBase64 = await _fileToBase64(file);
