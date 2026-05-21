@@ -3051,11 +3051,19 @@ async function handleRecurringNoteUpload(event) {
   const promises = files.map((file, idx) => _processOneRecurringNote(file, idx, vendorsCtx, [y1,y2,y3,y4], accessToken));
   const results = await Promise.allSettled(promises);
 
-  // Collect successes and errors
+  // Collect successes (each result is an ARRAY of items — flatten into queue) and errors
+  let totalFiles = files.length;
+  let listsDetected = 0;
+  let totalBillsFromLists = 0;
   results.forEach((r, idx) => {
     const fname = files[idx].name;
-    if (r.status === 'fulfilled' && r.value) {
-      _vnrQueue.push(r.value);
+    if (r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length > 0) {
+      // Spread the items into the queue
+      _vnrQueue.push(...r.value);
+      if (r.value.length > 1) {
+        listsDetected++;
+        totalBillsFromLists += r.value.length;
+      }
     } else {
       const errMsg = r.status === 'rejected'
         ? (r.reason && r.reason.message ? r.reason.message : String(r.reason))
@@ -3078,7 +3086,13 @@ async function handleRecurringNoteUpload(event) {
     return;
   }
 
-  _vnrSetStatus('✅ ' + okCount + ' processado(s)' + (errCount ? ', ' + errCount + ' com erro' : ''));
+  // Helpful status: distinguish single bills from lists detected
+  let statusMsg = '✅ ' + okCount + ' bill(s) prontas';
+  if (listsDetected > 0) {
+    statusMsg += ' (' + listsDetected + ' lista' + (listsDetected>1?'s':'') + ' detectada' + (listsDetected>1?'s':'') + ')';
+  }
+  if (errCount > 0) statusMsg += ', ' + errCount + ' arquivo(s) com erro';
+  _vnrSetStatus(statusMsg);
   _renderRecurringQueueBanner();
 
   // Auto-open the first one
@@ -3086,12 +3100,14 @@ async function handleRecurringNoteUpload(event) {
 }
 
 async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToken) {
-  // Returns the queue item OR throws
+  // Returns ARRAY of queue items (one per detected bill) OR throws on hard failure.
+  // For a single bill PDF → array of 1 item.
+  // For an activity_list PDF → array of N items (one per bill row).
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-  const noteId = crypto.randomUUID();
-  const storagePath = `${CID}/recurring/${noteId}.${ext}`;
+  const baseNoteId = crypto.randomUUID();
+  const storagePath = `${CID}/recurring/${baseNoteId}.${ext}`;
 
-  // 1. Upload to storage
+  // 1. Upload to storage (single file, even if multiple bills inside)
   const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
     contentType: file.type, upsert: false,
   });
@@ -3127,43 +3143,109 @@ async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToke
   const result = await resp.json();
   if (!result.success) throw new Error(result.message || 'AI failed');
 
-  // 4. Save vendor_notes row (pending_review)
-  const insertRow = {
-    id: noteId,
-    project_id: CID,
-    target_type: 'recurring_costs',
-    storage_path: storagePath,
-    original_filename: file.name,
-    file_type: file.type,
-    file_size_bytes: file.size,
-    extracted_vendor: result.data.vendor || null,
-    extracted_date: result.data.date || null,
-    extracted_total: result.data.total || null,
-    extracted_category: result.data.category || 'recurring',
-    extracted_notes: result.data.notes || null,
-    recurring_item_name: result.data.suggested_recurring_item || null,
-    recurring_year_offset: (result.data.suggested_year_offset === 0 || result.data.suggested_year_offset) ? result.data.suggested_year_offset : null,
-    recurring_month: result.data.suggested_month || null,
-    vendor_match_id: result.data.vendor_match_id || null,
-    vendor_is_new: !!result.data.vendor_is_new,
-    status: 'pending_review',
-  };
-  const insRes = await sb.from('vendor_notes').insert(insertRow);
-  if (insRes.error) {
-    console.warn('vendor_notes (recurring) insert failed (non-blocking):', insRes.error);
+  // 4. Normalize response into an items array.
+  //    The AI now returns: { document_type, vendor_match_id, vendor_is_new, items: [...], document_warnings: [...] }
+  //    Old format (v2 fallback): { vendor, date, total, ..., suggested_recurring_item, ... }
+  const aiData = result.data || {};
+  let items = [];
+  let topVendorMatchId = null;
+  let topVendorIsNew = false;
+  let documentWarnings = [];
+
+  if (Array.isArray(aiData.items) && aiData.items.length > 0) {
+    // New format (v3 list-aware)
+    items = aiData.items;
+    topVendorMatchId = aiData.vendor_match_id || null;
+    topVendorIsNew = !!aiData.vendor_is_new;
+    documentWarnings = Array.isArray(aiData.document_warnings) ? aiData.document_warnings : [];
+  } else if (aiData.suggested_recurring_item || aiData.total) {
+    // Fallback: old single-bill format
+    items = [{
+      vendor: aiData.vendor || null,
+      date: aiData.date || null,
+      total: aiData.total || null,
+      category: aiData.category || 'recurring',
+      notes: aiData.notes || null,
+      suggested_recurring_item: aiData.suggested_recurring_item || null,
+      suggested_year_offset: aiData.suggested_year_offset,
+      suggested_month: aiData.suggested_month || null,
+      confidence_warnings: aiData.confidence_warnings || [],
+    }];
+    topVendorMatchId = aiData.vendor_match_id || null;
+    topVendorIsNew = !!aiData.vendor_is_new;
+  } else {
+    throw new Error('AI returned no items');
   }
 
-  return {
-    note_id: noteId,
-    file: file,
-    storage_path: storagePath,
-    original_filename: file.name,
-    file_size_bytes: file.size,
-    file_type: file.type,
-    extracted: result.data,
-    meta: result.meta,
-    vendor_id_to_use: result.data.vendor_match_id || null,
-  };
+  // 5. Create one vendor_notes row per item (so each bill has its own audit trail)
+  const queueItems = [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const noteId = (i === 0) ? baseNoteId : crypto.randomUUID();
+    // Combine top-level vendor info with per-item warnings
+    const allWarnings = [
+      ...documentWarnings,
+      ...(Array.isArray(it.confidence_warnings) ? it.confidence_warnings : []),
+    ];
+    // If year_offset is null/missing, mark as out-of-range
+    if (it.suggested_year_offset === null || it.suggested_year_offset === undefined) {
+      allWarnings.push('Ano da bill não está nos anos cadastrados — ajuste manualmente.');
+    }
+
+    const insertRow = {
+      id: noteId,
+      project_id: CID,
+      target_type: 'recurring_costs',
+      storage_path: storagePath,  // all share the same source file
+      original_filename: file.name,
+      file_type: file.type,
+      file_size_bytes: file.size,
+      extracted_vendor: it.vendor || null,
+      extracted_date: it.date || null,
+      extracted_total: it.total || null,
+      extracted_category: it.category || 'recurring',
+      extracted_notes: it.notes || null,
+      recurring_item_name: it.suggested_recurring_item || null,
+      recurring_year_offset: (it.suggested_year_offset === 0 || it.suggested_year_offset) ? it.suggested_year_offset : null,
+      recurring_month: it.suggested_month || null,
+      vendor_match_id: topVendorMatchId,
+      vendor_is_new: topVendorIsNew,
+      status: 'pending_review',
+    };
+    // Don't await — fire in parallel for speed (errors are logged but non-blocking)
+    sb.from('vendor_notes').insert(insertRow).then(({error}) => {
+      if (error) console.warn('vendor_notes (recurring) insert failed (non-blocking):', error);
+    });
+
+    queueItems.push({
+      note_id: noteId,
+      file: file,
+      storage_path: storagePath,
+      original_filename: file.name + (items.length > 1 ? ` (linha ${i+1}/${items.length})` : ''),
+      file_size_bytes: file.size,
+      file_type: file.type,
+      extracted: {
+        vendor: it.vendor,
+        date: it.date,
+        total: it.total,
+        category: it.category || 'recurring',
+        notes: it.notes,
+        suggested_recurring_item: it.suggested_recurring_item,
+        suggested_year_offset: it.suggested_year_offset,
+        suggested_month: it.suggested_month,
+        vendor_match_id: topVendorMatchId,
+        vendor_is_new: topVendorIsNew,
+        confidence_warnings: allWarnings,
+      },
+      meta: result.meta,
+      vendor_id_to_use: topVendorMatchId,
+      source_doc_type: aiData.document_type || 'single_bill',
+      source_line_index: i,
+      source_line_count: items.length,
+    });
+  }
+
+  return queueItems;
 }
 
 function _renderRecurringQueueBanner() {
@@ -3177,10 +3259,15 @@ function _renderRecurringQueueBanner() {
   let html = '';
   if (remaining > 0) {
     const next = _vnrQueue[0];
+    // Count how many items come from multi-line documents
+    const fromLists = _vnrQueue.filter(q => q.source_line_count && q.source_line_count > 1).length;
+    const subInfo = fromLists > 0
+      ? `<span style="font-size:11px;color:#5C7A3F;background:#ECEFE3;padding:2px 6px;border-radius:4px;margin-left:6px">📋 ${fromLists} de lista(s)</span>`
+      : '';
     html += `
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font-weight:700;color:#3D271A;font-size:13px">📋 ${remaining} nota(s) aguardando revisão</div>
+          <div style="font-weight:700;color:#3D271A;font-size:13px">📋 ${remaining} bill(s) aguardando revisão ${subInfo}</div>
           <div style="font-size:11px;color:#655A4E;margin-top:2px">Próxima: <strong>${(next.original_filename||'').replace(/</g,'&lt;')}</strong></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
