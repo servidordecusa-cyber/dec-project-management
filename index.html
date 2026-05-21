@@ -402,6 +402,22 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
       <div class="page" id="page-act">
         <div class="page-title">💰 Actual Costs</div><div class="page-sub">Enter what was actually spent</div>
+
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
+            <div>
+              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px">🤖 Assistente Administrativo</div>
+              <div style="font-size:12px;color:#655A4E;margin-top:2px">Faça upload de uma nota fiscal (PDF ou imagem) e eu lanço pra você</div>
+            </div>
+            <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
+          </div>
+          <input type="file" id="vn-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="handleVendorNoteUpload(event)">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button onclick="document.getElementById('vn-file-input').click()" id="vn-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar nota</button>
+            <span id="vn-status" style="font-size:12px;color:#655A4E"></span>
+          </div>
+        </div>
+
         <div id="act-rooms"></div>
       </div>
 
@@ -1504,6 +1520,80 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   </div>
 </div>
 
+<!-- VENDOR NOTE PREVIEW MODAL -->
+<div class="modal-overlay" id="modal-vendor-note">
+  <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
+    <h2>🤖 Nota processada — revise e aprove</h2>
+    <div id="vn-confidence-warnings" style="display:none;margin-bottom:12px;padding:10px 12px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:6px;font-size:12px;color:#A86A2C"></div>
+
+    <div id="vn-attach-info" style="margin-bottom:12px;padding:10px 12px;background:#FAF7F3;border-radius:6px;font-size:12px;color:#655A4E;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span>📎 <span id="vn-attach-name">arquivo.pdf</span></span>
+      <button id="vn-attach-view" onclick="viewVendorNoteFile()" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue)">👁️ Visualizar</button>
+    </div>
+
+    <div class="fgrid">
+      <div class="fg">
+        <label>Vendor</label>
+        <select id="vn-vendor-select" onchange="onVendorNoteVendorChange()">
+          <option value="">— select —</option>
+        </select>
+        <div id="vn-vendor-new-row" style="display:none;margin-top:6px;padding:8px 10px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:5px;font-size:12px">
+          ⚠️ Vendor <strong id="vn-vendor-new-name"></strong> não está cadastrado.
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="vendorNoteCreateVendor()" style="padding:4px 10px;font-size:11px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-weight:600">✅ Criar e usar</button>
+            <button onclick="vendorNoteIgnoreNewVendor()" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer">Selecionar existente</button>
+          </div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Date</label>
+        <input id="vn-date" type="date">
+      </div>
+    </div>
+
+    <div class="fgrid">
+      <div class="fg">
+        <label>Total ($) *</label>
+        <input id="vn-total" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="fg">
+        <label>Category</label>
+        <select id="vn-category">
+          <option value="">— select —</option>
+          <option value="material">📦 Material</option>
+          <option value="labor">🔧 Labor</option>
+          <option value="material_labor">🔨 Material + Labor</option>
+          <option value="equipment">⚙️ Equipment</option>
+          <option value="other">📌 Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fgrid">
+      <div class="fg">
+        <label>Phase</label>
+        <select id="vn-group" onchange="onVendorNoteGroupChange()">
+          <option value="">— select —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Item</label>
+        <input id="vn-item-name" list="vn-item-suggestions" placeholder="e.g. Drywall" autocomplete="off">
+        <datalist id="vn-item-suggestions"></datalist>
+      </div>
+    </div>
+
+    <div class="fg"><label>Notes (short summary)</label>
+      <input id="vn-notes" maxlength="200" placeholder="What was purchased">
+    </div>
+
+    <div class="mactions">
+      <button class="btn btn-ghost" onclick="closeVendorNoteModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="approveVendorNote()" id="vn-approve-btn">✅ Aprovar e Lançar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD TASK MODAL -->
 <div class="modal-overlay" id="modal-add-task">
   <div class="modal" style="max-width:440px">
@@ -2348,6 +2438,403 @@ async function confirmAddItem(){
   closeAddItemModal();
   showSaved();
 }
+
+// ═══ VENDOR NOTES ASSISTANT ═══════════════════════════════════════════
+// Upload PDF or image of an invoice, extract data via Claude Haiku Vision,
+// preview/edit, then create a row in budget_items (Actual Costs).
+const VN_EDGE_URL = `${SURL}/functions/v1/process-vendor-note`;
+
+let _vnCurrent = null; // {note_id, file, file_type, storage_path, original_filename, file_size_bytes, extracted, vendor_id_to_use, vendor_was_created}
+
+function _vnSetStatus(msg, isError) {
+  const el = document.getElementById('vn-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#B85450' : '#655A4E';
+}
+
+function _fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleVendorNoteUpload(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  input.value = ''; // allow re-selecting same file later
+
+  if (!CID) { toast('Open a project first', false); return; }
+  if (!isCEO()) { toast('CEO only', false); return; }
+
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) { toast('File too big (max 5MB)', false); return; }
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    toast('Unsupported file type. Use PDF or image (JPG/PNG/WebP)', false);
+    return;
+  }
+
+  const btn = document.getElementById('vn-upload-btn');
+  if (btn) btn.disabled = true;
+  _vnSetStatus('📤 Enviando arquivo...');
+
+  try {
+    // 1. Upload to vendor-notes bucket
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const noteId = crypto.randomUUID();
+    const storagePath = `${CID}/${noteId}.${ext}`;
+    const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
+      contentType: file.type, upsert: false,
+    });
+    if (upRes.error) throw new Error('Upload failed: ' + upRes.error.message);
+
+    _vnSetStatus('🤖 Analisando nota (5–15s)...');
+
+    // 2. Base64 encode for the Edge Function
+    const fileBase64 = await _fileToBase64(file);
+
+    // 3. Build context: vendors + groups+items
+    const vendorsCtx = (vendors || []).map(v => ({ id: v.id, name: v.name }));
+    const groupsCtx = GROUPS.map(g => {
+      const items = ((itemsMap[CID] || {})[g.id] || []).map(it => it.name);
+      return { id: g.id, name: g.name, items };
+    });
+
+    // 4. Call Edge Function
+    const { data: { session } } = await sb.auth.getSession();
+    const accessToken = session && session.access_token;
+    const resp = await fetch(VN_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + accessToken,
+        'apikey': SKEY,
+      },
+      body: JSON.stringify({
+        file_base64: fileBase64,
+        file_type: file.type,
+        vendors: vendorsCtx,
+        groups: groupsCtx,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error('vendor-note process error:', errText);
+      let msg = 'AI processing failed (' + resp.status + ')';
+      try {
+        const errObj = JSON.parse(errText);
+        if (errObj && errObj.message) msg = errObj.message;
+      } catch(_){}
+      throw new Error(msg);
+    }
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.message || 'AI processing failed');
+
+    // 5. Save vendor_notes row
+    const insertRow = {
+      id: noteId,
+      project_id: CID,
+      storage_path: storagePath,
+      original_filename: file.name,
+      file_type: file.type,
+      file_size_bytes: file.size,
+      extracted_vendor: result.data.vendor || null,
+      extracted_date: result.data.date || null,
+      extracted_total: result.data.total || null,
+      extracted_category: result.data.category || null,
+      extracted_notes: result.data.notes || null,
+      suggested_group_id: result.data.suggested_group_id || null,
+      suggested_item_name: result.data.suggested_item_name || null,
+      vendor_match_id: result.data.vendor_match_id || null,
+      vendor_is_new: !!result.data.vendor_is_new,
+      status: 'pending_review',
+    };
+    const insRes = await sb.from('vendor_notes').insert(insertRow);
+    if (insRes.error) {
+      console.warn('vendor_notes insert failed (non-blocking):', insRes.error);
+    }
+
+    _vnCurrent = {
+      note_id: noteId,
+      file: file,
+      storage_path: storagePath,
+      original_filename: file.name,
+      file_size_bytes: file.size,
+      file_type: file.type,
+      extracted: result.data,
+      meta: result.meta,
+      vendor_id_to_use: result.data.vendor_match_id || null,
+      vendor_was_created: false,
+    };
+
+    _vnSetStatus('✅ Análise pronta — revise');
+    openVendorNoteModal();
+  } catch (err) {
+    console.error('Vendor note upload error:', err);
+    _vnSetStatus('❌ ' + (err.message || 'Erro ao processar'), true);
+    toast(err.message || 'Erro ao processar nota', false);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function openVendorNoteModal() {
+  if (!_vnCurrent) return;
+  const ex = _vnCurrent.extracted || {};
+
+  document.getElementById('vn-attach-name').textContent = _vnCurrent.original_filename || 'file';
+
+  const warnEl = document.getElementById('vn-confidence-warnings');
+  const warns = Array.isArray(ex.confidence_warnings) ? ex.confidence_warnings : [];
+  if (warns.length > 0) {
+    warnEl.style.display = 'block';
+    warnEl.innerHTML = '⚠️ <strong>Atenção:</strong><br>' + warns.map(w => '• ' + w.replace(/</g,'&lt;')).join('<br>');
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  _vnPopulateVendors();
+  document.getElementById('vn-date').value = ex.date || '';
+  document.getElementById('vn-total').value = ex.total || '';
+  document.getElementById('vn-category').value = ex.category || '';
+  _vnPopulateGroups();
+  document.getElementById('vn-group').value = ex.suggested_group_id || '';
+  _vnPopulateItemSuggestions();
+  document.getElementById('vn-item-name').value = ex.suggested_item_name || '';
+  document.getElementById('vn-notes').value = ex.notes || '';
+
+  document.getElementById('modal-vendor-note').classList.add('open');
+}
+
+function _vnPopulateVendors() {
+  const sel = document.getElementById('vn-vendor-select');
+  const ex = _vnCurrent.extracted || {};
+  const matchId = _vnCurrent.vendor_id_to_use;
+  let html = '<option value="">— select —</option>';
+  (vendors || []).forEach(v => {
+    html += `<option value="${v.id}">${(v.name||'').replace(/</g,'&lt;')}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = matchId || '';
+
+  const newRow = document.getElementById('vn-vendor-new-row');
+  if (ex.vendor_is_new && !matchId && ex.vendor) {
+    document.getElementById('vn-vendor-new-name').textContent = ex.vendor;
+    newRow.style.display = 'block';
+  } else {
+    newRow.style.display = 'none';
+  }
+}
+
+function onVendorNoteVendorChange() {
+  const sel = document.getElementById('vn-vendor-select');
+  _vnCurrent.vendor_id_to_use = sel.value || null;
+  if (sel.value) {
+    document.getElementById('vn-vendor-new-row').style.display = 'none';
+  }
+}
+
+async function vendorNoteCreateVendor() {
+  const ex = _vnCurrent.extracted || {};
+  const name = (ex.vendor || '').trim();
+  if (!name) { toast('Nome do vendor vazio', false); return; }
+  const existing = (vendors || []).find(v => (v.name || '').toLowerCase() === name.toLowerCase());
+  if (existing) {
+    _vnCurrent.vendor_id_to_use = existing.id;
+    document.getElementById('vn-vendor-select').value = existing.id;
+    document.getElementById('vn-vendor-new-row').style.display = 'none';
+    toast('Vendor já existia — selecionado', true);
+    return;
+  }
+  const { data, error } = await sb.from('vendors').insert({ name }).select().single();
+  if (error) { console.error('create vendor', error); toast('Erro ao criar vendor', false); return; }
+  vendors.push(data);
+  _vnCurrent.vendor_id_to_use = data.id;
+  _vnCurrent.vendor_was_created = true;
+  _vnPopulateVendors();
+  document.getElementById('vn-vendor-select').value = data.id;
+  document.getElementById('vn-vendor-new-row').style.display = 'none';
+  toast('Vendor "' + name + '" criado', true);
+}
+
+function vendorNoteIgnoreNewVendor() {
+  document.getElementById('vn-vendor-new-row').style.display = 'none';
+  document.getElementById('vn-vendor-select').focus();
+}
+
+function _vnPopulateGroups() {
+  const sel = document.getElementById('vn-group');
+  let html = '<option value="">— select —</option>';
+  GROUPS.forEach(g => {
+    html += `<option value="${g.id}">${g.name.replace(/</g,'&lt;')}</option>`;
+  });
+  sel.innerHTML = html;
+}
+
+function onVendorNoteGroupChange() {
+  _vnPopulateItemSuggestions();
+}
+
+function _vnPopulateItemSuggestions() {
+  const gid = document.getElementById('vn-group').value;
+  const dl = document.getElementById('vn-item-suggestions');
+  if (!gid) { dl.innerHTML = ''; return; }
+  const items = ((itemsMap[CID] || {})[gid] || []);
+  dl.innerHTML = items.map(it => `<option value="${(it.name||'').replace(/"/g,'&quot;')}">`).join('');
+}
+
+function closeVendorNoteModal() {
+  document.getElementById('modal-vendor-note').classList.remove('open');
+}
+
+async function viewVendorNoteFile() {
+  if (!_vnCurrent || !_vnCurrent.storage_path) return;
+  const { data, error } = await sb.storage.from('vendor-notes')
+    .createSignedUrl(_vnCurrent.storage_path, 60);
+  if (error) { console.error('signed url', error); toast('Erro ao gerar link', false); return; }
+  window.open(data.signedUrl, '_blank');
+}
+
+async function approveVendorNote() {
+  if (!_vnCurrent || !CID || !isCEO()) return;
+
+  const vendorId = document.getElementById('vn-vendor-select').value;
+  const vendorName = vendorId ? (vendors.find(v => v.id === vendorId) || {}).name || '' : '';
+  const date = document.getElementById('vn-date').value;
+  const totalStr = document.getElementById('vn-total').value;
+  const total = parseFloat(totalStr);
+  const category = document.getElementById('vn-category').value;
+  const gid = document.getElementById('vn-group').value;
+  const itemName = (document.getElementById('vn-item-name').value || '').trim();
+  const notes = document.getElementById('vn-notes').value || '';
+
+  if (!gid) { toast('Selecione a phase', false); return; }
+  if (!itemName) { toast('Informe o nome do item', false); return; }
+  if (isNaN(total) || total <= 0) { toast('Total inválido', false); return; }
+  if (!vendorId && _vnCurrent.extracted.vendor_is_new) {
+    if (!confirm('Você não selecionou nem criou vendor. Continuar mesmo assim?')) return;
+  }
+
+  const btn = document.getElementById('vn-approve-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Lançando...'; }
+
+  try {
+    const islug = slug(itemName);
+
+    if (!itemsMap[CID]) itemsMap[CID] = {};
+    if (!itemsMap[CID][gid]) itemsMap[CID][gid] = [];
+
+    const existingItem = itemsMap[CID][gid].find(x => x.slug === islug);
+
+    if (!existingItem) {
+      // Create new item
+      itemsMap[CID][gid].push({ slug: islug, name: itemName });
+      if (!budgetMap[CID]) budgetMap[CID] = {};
+      if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
+      budgetMap[CID][gid][islug] = {
+        est: 0, actual: total,
+        est_note: '', actual_note: notes,
+        est_supplier: '', actual_supplier: vendorName,
+        est_qty: 0, actual_qty: 1,
+        est_unit_cost: 0, actual_unit_cost: total,
+        category: category || '',
+      };
+      const upRes = await sb.from('budget_items').upsert({
+        project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+        est: 0, actual: total,
+        est_note: '', actual_note: notes,
+        est_supplier: '', actual_supplier: vendorName,
+        est_qty: 0, actual_qty: 1,
+        est_unit_cost: 0, actual_unit_cost: total,
+        category: category || '',
+      }, { onConflict: 'project_id,room_id,item_slug' });
+      if (upRes.error) throw new Error('Failed to save item: ' + upRes.error.message);
+    } else {
+      // Add to existing item (don't overwrite)
+      if (!budgetMap[CID]) budgetMap[CID] = {};
+      if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
+      if (!budgetMap[CID][gid][islug]) budgetMap[CID][gid][islug] = {
+        est: 0, actual: 0, est_note: '', actual_note: '',
+        est_supplier: '', actual_supplier: '',
+        est_qty: 0, actual_qty: 0, est_unit_cost: 0, actual_unit_cost: 0, category: ''
+      };
+      const cur = budgetMap[CID][gid][islug];
+      const newActual = (+cur.actual || 0) + total;
+      const newNote = cur.actual_note ? (cur.actual_note + ' · ' + notes) : notes;
+      const newSupplier = cur.actual_supplier && vendorName && !cur.actual_supplier.includes(vendorName)
+        ? (cur.actual_supplier + ', ' + vendorName)
+        : (cur.actual_supplier || vendorName);
+      cur.actual = newActual;
+      cur.actual_note = newNote;
+      cur.actual_supplier = newSupplier;
+      if (!cur.category && category) cur.category = category;
+      const upRes = await sb.from('budget_items').upsert({
+        project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+        actual: newActual, actual_note: newNote, actual_supplier: newSupplier,
+        category: cur.category || category || '',
+      }, { onConflict: 'project_id,room_id,item_slug' });
+      if (upRes.error) throw new Error('Failed to update item: ' + upRes.error.message);
+    }
+
+    // Copy the file from vendor-notes bucket to budget-attachments bucket
+    // (so it shows up natively in the item's 📎 list)
+    try {
+      const attPath = `${CID}/${gid}/${islug}/${Date.now()}_${(_vnCurrent.original_filename||'invoice').replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const reupload = await sb.storage.from('budget-attachments').upload(
+        attPath, _vnCurrent.file, { contentType: _vnCurrent.file_type, upsert: false }
+      );
+      if (!reupload.error) {
+        const attIns = await sb.from('budget_attachments').insert({
+          project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+          name: _vnCurrent.original_filename || 'invoice',
+          size: _vnCurrent.file_size_bytes || null,
+          mime: _vnCurrent.file_type || '',
+          storage_path: attPath,
+        }).select().single();
+        if (!attIns.error && attIns.data) {
+          if (!attachMap[CID]) attachMap[CID] = {};
+          if (!attachMap[CID][gid]) attachMap[CID][gid] = {};
+          if (!attachMap[CID][gid][islug]) attachMap[CID][gid][islug] = [];
+          attachMap[CID][gid][islug].push(attIns.data);
+        }
+      } else {
+        console.warn('Attachment copy failed (non-blocking):', reupload.error);
+      }
+    } catch (e) {
+      console.warn('Attachment copy error (non-blocking):', e);
+    }
+
+    // Mark vendor_note as approved
+    await sb.from('vendor_notes').update({
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+    }).eq('id', _vnCurrent.note_id);
+
+    // Refresh UI
+    renderItems('est', gid);
+    renderItems('act', gid);
+    closeVendorNoteModal();
+    _vnSetStatus('✅ Lançada em ' + (GROUPS.find(g => g.id === gid)?.name || '') + ' / ' + itemName);
+    toast('Nota lançada com sucesso!', true);
+    _vnCurrent = null;
+  } catch (err) {
+    console.error('approve vendor note', err);
+    toast('Erro ao lançar: ' + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Aprovar e Lançar'; }
+  }
+}
+// ═══ END VENDOR NOTES ASSISTANT ═══════════════════════════════════════
 
 async function removeItem(gid,islug){
   // Look up current name from itemsMap (in case it was renamed)
