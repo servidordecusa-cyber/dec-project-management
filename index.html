@@ -1045,6 +1045,28 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
 
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
+            <div>
+              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px">🤖 Assistente Administrativo</div>
+              <div style="font-size:12px;color:#655A4E;margin-top:2px">Faça upload de uma conta (luz, água, HOA, etc.) e eu lanço pra você</div>
+            </div>
+            <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
+          </div>
+          <input type="file" id="vnr-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="handleRecurringNoteUpload(event)">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button onclick="document.getElementById('vnr-file-input').click()" id="vnr-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar conta</button>
+            <span id="vnr-status" style="font-size:12px;color:#655A4E"></span>
+          </div>
+        </div>
+
+        <!-- Main tabs (Lançamentos / Histórico de Notas) -->
+        <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #F0EAE2">
+          <button class="rcd-maintab" data-tab="lancamentos" onclick="setRecurringMainTab('lancamentos')" style="padding:10px 18px;font-size:13px;font-weight:700;background:transparent;border:0;border-bottom:3px solid #3D271A;cursor:pointer;color:#3D271A;transition:all .15s">📅 Lançamentos mensais</button>
+          <button class="rcd-maintab" data-tab="notas" onclick="setRecurringMainTab('notas')" style="padding:10px 18px;font-size:13px;font-weight:700;background:transparent;border:0;border-bottom:3px solid transparent;cursor:pointer;color:var(--gray3);transition:all .15s">📋 Histórico de Notas <span id="vnr-tab-count" style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:2px"></span></button>
+        </div>
+
+        <div id="rcd-pane-lancamentos">
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
             <div class="card-title" style="margin:0;border:0;padding:0">📅 Lançamentos mensais
@@ -1086,6 +1108,38 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             </table>
           </div>
         </div>
+        </div><!-- end rcd-pane-lancamentos -->
+
+        <div id="rcd-pane-notas" style="display:none">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+              <div class="card-title" style="margin:0;border:0;padding:0">📋 Histórico de Notas Processadas</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <select id="vnr-filter-item" onchange="renderRecurringNotesHistory()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+                  <option value="">Todos os itens</option>
+                </select>
+                <select id="vnr-filter-year" onchange="renderRecurringNotesHistory()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+                  <option value="">Todos os anos</option>
+                </select>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px">
+                <thead>
+                  <tr style="background:#FAF7F3">
+                    <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray3)">Mês / Ano</th>
+                    <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray3)">Item</th>
+                    <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray3)">Vendor</th>
+                    <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray3)">Total</th>
+                    <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray3)">Data</th>
+                    <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--gray3);width:80px">📎</th>
+                  </tr>
+                </thead>
+                <tbody id="vnr-history-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- end rcd-pane-notas -->
       </div>
 
     </div>
@@ -1590,6 +1644,85 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <div class="mactions">
       <button class="btn btn-ghost" onclick="closeVendorNoteModal()">Cancel</button>
       <button class="btn btn-primary" onclick="approveVendorNote()" id="vn-approve-btn">✅ Aprovar e Lançar</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECURRING VENDOR NOTE PREVIEW MODAL -->
+<div class="modal-overlay" id="modal-vendor-note-recurring">
+  <div class="modal" style="max-width:580px;max-height:90vh;overflow-y:auto">
+    <h2>🤖 Conta processada — revise e aprove</h2>
+    <div id="vnr-confidence-warnings" style="display:none;margin-bottom:12px;padding:10px 12px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:6px;font-size:12px;color:#A86A2C"></div>
+
+    <div id="vnr-attach-info" style="margin-bottom:12px;padding:10px 12px;background:#FAF7F3;border-radius:6px;font-size:12px;color:#655A4E;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span>📎 <span id="vnr-attach-name">arquivo.pdf</span></span>
+      <button onclick="viewRecurringNoteFile()" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue)">👁️ Visualizar</button>
+    </div>
+
+    <div class="fgrid">
+      <div class="fg">
+        <label>Vendor</label>
+        <select id="vnr-vendor-select" onchange="onRecurringNoteVendorChange()">
+          <option value="">— select —</option>
+        </select>
+        <div id="vnr-vendor-new-row" style="display:none;margin-top:6px;padding:8px 10px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:5px;font-size:12px">
+          ⚠️ Vendor <strong id="vnr-vendor-new-name"></strong> não está cadastrado.
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="recurringNoteCreateVendor()" style="padding:4px 10px;font-size:11px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-weight:600">✅ Criar e usar</button>
+            <button onclick="recurringNoteIgnoreNewVendor()" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer">Selecionar existente</button>
+          </div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Date</label>
+        <input id="vnr-date" type="date">
+      </div>
+    </div>
+
+    <div class="fg"><label>Item Recurring *</label>
+      <select id="vnr-recurring-item">
+        <option value="">— select —</option>
+      </select>
+    </div>
+
+    <div class="fgrid">
+      <div class="fg">
+        <label>Mês *</label>
+        <select id="vnr-month">
+          <option value="">— select —</option>
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Ano *</label>
+        <select id="vnr-year-offset">
+          <option value="">— select —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fg"><label>Total ($) *</label>
+      <input id="vnr-total" type="number" min="0" step="0.01" placeholder="0.00">
+    </div>
+
+    <div class="fg"><label>Notes (short summary)</label>
+      <input id="vnr-notes" maxlength="200" placeholder="What was paid">
+    </div>
+
+    <div class="mactions">
+      <button class="btn btn-ghost" onclick="closeRecurringNoteModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="approveRecurringNote()" id="vnr-approve-btn">✅ Aprovar e Lançar</button>
     </div>
   </div>
 </div>
@@ -2273,6 +2406,8 @@ function calcRoomItemTotal(pid,roomId,type){
 // ═══ OPEN PROJECT ═════════════════════════════════════════════════════
 function openProject(id){
   CID=id;
+  // Reset per-project caches
+  if (typeof _vnrHistoryCache !== 'undefined') _vnrHistoryCache = null;
   const p=projects.find(x=>x.id===id);
   if(!p) return;
   // Hide ALL global views
@@ -2835,6 +2970,469 @@ async function approveVendorNote() {
   }
 }
 // ═══ END VENDOR NOTES ASSISTANT ═══════════════════════════════════════
+
+// ═══ VENDOR NOTES — RECURRING COSTS MODE ══════════════════════════════
+// Same Edge Function, different mode. Lands in recurring_detail_months.
+let _vnrCurrent = null;
+let _vnrMainTab = 'lancamentos';
+let _vnrHistoryCache = null; // cached list of approved recurring notes for current project
+
+function setRecurringMainTab(tab) {
+  _vnrMainTab = tab;
+  document.querySelectorAll('.rcd-maintab').forEach(b => {
+    const isActive = b.getAttribute('data-tab') === tab;
+    b.style.borderBottomColor = isActive ? '#3D271A' : 'transparent';
+    b.style.color = isActive ? '#3D271A' : 'var(--gray3)';
+  });
+  document.getElementById('rcd-pane-lancamentos').style.display = tab === 'lancamentos' ? 'block' : 'none';
+  document.getElementById('rcd-pane-notas').style.display = tab === 'notas' ? 'block' : 'none';
+  if (tab === 'notas') loadRecurringNotesHistory();
+}
+
+function _vnrSetStatus(msg, isError) {
+  const el = document.getElementById('vnr-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#B85450' : '#655A4E';
+}
+
+async function handleRecurringNoteUpload(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  if (!CID) { toast('Open a project first', false); return; }
+  if (!isCEO()) { toast('CEO only', false); return; }
+
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) { toast('File too big (max 5MB)', false); return; }
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    toast('Unsupported file type. Use PDF or image (JPG/PNG/WebP)', false);
+    return;
+  }
+
+  const btn = document.getElementById('vnr-upload-btn');
+  if (btn) btn.disabled = true;
+  _vnrSetStatus('📤 Enviando arquivo...');
+
+  try {
+    // 1. Upload to vendor-notes bucket
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const noteId = crypto.randomUUID();
+    const storagePath = `${CID}/recurring/${noteId}.${ext}`;
+    const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
+      contentType: file.type, upsert: false,
+    });
+    if (upRes.error) throw new Error('Upload failed: ' + upRes.error.message);
+
+    _vnrSetStatus('🤖 Analisando conta (5–15s)...');
+
+    const fileBase64 = await _fileToBase64(file);
+
+    // 2. Build context for recurring mode
+    const vendorsCtx = (vendors || []).map(v => ({ id: v.id, name: v.name }));
+    const { y1, y2, y3, y4 } = _getRCYears();
+
+    // 3. Call Edge Function with mode=recurring_costs
+    const { data: { session } } = await sb.auth.getSession();
+    const accessToken = session && session.access_token;
+    const resp = await fetch(VN_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + accessToken,
+        'apikey': SKEY,
+      },
+      body: JSON.stringify({
+        mode: 'recurring_costs',
+        file_base64: fileBase64,
+        file_type: file.type,
+        vendors: vendorsCtx,
+        recurring_items: RC_ITEMS,
+        years: [y1, y2, y3, y4],
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error('vendor-note recurring process error:', errText);
+      let msg = 'AI processing failed (' + resp.status + ')';
+      try {
+        const errObj = JSON.parse(errText);
+        if (errObj && errObj.message) msg = errObj.message;
+      } catch(_){}
+      throw new Error(msg);
+    }
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.message || 'AI processing failed');
+
+    // 4. Save vendor_notes row (recurring mode)
+    const insertRow = {
+      id: noteId,
+      project_id: CID,
+      target_type: 'recurring_costs',
+      storage_path: storagePath,
+      original_filename: file.name,
+      file_type: file.type,
+      file_size_bytes: file.size,
+      extracted_vendor: result.data.vendor || null,
+      extracted_date: result.data.date || null,
+      extracted_total: result.data.total || null,
+      extracted_category: result.data.category || 'recurring',
+      extracted_notes: result.data.notes || null,
+      recurring_item_name: result.data.suggested_recurring_item || null,
+      recurring_year_offset: (result.data.suggested_year_offset === 0 || result.data.suggested_year_offset) ? result.data.suggested_year_offset : null,
+      recurring_month: result.data.suggested_month || null,
+      vendor_match_id: result.data.vendor_match_id || null,
+      vendor_is_new: !!result.data.vendor_is_new,
+      status: 'pending_review',
+    };
+    const insRes = await sb.from('vendor_notes').insert(insertRow);
+    if (insRes.error) {
+      console.warn('vendor_notes (recurring) insert failed (non-blocking):', insRes.error);
+    }
+
+    _vnrCurrent = {
+      note_id: noteId,
+      file: file,
+      storage_path: storagePath,
+      original_filename: file.name,
+      file_size_bytes: file.size,
+      file_type: file.type,
+      extracted: result.data,
+      meta: result.meta,
+      vendor_id_to_use: result.data.vendor_match_id || null,
+    };
+
+    _vnrSetStatus('✅ Análise pronta — revise');
+    openRecurringNoteModal();
+  } catch (err) {
+    console.error('Recurring note upload error:', err);
+    _vnrSetStatus('❌ ' + (err.message || 'Erro ao processar'), true);
+    toast(err.message || 'Erro ao processar nota', false);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function openRecurringNoteModal() {
+  if (!_vnrCurrent) return;
+  const ex = _vnrCurrent.extracted || {};
+
+  document.getElementById('vnr-attach-name').textContent = _vnrCurrent.original_filename || 'file';
+
+  // Confidence warnings
+  const warnEl = document.getElementById('vnr-confidence-warnings');
+  const warns = Array.isArray(ex.confidence_warnings) ? ex.confidence_warnings : [];
+  if (warns.length > 0) {
+    warnEl.style.display = 'block';
+    warnEl.innerHTML = '⚠️ <strong>Atenção:</strong><br>' + warns.map(w => '• ' + String(w).replace(/</g,'&lt;')).join('<br>');
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  // Vendor dropdown
+  _vnrPopulateVendors();
+
+  // Date
+  document.getElementById('vnr-date').value = ex.date || '';
+  // Total
+  document.getElementById('vnr-total').value = ex.total || '';
+
+  // Recurring item dropdown
+  const itemSel = document.getElementById('vnr-recurring-item');
+  let itemHtml = '<option value="">— select —</option>';
+  RC_ITEMS.forEach(it => {
+    itemHtml += `<option value="${it.replace(/"/g,'&quot;')}">${it.replace(/</g,'&lt;')}</option>`;
+  });
+  itemSel.innerHTML = itemHtml;
+  itemSel.value = ex.suggested_recurring_item || '';
+
+  // Year offset dropdown (Y1..Y4 with the actual year labels)
+  const { y1, y2, y3, y4 } = _getRCYears();
+  const years = [y1, y2, y3, y4];
+  const yrSel = document.getElementById('vnr-year-offset');
+  let yrHtml = '<option value="">— select —</option>';
+  years.forEach((yr, i) => {
+    yrHtml += `<option value="${i}">Ano ${i+1} (${yr})</option>`;
+  });
+  yrSel.innerHTML = yrHtml;
+  const sugYr = ex.suggested_year_offset;
+  yrSel.value = (sugYr === 0 || sugYr) ? String(sugYr) : '';
+
+  // Month
+  document.getElementById('vnr-month').value = ex.suggested_month || '';
+
+  // Notes
+  document.getElementById('vnr-notes').value = ex.notes || '';
+
+  document.getElementById('modal-vendor-note-recurring').classList.add('open');
+}
+
+function _vnrPopulateVendors() {
+  const sel = document.getElementById('vnr-vendor-select');
+  const ex = _vnrCurrent.extracted || {};
+  const matchId = _vnrCurrent.vendor_id_to_use;
+  let html = '<option value="">— select —</option>';
+  (vendors || []).forEach(v => {
+    html += `<option value="${v.id}">${(v.name||'').replace(/</g,'&lt;')}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = matchId || '';
+
+  const newRow = document.getElementById('vnr-vendor-new-row');
+  if (ex.vendor_is_new && !matchId && ex.vendor) {
+    document.getElementById('vnr-vendor-new-name').textContent = ex.vendor;
+    newRow.style.display = 'block';
+  } else {
+    newRow.style.display = 'none';
+  }
+}
+
+function onRecurringNoteVendorChange() {
+  const sel = document.getElementById('vnr-vendor-select');
+  _vnrCurrent.vendor_id_to_use = sel.value || null;
+  if (sel.value) {
+    document.getElementById('vnr-vendor-new-row').style.display = 'none';
+  }
+}
+
+async function recurringNoteCreateVendor() {
+  const ex = _vnrCurrent.extracted || {};
+  const name = (ex.vendor || '').trim();
+  if (!name) { toast('Nome do vendor vazio', false); return; }
+  const existing = (vendors || []).find(v => (v.name || '').toLowerCase() === name.toLowerCase());
+  if (existing) {
+    _vnrCurrent.vendor_id_to_use = existing.id;
+    document.getElementById('vnr-vendor-select').value = existing.id;
+    document.getElementById('vnr-vendor-new-row').style.display = 'none';
+    toast('Vendor já existia — selecionado', true);
+    return;
+  }
+  const { data, error } = await sb.from('vendors').insert({ name }).select().single();
+  if (error) { console.error('create vendor', error); toast('Erro ao criar vendor', false); return; }
+  vendors.push(data);
+  _vnrCurrent.vendor_id_to_use = data.id;
+  _vnrPopulateVendors();
+  document.getElementById('vnr-vendor-select').value = data.id;
+  document.getElementById('vnr-vendor-new-row').style.display = 'none';
+  toast('Vendor "' + name + '" criado', true);
+}
+
+function recurringNoteIgnoreNewVendor() {
+  document.getElementById('vnr-vendor-new-row').style.display = 'none';
+  document.getElementById('vnr-vendor-select').focus();
+}
+
+function closeRecurringNoteModal() {
+  document.getElementById('modal-vendor-note-recurring').classList.remove('open');
+}
+
+async function viewRecurringNoteFile() {
+  if (!_vnrCurrent || !_vnrCurrent.storage_path) return;
+  const { data, error } = await sb.storage.from('vendor-notes')
+    .createSignedUrl(_vnrCurrent.storage_path, 60);
+  if (error) { console.error('signed url', error); toast('Erro ao gerar link', false); return; }
+  window.open(data.signedUrl, '_blank');
+}
+
+async function approveRecurringNote() {
+  if (!_vnrCurrent || !CID || !isCEO()) return;
+
+  const vendorId = document.getElementById('vnr-vendor-select').value;
+  const vendorName = vendorId ? (vendors.find(v => v.id === vendorId) || {}).name || '' : '';
+  const date = document.getElementById('vnr-date').value || null;
+  const totalStr = document.getElementById('vnr-total').value;
+  const total = parseFloat(totalStr);
+  const itemName = document.getElementById('vnr-recurring-item').value;
+  const yearOffsetStr = document.getElementById('vnr-year-offset').value;
+  const monthStr = document.getElementById('vnr-month').value;
+  const yearOffset = parseInt(yearOffsetStr);
+  const month = parseInt(monthStr);
+  const notes = document.getElementById('vnr-notes').value || '';
+
+  // Validation
+  if (!itemName || RC_ITEMS.indexOf(itemName) < 0) { toast('Selecione um item recurring válido', false); return; }
+  if (isNaN(yearOffset) || yearOffset < 0 || yearOffset >= RC_YEARS_COUNT) { toast('Selecione o ano', false); return; }
+  if (isNaN(month) || month < 1 || month > 12) { toast('Selecione o mês', false); return; }
+  if (isNaN(total) || total <= 0) { toast('Total inválido', false); return; }
+  if (!vendorId && _vnrCurrent.extracted.vendor_is_new) {
+    if (!confirm('Você não selecionou nem criou vendor. Continuar mesmo assim?')) return;
+  }
+
+  // Check if there's already a value at this slot
+  const key = _rcKey(yearOffset, month);
+  const existingRow = (recurringMap[CID] || {})[itemName] || { months: {} };
+  const existingAmount = (existingRow.months || {})[key];
+  if (existingAmount != null && +existingAmount > 0) {
+    const yr = _getRCYearForOffset(yearOffset);
+    const monthLabel = RC_MONTH_LABELS[month - 1];
+    const ok = confirm(
+      `⚠️ Já existe um valor de $${(+existingAmount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} em "${itemName}" / ${monthLabel} ${yr}.\n\nSobrescrever com $${total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}?`
+    );
+    if (!ok) return;
+  }
+
+  const btn = document.getElementById('vnr-approve-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Lançando...'; }
+
+  try {
+    // 1. Save to recurring_detail_months
+    if (!recurringMap[CID]) recurringMap[CID] = {};
+    if (!recurringMap[CID][itemName]) {
+      recurringMap[CID][itemName] = { company: '', account: '', notes: '', months: {} };
+    }
+    if (!recurringMap[CID][itemName].months) recurringMap[CID][itemName].months = {};
+    recurringMap[CID][itemName].months[key] = total;
+
+    // Also update company name if it was empty and we have a vendor
+    if (vendorName && !recurringMap[CID][itemName].company) {
+      recurringMap[CID][itemName].company = vendorName;
+    }
+
+    // Persist (this also handles meta upsert)
+    await saveRCDMonth(itemName, yearOffset, month);
+
+    // 2. Update meta if company was just set
+    if (vendorName) {
+      await sb.from('recurring_detail_meta').upsert({
+        project_id: CID,
+        item_name: itemName,
+        company: recurringMap[CID][itemName].company || '',
+        account: recurringMap[CID][itemName].account || '',
+        notes: recurringMap[CID][itemName].notes || '',
+      }, { onConflict: 'project_id,item_name' });
+    }
+
+    // 3. Mark vendor_note as approved
+    await sb.from('vendor_notes').update({
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+      recurring_item_name: itemName,
+      recurring_year_offset: yearOffset,
+      recurring_month: month,
+      extracted_total: total,
+      extracted_date: date,
+      extracted_notes: notes,
+    }).eq('id', _vnrCurrent.note_id);
+
+    // 4. Invalidate history cache so the Notas tab refreshes next time
+    _vnrHistoryCache = null;
+
+    // 5. Refresh UI
+    renderRecurringDetail();
+    closeRecurringNoteModal();
+    const yr = _getRCYearForOffset(yearOffset);
+    _vnrSetStatus(`✅ Lançada em ${itemName} / ${RC_MONTH_LABELS[month-1]} ${yr}`);
+    toast('Conta lançada com sucesso!', true);
+    _vnrCurrent = null;
+  } catch (err) {
+    console.error('approve recurring note', err);
+    toast('Erro ao lançar: ' + (err.message || err), false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Aprovar e Lançar'; }
+  }
+}
+
+// ─── Histórico de Notas (aba) ──────────────────────────────────────────
+async function loadRecurringNotesHistory() {
+  if (!CID || !isCEO()) return;
+  const tbody = document.getElementById('vnr-history-tbody');
+  if (tbody && !_vnrHistoryCache) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--gray3);font-style:italic">Carregando...</td></tr>';
+  }
+
+  if (!_vnrHistoryCache) {
+    const { data, error } = await sb.from('vendor_notes')
+      .select('*')
+      .eq('project_id', CID)
+      .eq('target_type', 'recurring_costs')
+      .eq('status', 'approved')
+      .order('recurring_year_offset', { ascending: true })
+      .order('recurring_month', { ascending: true });
+    if (error) {
+      console.error('history load', error);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#B85450">Erro ao carregar histórico</td></tr>';
+      return;
+    }
+    _vnrHistoryCache = data || [];
+  }
+
+  // Populate filter dropdowns
+  const filterItem = document.getElementById('vnr-filter-item');
+  if (filterItem && filterItem.options.length <= 1) {
+    let html = '<option value="">Todos os itens</option>';
+    RC_ITEMS.forEach(it => { html += `<option value="${it.replace(/"/g,'&quot;')}">${it.replace(/</g,'&lt;')}</option>`; });
+    filterItem.innerHTML = html;
+  }
+  const filterYear = document.getElementById('vnr-filter-year');
+  if (filterYear && filterYear.options.length <= 1) {
+    const { y1, y2, y3, y4 } = _getRCYears();
+    let html = '<option value="">Todos os anos</option>';
+    [y1, y2, y3, y4].forEach((yr, i) => { html += `<option value="${i}">Ano ${i+1} (${yr})</option>`; });
+    filterYear.innerHTML = html;
+  }
+
+  renderRecurringNotesHistory();
+}
+
+function renderRecurringNotesHistory() {
+  const tbody = document.getElementById('vnr-history-tbody');
+  if (!tbody || !_vnrHistoryCache) return;
+
+  const filterItem = document.getElementById('vnr-filter-item')?.value || '';
+  const filterYearOffsetStr = document.getElementById('vnr-filter-year')?.value || '';
+  const filterYearOffset = filterYearOffsetStr === '' ? null : parseInt(filterYearOffsetStr);
+
+  const list = _vnrHistoryCache.filter(n => {
+    if (filterItem && n.recurring_item_name !== filterItem) return false;
+    if (filterYearOffset != null && n.recurring_year_offset !== filterYearOffset) return false;
+    return true;
+  });
+
+  // Update tab counter
+  const tabCount = document.getElementById('vnr-tab-count');
+  if (tabCount) tabCount.textContent = _vnrHistoryCache.length > 0 ? '(' + _vnrHistoryCache.length + ')' : '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">Nenhuma nota processada ainda.</td></tr>';
+    return;
+  }
+
+  const { y1, y2, y3, y4 } = _getRCYears();
+  const yearMap = [y1, y2, y3, y4];
+
+  tbody.innerHTML = list.map(n => {
+    const yr = (n.recurring_year_offset != null) ? yearMap[n.recurring_year_offset] : '—';
+    const monthLabel = (n.recurring_month != null && n.recurring_month >= 1 && n.recurring_month <= 12)
+      ? RC_MONTH_LABELS[n.recurring_month - 1]
+      : '—';
+    const vendor = (n.extracted_vendor || '—').replace(/</g,'&lt;');
+    const total = '$' + (+n.extracted_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const dt = n.extracted_date || '—';
+    return `
+      <tr style="border-bottom:1px solid #F0EAE2">
+        <td style="padding:10px 12px;font-weight:600;color:var(--navy);font-size:12px">${monthLabel} / ${yr}</td>
+        <td style="padding:10px 12px;font-size:12px">${(n.recurring_item_name || '—').replace(/</g,'&lt;')}</td>
+        <td style="padding:10px 12px;font-size:12px;color:var(--text)">${vendor}</td>
+        <td style="padding:10px 12px;text-align:right;font-weight:700;color:#3D271A;font-size:12px">${total}</td>
+        <td style="padding:10px 12px;font-size:11px;color:var(--gray3)">${dt}</td>
+        <td style="padding:10px 12px;text-align:center"><button onclick="viewRecurringNoteHistoryFile('${n.id}')" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue)" title="${(n.original_filename||'').replace(/"/g,'&quot;')}">📎 Ver</button></td>
+      </tr>`;
+  }).join('');
+}
+
+async function viewRecurringNoteHistoryFile(noteId) {
+  const note = (_vnrHistoryCache || []).find(n => n.id === noteId);
+  if (!note || !note.storage_path) { toast('Arquivo não encontrado', false); return; }
+  const { data, error } = await sb.storage.from('vendor-notes')
+    .createSignedUrl(note.storage_path, 60);
+  if (error) { console.error('signed url', error); toast('Erro ao gerar link', false); return; }
+  window.open(data.signedUrl, '_blank');
+}
+// ═══ END VENDOR NOTES — RECURRING COSTS MODE ══════════════════════════
 
 async function removeItem(gid,islug){
   // Look up current name from itemsMap (in case it was renamed)
