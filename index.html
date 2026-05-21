@@ -1053,11 +1053,13 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             </div>
             <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
           </div>
-          <input type="file" id="vnr-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="handleRecurringNoteUpload(event)">
+          <input type="file" id="vnr-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" multiple style="display:none" onchange="handleRecurringNoteUpload(event)">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <button onclick="document.getElementById('vnr-file-input').click()" id="vnr-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar conta</button>
-            <span id="vnr-status" style="font-size:12px;color:#655A4E"></span>
+            <button onclick="document.getElementById('vnr-file-input').click()" id="vnr-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar conta(s)</button>
+            <span style="font-size:11px;color:#999">até 10 arquivos por vez</span>
+            <span id="vnr-status" style="font-size:12px;color:#655A4E;margin-left:auto"></span>
           </div>
+          <div id="vnr-queue-banner" style="display:none;margin-top:10px;padding:12px 14px;background:#fff;border:2px solid #5C7A3F;border-radius:8px"></div>
         </div>
 
         <!-- Main tabs (Lançamentos / Histórico de Notas) -->
@@ -1722,6 +1724,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
     <div class="mactions">
       <button class="btn btn-ghost" onclick="closeRecurringNoteModal()">Cancel</button>
+      <button class="btn btn-ghost" onclick="skipRecurringNote()" id="vnr-skip-btn" style="display:none">⏭ Pular esta</button>
       <button class="btn btn-primary" onclick="approveRecurringNote()" id="vnr-approve-btn">✅ Aprovar e Lançar</button>
     </div>
   </div>
@@ -2996,125 +2999,246 @@ function _vnrSetStatus(msg, isError) {
   el.style.color = isError ? '#B85450' : '#655A4E';
 }
 
+// ─── Multi-file queue state ─────────────────────────────────────────
+const VNR_MAX_FILES = 10;
+let _vnrQueue = [];       // array of items pending review {note_id, file, ...extracted}
+let _vnrQueueErrors = []; // array of {filename, error}
+let _vnrCurrentIndex = -1; // index into _vnrQueue currently shown in modal
+
 async function handleRecurringNoteUpload(event) {
   const input = event.target;
-  const file = input.files && input.files[0];
-  if (!file) return;
-  input.value = '';
+  const fileList = input.files;
+  if (!fileList || fileList.length === 0) return;
+  const files = Array.from(fileList);
+  input.value = ''; // allow re-selecting same files later
 
   if (!CID) { toast('Open a project first', false); return; }
   if (!isCEO()) { toast('CEO only', false); return; }
 
-  const MAX_SIZE = 5 * 1024 * 1024;
-  if (file.size > MAX_SIZE) { toast('File too big (max 5MB)', false); return; }
-  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  if (!allowedTypes.includes(file.type)) {
-    toast('Unsupported file type. Use PDF or image (JPG/PNG/WebP)', false);
+  if (files.length > VNR_MAX_FILES) {
+    toast('Máximo de ' + VNR_MAX_FILES + ' arquivos por vez. Selecionados: ' + files.length, false);
     return;
+  }
+
+  // Pre-validate all files before doing anything
+  const MAX_SIZE = 5 * 1024 * 1024;
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  for (const f of files) {
+    if (f.size > MAX_SIZE) { toast('"' + f.name + '" > 5MB. Ajuste e tente de novo.', false); return; }
+    if (!allowedTypes.includes(f.type)) {
+      toast('"' + f.name + '" — tipo não suportado (use PDF ou imagem)', false); return;
+    }
   }
 
   const btn = document.getElementById('vnr-upload-btn');
   if (btn) btn.disabled = true;
-  _vnrSetStatus('📤 Enviando arquivo...');
 
-  try {
-    // 1. Upload to vendor-notes bucket
-    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-    const noteId = crypto.randomUUID();
-    const storagePath = `${CID}/recurring/${noteId}.${ext}`;
-    const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
-      contentType: file.type, upsert: false,
-    });
-    if (upRes.error) throw new Error('Upload failed: ' + upRes.error.message);
+  // Reset queue state for this batch
+  _vnrQueue = [];
+  _vnrQueueErrors = [];
 
-    _vnrSetStatus('🤖 Analisando conta (5–15s)...');
+  // Build static context once (same for all files)
+  const vendorsCtx = (vendors || []).map(v => ({ id: v.id, name: v.name }));
+  const { y1, y2, y3, y4 } = _getRCYears();
 
-    const fileBase64 = await _fileToBase64(file);
+  // Get session token once
+  const { data: { session } } = await sb.auth.getSession();
+  const accessToken = session && session.access_token;
 
-    // 2. Build context for recurring mode
-    const vendorsCtx = (vendors || []).map(v => ({ id: v.id, name: v.name }));
-    const { y1, y2, y3, y4 } = _getRCYears();
+  _vnrSetStatus('🤖 Processando ' + files.length + ' arquivo(s) em paralelo...');
 
-    // 3. Call Edge Function with mode=recurring_costs
-    const { data: { session } } = await sb.auth.getSession();
-    const accessToken = session && session.access_token;
-    const resp = await fetch(VN_EDGE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + accessToken,
-        'apikey': SKEY,
-      },
-      body: JSON.stringify({
-        mode: 'recurring_costs',
-        file_base64: fileBase64,
-        file_type: file.type,
-        vendors: vendorsCtx,
-        recurring_items: RC_ITEMS,
-        years: [y1, y2, y3, y4],
-      }),
-    });
+  // Process all in parallel using Promise.allSettled (so 1 failure doesn't abort others)
+  const promises = files.map((file, idx) => _processOneRecurringNote(file, idx, vendorsCtx, [y1,y2,y3,y4], accessToken));
+  const results = await Promise.allSettled(promises);
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error('vendor-note recurring process error:', errText);
-      let msg = 'AI processing failed (' + resp.status + ')';
-      try {
-        const errObj = JSON.parse(errText);
-        if (errObj && errObj.message) msg = errObj.message;
-      } catch(_){}
-      throw new Error(msg);
+  // Collect successes and errors
+  results.forEach((r, idx) => {
+    const fname = files[idx].name;
+    if (r.status === 'fulfilled' && r.value) {
+      _vnrQueue.push(r.value);
+    } else {
+      const errMsg = r.status === 'rejected'
+        ? (r.reason && r.reason.message ? r.reason.message : String(r.reason))
+        : 'unknown error';
+      _vnrQueueErrors.push({ filename: fname, error: errMsg });
     }
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.message || 'AI processing failed');
+  });
 
-    // 4. Save vendor_notes row (recurring mode)
-    const insertRow = {
-      id: noteId,
-      project_id: CID,
-      target_type: 'recurring_costs',
-      storage_path: storagePath,
-      original_filename: file.name,
-      file_type: file.type,
-      file_size_bytes: file.size,
-      extracted_vendor: result.data.vendor || null,
-      extracted_date: result.data.date || null,
-      extracted_total: result.data.total || null,
-      extracted_category: result.data.category || 'recurring',
-      extracted_notes: result.data.notes || null,
-      recurring_item_name: result.data.suggested_recurring_item || null,
-      recurring_year_offset: (result.data.suggested_year_offset === 0 || result.data.suggested_year_offset) ? result.data.suggested_year_offset : null,
-      recurring_month: result.data.suggested_month || null,
-      vendor_match_id: result.data.vendor_match_id || null,
-      vendor_is_new: !!result.data.vendor_is_new,
-      status: 'pending_review',
-    };
-    const insRes = await sb.from('vendor_notes').insert(insertRow);
-    if (insRes.error) {
-      console.warn('vendor_notes (recurring) insert failed (non-blocking):', insRes.error);
+  if (btn) btn.disabled = false;
+
+  // Update status
+  const okCount = _vnrQueue.length;
+  const errCount = _vnrQueueErrors.length;
+  if (okCount === 0) {
+    _vnrSetStatus('❌ Nenhum arquivo processado com sucesso (' + errCount + ' erro(s))', true);
+    if (errCount > 0) {
+      const errSummary = _vnrQueueErrors.slice(0, 3).map(e => '• ' + e.filename + ': ' + e.error).join('\n');
+      alert('Erros no processamento:\n\n' + errSummary + (errCount > 3 ? '\n\n(+' + (errCount-3) + ' outros)' : ''));
     }
-
-    _vnrCurrent = {
-      note_id: noteId,
-      file: file,
-      storage_path: storagePath,
-      original_filename: file.name,
-      file_size_bytes: file.size,
-      file_type: file.type,
-      extracted: result.data,
-      meta: result.meta,
-      vendor_id_to_use: result.data.vendor_match_id || null,
-    };
-
-    _vnrSetStatus('✅ Análise pronta — revise');
-    openRecurringNoteModal();
-  } catch (err) {
-    console.error('Recurring note upload error:', err);
-    _vnrSetStatus('❌ ' + (err.message || 'Erro ao processar'), true);
-    toast(err.message || 'Erro ao processar nota', false);
-  } finally {
-    if (btn) btn.disabled = false;
+    return;
   }
+
+  _vnrSetStatus('✅ ' + okCount + ' processado(s)' + (errCount ? ', ' + errCount + ' com erro' : ''));
+  _renderRecurringQueueBanner();
+
+  // Auto-open the first one
+  _vnrShowQueueIndex(0);
+}
+
+async function _processOneRecurringNote(file, idx, vendorsCtx, years, accessToken) {
+  // Returns the queue item OR throws
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const noteId = crypto.randomUUID();
+  const storagePath = `${CID}/recurring/${noteId}.${ext}`;
+
+  // 1. Upload to storage
+  const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
+    contentType: file.type, upsert: false,
+  });
+  if (upRes.error) throw new Error('Upload: ' + upRes.error.message);
+
+  // 2. Convert to base64
+  const fileBase64 = await _fileToBase64(file);
+
+  // 3. Call Edge Function
+  const resp = await fetch(VN_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + accessToken,
+      'apikey': SKEY,
+    },
+    body: JSON.stringify({
+      mode: 'recurring_costs',
+      file_base64: fileBase64,
+      file_type: file.type,
+      vendors: vendorsCtx,
+      recurring_items: RC_ITEMS,
+      years: years,
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    let msg = 'AI ' + resp.status;
+    try { const e = JSON.parse(errText); if (e && e.message) msg = e.message; } catch(_){}
+    throw new Error(msg);
+  }
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.message || 'AI failed');
+
+  // 4. Save vendor_notes row (pending_review)
+  const insertRow = {
+    id: noteId,
+    project_id: CID,
+    target_type: 'recurring_costs',
+    storage_path: storagePath,
+    original_filename: file.name,
+    file_type: file.type,
+    file_size_bytes: file.size,
+    extracted_vendor: result.data.vendor || null,
+    extracted_date: result.data.date || null,
+    extracted_total: result.data.total || null,
+    extracted_category: result.data.category || 'recurring',
+    extracted_notes: result.data.notes || null,
+    recurring_item_name: result.data.suggested_recurring_item || null,
+    recurring_year_offset: (result.data.suggested_year_offset === 0 || result.data.suggested_year_offset) ? result.data.suggested_year_offset : null,
+    recurring_month: result.data.suggested_month || null,
+    vendor_match_id: result.data.vendor_match_id || null,
+    vendor_is_new: !!result.data.vendor_is_new,
+    status: 'pending_review',
+  };
+  const insRes = await sb.from('vendor_notes').insert(insertRow);
+  if (insRes.error) {
+    console.warn('vendor_notes (recurring) insert failed (non-blocking):', insRes.error);
+  }
+
+  return {
+    note_id: noteId,
+    file: file,
+    storage_path: storagePath,
+    original_filename: file.name,
+    file_size_bytes: file.size,
+    file_type: file.type,
+    extracted: result.data,
+    meta: result.meta,
+    vendor_id_to_use: result.data.vendor_match_id || null,
+  };
+}
+
+function _renderRecurringQueueBanner() {
+  const banner = document.getElementById('vnr-queue-banner');
+  if (!banner) return;
+  const remaining = _vnrQueue.length;
+  if (remaining === 0 && _vnrQueueErrors.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+  let html = '';
+  if (remaining > 0) {
+    const next = _vnrQueue[0];
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-weight:700;color:#3D271A;font-size:13px">📋 ${remaining} nota(s) aguardando revisão</div>
+          <div style="font-size:11px;color:#655A4E;margin-top:2px">Próxima: <strong>${(next.original_filename||'').replace(/</g,'&lt;')}</strong></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="_vnrShowQueueIndex(0)" style="padding:6px 14px;font-size:12px;background:linear-gradient(135deg,#5C7A3F,#7A9954);color:#fff;border:0;border-radius:6px;cursor:pointer;font-weight:700">▶ Revisar próxima</button>
+          <button onclick="discardRecurringQueue()" style="padding:6px 12px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:6px;cursor:pointer;color:var(--gray3)">Descartar fila</button>
+        </div>
+      </div>`;
+  }
+  if (_vnrQueueErrors.length > 0) {
+    const errLines = _vnrQueueErrors.slice(0, 3).map(e =>
+      `<div style="font-size:11px;color:#A02021">• ${e.filename.replace(/</g,'&lt;')}: ${e.error.replace(/</g,'&lt;')}</div>`
+    ).join('');
+    const more = _vnrQueueErrors.length > 3 ? `<div style="font-size:11px;color:#A02021">+ ${_vnrQueueErrors.length-3} outros</div>` : '';
+    html += `
+      <div style="margin-top:${remaining>0?'10px':'0'};padding-top:${remaining>0?'10px':'0'};border-top:${remaining>0?'1px dashed #F0EAE2':'0'}">
+        <div style="font-weight:700;color:#A02021;font-size:12px;margin-bottom:4px">⚠️ ${_vnrQueueErrors.length} erro(s) no processamento:</div>
+        ${errLines}
+        ${more}
+      </div>`;
+  }
+  banner.innerHTML = html;
+  banner.style.display = 'block';
+}
+
+function _vnrShowQueueIndex(idx) {
+  if (idx < 0 || idx >= _vnrQueue.length) return;
+  _vnrCurrentIndex = idx;
+  _vnrCurrent = _vnrQueue[idx];
+  // Show skip button only if there are queue items
+  const skipBtn = document.getElementById('vnr-skip-btn');
+  if (skipBtn) skipBtn.style.display = _vnrQueue.length > 1 ? 'inline-flex' : 'none';
+  openRecurringNoteModal();
+}
+
+function skipRecurringNote() {
+  if (_vnrCurrentIndex < 0) return;
+  // Remove current item from queue without lançar
+  _vnrQueue.splice(_vnrCurrentIndex, 1);
+  closeRecurringNoteModal();
+  _vnrCurrent = null;
+  _vnrCurrentIndex = -1;
+  _renderRecurringQueueBanner();
+  // Auto-open next if any
+  if (_vnrQueue.length > 0) {
+    setTimeout(() => _vnrShowQueueIndex(0), 200);
+  } else {
+    _vnrSetStatus('✅ Fila processada');
+  }
+}
+
+function discardRecurringQueue() {
+  if (!confirm('Descartar ' + _vnrQueue.length + ' nota(s) não revisada(s)? Os arquivos ficam salvos mas as sugestões serão perdidas.')) return;
+  _vnrQueue = [];
+  _vnrQueueErrors = [];
+  _vnrCurrent = null;
+  _vnrCurrentIndex = -1;
+  _renderRecurringQueueBanner();
+  _vnrSetStatus('Fila descartada');
 }
 
 function openRecurringNoteModal() {
@@ -3327,7 +3451,22 @@ async function approveRecurringNote() {
     const yr = _getRCYearForOffset(yearOffset);
     _vnrSetStatus(`✅ Lançada em ${itemName} / ${RC_MONTH_LABELS[month-1]} ${yr}`);
     toast('Conta lançada com sucesso!', true);
+
+    // 6. Advance queue (multi-upload flow)
+    if (_vnrCurrentIndex >= 0 && _vnrQueue.length > 0) {
+      _vnrQueue.splice(_vnrCurrentIndex, 1);
+    }
     _vnrCurrent = null;
+    _vnrCurrentIndex = -1;
+    _renderRecurringQueueBanner();
+    if (_vnrQueue.length > 0) {
+      setTimeout(() => _vnrShowQueueIndex(0), 250);
+    } else if (typeof _vnrQueueErrors !== 'undefined' && (_vnrQueueErrors.length > 0 || _vnrQueue.length === 0)) {
+      // Queue done
+      if (_vnrQueueErrors && _vnrQueueErrors.length === 0) {
+        _vnrSetStatus('✅ Fila concluída');
+      }
+    }
   } catch (err) {
     console.error('approve recurring note', err);
     toast('Erro ao lançar: ' + (err.message || err), false);
