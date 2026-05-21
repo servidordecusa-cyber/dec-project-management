@@ -411,11 +411,13 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             </div>
             <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
           </div>
-          <input type="file" id="vn-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none" onchange="handleVendorNoteUpload(event)">
+          <input type="file" id="vn-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" multiple style="display:none" onchange="handleVendorNoteUpload(event)">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <button onclick="document.getElementById('vn-file-input').click()" id="vn-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar nota</button>
-            <span id="vn-status" style="font-size:12px;color:#655A4E"></span>
+            <button onclick="document.getElementById('vn-file-input').click()" id="vn-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar nota(s)</button>
+            <span style="font-size:11px;color:#999">até 10 arquivos por vez</span>
+            <span id="vn-status" style="font-size:12px;color:#655A4E;margin-left:auto"></span>
           </div>
+          <div id="vn-queue-banner" style="display:none;margin-top:10px;padding:12px 14px;background:#fff;border:2px solid #5C7A3F;border-radius:8px"></div>
         </div>
 
         <div id="act-rooms"></div>
@@ -1645,6 +1647,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
     <div class="mactions">
       <button class="btn btn-ghost" onclick="closeVendorNoteModal()">Cancel</button>
+      <button class="btn btn-ghost" onclick="skipVendorNote()" id="vn-skip-btn" style="display:none">⏭ Pular esta</button>
       <button class="btn btn-primary" onclick="approveVendorNote()" id="vn-approve-btn">✅ Aprovar e Lançar</button>
     </div>
   </div>
@@ -2604,126 +2607,240 @@ function _fileToBase64(file) {
   });
 }
 
+// ─── Multi-file queue state (Actual Costs) ─────────────────────────
+const VN_MAX_FILES = 10;
+let _vnQueue = [];        // array of items pending review
+let _vnQueueErrors = [];  // array of {filename, error}
+let _vnCurrentIndex = -1; // index in queue currently shown in modal
+
 async function handleVendorNoteUpload(event) {
   const input = event.target;
-  const file = input.files && input.files[0];
-  if (!file) return;
-  input.value = ''; // allow re-selecting same file later
+  const fileList = input.files;
+  if (!fileList || fileList.length === 0) return;
+  const files = Array.from(fileList);
+  input.value = ''; // allow re-selecting same files later
 
   if (!CID) { toast('Open a project first', false); return; }
   if (!isCEO()) { toast('CEO only', false); return; }
 
-  const MAX_SIZE = 5 * 1024 * 1024;
-  if (file.size > MAX_SIZE) { toast('File too big (max 5MB)', false); return; }
-  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  if (!allowedTypes.includes(file.type)) {
-    toast('Unsupported file type. Use PDF or image (JPG/PNG/WebP)', false);
+  if (files.length > VN_MAX_FILES) {
+    toast('Máximo de ' + VN_MAX_FILES + ' arquivos por vez. Selecionados: ' + files.length, false);
     return;
+  }
+
+  // Pre-validate all files
+  const MAX_SIZE = 5 * 1024 * 1024;
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  for (const f of files) {
+    if (f.size > MAX_SIZE) { toast('"' + f.name + '" > 5MB. Ajuste e tente de novo.', false); return; }
+    if (!allowedTypes.includes(f.type)) {
+      toast('"' + f.name + '" — tipo não suportado (use PDF ou imagem)', false); return;
+    }
   }
 
   const btn = document.getElementById('vn-upload-btn');
   if (btn) btn.disabled = true;
-  _vnSetStatus('📤 Enviando arquivo...');
 
-  try {
-    // 1. Upload to vendor-notes bucket
-    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-    const noteId = crypto.randomUUID();
-    const storagePath = `${CID}/${noteId}.${ext}`;
-    const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
-      contentType: file.type, upsert: false,
-    });
-    if (upRes.error) throw new Error('Upload failed: ' + upRes.error.message);
+  // Reset queue state
+  _vnQueue = [];
+  _vnQueueErrors = [];
 
-    _vnSetStatus('🤖 Analisando nota (5–15s)...');
+  // Build static context once
+  const vendorsCtx = (vendors || []).map(v => ({ id: v.id, name: v.name }));
+  const groupsCtx = GROUPS.map(g => {
+    const items = ((itemsMap[CID] || {})[g.id] || []).map(it => it.name);
+    return { id: g.id, name: g.name, items };
+  });
 
-    // 2. Base64 encode for the Edge Function
-    const fileBase64 = await _fileToBase64(file);
+  // Get session once
+  const { data: { session } } = await sb.auth.getSession();
+  const accessToken = session && session.access_token;
 
-    // 3. Build context: vendors + groups+items
-    const vendorsCtx = (vendors || []).map(v => ({ id: v.id, name: v.name }));
-    const groupsCtx = GROUPS.map(g => {
-      const items = ((itemsMap[CID] || {})[g.id] || []).map(it => it.name);
-      return { id: g.id, name: g.name, items };
-    });
+  _vnSetStatus('🤖 Processando ' + files.length + ' arquivo(s) em paralelo...');
 
-    // 4. Call Edge Function
-    const { data: { session } } = await sb.auth.getSession();
-    const accessToken = session && session.access_token;
-    const resp = await fetch(VN_EDGE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + accessToken,
-        'apikey': SKEY,
-      },
-      body: JSON.stringify({
-        file_base64: fileBase64,
-        file_type: file.type,
-        vendors: vendorsCtx,
-        groups: groupsCtx,
-      }),
-    });
+  // Process in parallel — single bills, no list detection in this mode
+  const promises = files.map((file, idx) => _processOneActualNote(file, idx, vendorsCtx, groupsCtx, accessToken));
+  const results = await Promise.allSettled(promises);
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error('vendor-note process error:', errText);
-      let msg = 'AI processing failed (' + resp.status + ')';
-      try {
-        const errObj = JSON.parse(errText);
-        if (errObj && errObj.message) msg = errObj.message;
-      } catch(_){}
-      throw new Error(msg);
+  results.forEach((r, idx) => {
+    const fname = files[idx].name;
+    if (r.status === 'fulfilled' && r.value) {
+      _vnQueue.push(r.value);
+    } else {
+      const errMsg = r.status === 'rejected'
+        ? (r.reason && r.reason.message ? r.reason.message : String(r.reason))
+        : 'unknown error';
+      _vnQueueErrors.push({ filename: fname, error: errMsg });
     }
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.message || 'AI processing failed');
+  });
 
-    // 5. Save vendor_notes row
-    const insertRow = {
-      id: noteId,
-      project_id: CID,
-      storage_path: storagePath,
-      original_filename: file.name,
-      file_type: file.type,
-      file_size_bytes: file.size,
-      extracted_vendor: result.data.vendor || null,
-      extracted_date: result.data.date || null,
-      extracted_total: result.data.total || null,
-      extracted_category: result.data.category || null,
-      extracted_notes: result.data.notes || null,
-      suggested_group_id: result.data.suggested_group_id || null,
-      suggested_item_name: result.data.suggested_item_name || null,
-      vendor_match_id: result.data.vendor_match_id || null,
-      vendor_is_new: !!result.data.vendor_is_new,
-      status: 'pending_review',
-    };
-    const insRes = await sb.from('vendor_notes').insert(insertRow);
-    if (insRes.error) {
-      console.warn('vendor_notes insert failed (non-blocking):', insRes.error);
+  if (btn) btn.disabled = false;
+
+  const okCount = _vnQueue.length;
+  const errCount = _vnQueueErrors.length;
+  if (okCount === 0) {
+    _vnSetStatus('❌ Nenhum arquivo processado com sucesso (' + errCount + ' erro(s))', true);
+    if (errCount > 0) {
+      const errSummary = _vnQueueErrors.slice(0, 3).map(e => '• ' + e.filename + ': ' + e.error).join('\n');
+      alert('Erros no processamento:\n\n' + errSummary + (errCount > 3 ? '\n\n(+' + (errCount-3) + ' outros)' : ''));
     }
-
-    _vnCurrent = {
-      note_id: noteId,
-      file: file,
-      storage_path: storagePath,
-      original_filename: file.name,
-      file_size_bytes: file.size,
-      file_type: file.type,
-      extracted: result.data,
-      meta: result.meta,
-      vendor_id_to_use: result.data.vendor_match_id || null,
-      vendor_was_created: false,
-    };
-
-    _vnSetStatus('✅ Análise pronta — revise');
-    openVendorNoteModal();
-  } catch (err) {
-    console.error('Vendor note upload error:', err);
-    _vnSetStatus('❌ ' + (err.message || 'Erro ao processar'), true);
-    toast(err.message || 'Erro ao processar nota', false);
-  } finally {
-    if (btn) btn.disabled = false;
+    return;
   }
+
+  _vnSetStatus('✅ ' + okCount + ' nota(s) prontas' + (errCount ? ', ' + errCount + ' com erro' : ''));
+  _renderActualQueueBanner();
+  _vnShowQueueIndex(0);
+}
+
+async function _processOneActualNote(file, idx, vendorsCtx, groupsCtx, accessToken) {
+  // Returns ONE queue item OR throws (Actual mode = 1 item per file, no list detection)
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const noteId = crypto.randomUUID();
+  const storagePath = `${CID}/${noteId}.${ext}`;
+
+  // 1. Upload to storage
+  const upRes = await sb.storage.from('vendor-notes').upload(storagePath, file, {
+    contentType: file.type, upsert: false,
+  });
+  if (upRes.error) throw new Error('Upload: ' + upRes.error.message);
+
+  // 2. Base64
+  const fileBase64 = await _fileToBase64(file);
+
+  // 3. Call Edge Function (mode = actual_costs, the default)
+  const resp = await fetch(VN_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + accessToken,
+      'apikey': SKEY,
+    },
+    body: JSON.stringify({
+      file_base64: fileBase64,
+      file_type: file.type,
+      vendors: vendorsCtx,
+      groups: groupsCtx,
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    let msg = 'AI ' + resp.status;
+    try { const e = JSON.parse(errText); if (e && e.message) msg = e.message; } catch(_){}
+    throw new Error(msg);
+  }
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.message || 'AI failed');
+
+  // 4. Save vendor_notes row
+  const insertRow = {
+    id: noteId,
+    project_id: CID,
+    target_type: 'actual_costs',
+    storage_path: storagePath,
+    original_filename: file.name,
+    file_type: file.type,
+    file_size_bytes: file.size,
+    extracted_vendor: result.data.vendor || null,
+    extracted_date: result.data.date || null,
+    extracted_total: result.data.total || null,
+    extracted_category: result.data.category || null,
+    extracted_notes: result.data.notes || null,
+    suggested_group_id: result.data.suggested_group_id || null,
+    suggested_item_name: result.data.suggested_item_name || null,
+    vendor_match_id: result.data.vendor_match_id || null,
+    vendor_is_new: !!result.data.vendor_is_new,
+    status: 'pending_review',
+  };
+  // Fire-and-forget insert (errors logged but non-blocking)
+  sb.from('vendor_notes').insert(insertRow).then(({error}) => {
+    if (error) console.warn('vendor_notes (actual) insert failed (non-blocking):', error);
+  });
+
+  return {
+    note_id: noteId,
+    file: file,
+    storage_path: storagePath,
+    original_filename: file.name,
+    file_size_bytes: file.size,
+    file_type: file.type,
+    extracted: result.data,
+    meta: result.meta,
+    vendor_id_to_use: result.data.vendor_match_id || null,
+    vendor_was_created: false,
+  };
+}
+
+function _renderActualQueueBanner() {
+  const banner = document.getElementById('vn-queue-banner');
+  if (!banner) return;
+  const remaining = _vnQueue.length;
+  if (remaining === 0 && _vnQueueErrors.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+  let html = '';
+  if (remaining > 0) {
+    const next = _vnQueue[0];
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-weight:700;color:#3D271A;font-size:13px">📋 ${remaining} nota(s) aguardando revisão</div>
+          <div style="font-size:11px;color:#655A4E;margin-top:2px">Próxima: <strong>${(next.original_filename||'').replace(/</g,'&lt;')}</strong></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="_vnShowQueueIndex(0)" style="padding:6px 14px;font-size:12px;background:linear-gradient(135deg,#5C7A3F,#7A9954);color:#fff;border:0;border-radius:6px;cursor:pointer;font-weight:700">▶ Revisar próxima</button>
+          <button onclick="discardActualQueue()" style="padding:6px 12px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:6px;cursor:pointer;color:var(--gray3)">Descartar fila</button>
+        </div>
+      </div>`;
+  }
+  if (_vnQueueErrors.length > 0) {
+    const errLines = _vnQueueErrors.slice(0, 3).map(e =>
+      `<div style="font-size:11px;color:#A02021">• ${e.filename.replace(/</g,'&lt;')}: ${e.error.replace(/</g,'&lt;')}</div>`
+    ).join('');
+    const more = _vnQueueErrors.length > 3 ? `<div style="font-size:11px;color:#A02021">+ ${_vnQueueErrors.length-3} outros</div>` : '';
+    html += `
+      <div style="margin-top:${remaining>0?'10px':'0'};padding-top:${remaining>0?'10px':'0'};border-top:${remaining>0?'1px dashed #F0EAE2':'0'}">
+        <div style="font-weight:700;color:#A02021;font-size:12px;margin-bottom:4px">⚠️ ${_vnQueueErrors.length} erro(s) no processamento:</div>
+        ${errLines}
+        ${more}
+      </div>`;
+  }
+  banner.innerHTML = html;
+  banner.style.display = 'block';
+}
+
+function _vnShowQueueIndex(idx) {
+  if (idx < 0 || idx >= _vnQueue.length) return;
+  _vnCurrentIndex = idx;
+  _vnCurrent = _vnQueue[idx];
+  const skipBtn = document.getElementById('vn-skip-btn');
+  if (skipBtn) skipBtn.style.display = _vnQueue.length > 1 ? 'inline-flex' : 'none';
+  openVendorNoteModal();
+}
+
+function skipVendorNote() {
+  if (_vnCurrentIndex < 0) return;
+  _vnQueue.splice(_vnCurrentIndex, 1);
+  closeVendorNoteModal();
+  _vnCurrent = null;
+  _vnCurrentIndex = -1;
+  _renderActualQueueBanner();
+  if (_vnQueue.length > 0) {
+    setTimeout(() => _vnShowQueueIndex(0), 200);
+  } else {
+    _vnSetStatus('✅ Fila processada');
+  }
+}
+
+function discardActualQueue() {
+  if (!confirm('Descartar ' + _vnQueue.length + ' nota(s) não revisada(s)? Os arquivos ficam salvos mas as sugestões serão perdidas.')) return;
+  _vnQueue = [];
+  _vnQueueErrors = [];
+  _vnCurrent = null;
+  _vnCurrentIndex = -1;
+  _renderActualQueueBanner();
+  _vnSetStatus('Fila descartada');
 }
 
 function openVendorNoteModal() {
@@ -2964,7 +3081,19 @@ async function approveVendorNote() {
     closeVendorNoteModal();
     _vnSetStatus('✅ Lançada em ' + (GROUPS.find(g => g.id === gid)?.name || '') + ' / ' + itemName);
     toast('Nota lançada com sucesso!', true);
+
+    // Advance queue (multi-upload flow)
+    if (_vnCurrentIndex >= 0 && _vnQueue.length > 0) {
+      _vnQueue.splice(_vnCurrentIndex, 1);
+    }
     _vnCurrent = null;
+    _vnCurrentIndex = -1;
+    _renderActualQueueBanner();
+    if (_vnQueue.length > 0) {
+      setTimeout(() => _vnShowQueueIndex(0), 250);
+    } else if (_vnQueueErrors.length === 0) {
+      _vnSetStatus('✅ Fila concluída');
+    }
   } catch (err) {
     console.error('approve vendor note', err);
     toast('Erro ao lançar: ' + err.message, false);
