@@ -1114,6 +1114,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Phone</th>
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">EIN/Tax</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:150px">🔗 Investor Portal</th>
             <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:90px">Actions</th>
           </tr>
         </thead>
@@ -1442,6 +1443,13 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="fg"><label>Payment date</label><input id="im-paid-date" type="date"></div>
     </div>
     <div class="fg"><label>Notes</label><textarea id="im-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Notes..."></textarea></div>
+    <div style="margin-top:12px;padding:12px 14px;background:#FAF7F3;border-left:3px solid var(--gold);border-radius:6px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--navy)">
+        <input id="im-visible-investor" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#3D271A">
+        <span>👁️ Visível para o investidor</span>
+      </label>
+      <div style="font-size:11px;color:var(--gray3);margin-top:4px;margin-left:28px">Quando marcada, esta invoice aparece no portal do investidor.</div>
+    </div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvoice()">Save →</button></div>
   </div>
 </div>
@@ -1631,6 +1639,12 @@ function applyCEOVisibility(){
 // ═══ AUTH ════════════════════════════════════════════════════════════
 async function init(){
   setLoading(true,'Connecting...');
+  // ─── INVESTOR PORTAL — detect ?investor=TOKEN in URL ───
+  const urlParams=new URLSearchParams(window.location.search);
+  const investorToken=urlParams.get('investor');
+  if(investorToken){
+    return showInvestorPortal(investorToken);
+  }
   const {data:{session}}=await sb.auth.getSession();
   if(session){
     CURRENT_USER=session.user;
@@ -1691,6 +1705,184 @@ function setLoading(show,msg='Loading...'){
   el.style.display=show?'flex':'none';
   document.getElementById('load-msg').textContent=msg;
 }
+
+// ═══ INVESTOR PORTAL — Public view (no login, accessed via token) ═════
+async function showInvestorPortal(token){
+  // Hide login + app, show our own container
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='none';
+  setLoading(true,'Carregando portal do investidor...');
+
+  // Inject portal container if not already there
+  let portalEl=document.getElementById('investor-portal');
+  if(!portalEl){
+    portalEl=document.createElement('div');
+    portalEl.id='investor-portal';
+    portalEl.style.cssText='min-height:100vh;background:#FAF7F3;font-family:inherit';
+    document.body.appendChild(portalEl);
+  }
+  portalEl.style.display='block';
+
+  try{
+    // Fetch the client by token (anon RLS will return only this one)
+    const {data:clientData,error:clientErr}=await sb.from('clients')
+      .select('*').eq('investor_token',token).maybeSingle();
+    if(clientErr) throw clientErr;
+    if(!clientData){
+      _renderInvestorError('Link inválido ou expirado. Entre em contato com a DEC Group USA.');
+      return;
+    }
+    // Fetch projects of this client
+    const {data:projData,error:projErr}=await sb.from('projects')
+      .select('*').eq('customer',clientData.id).order('created_at',{ascending:false});
+    if(projErr) throw projErr;
+    // Fetch visible invoices for these projects
+    const projIds=(projData||[]).map(p=>p.id);
+    let invData=[];
+    let itemsByInvoice={};
+    if(projIds.length>0){
+      const {data:invs,error:invErr}=await sb.from('invoices')
+        .select('*').eq('visible_to_investor',true).in('project_id',projIds)
+        .order('date',{ascending:false});
+      if(invErr) throw invErr;
+      invData=invs||[];
+      // Fetch items for those invoices
+      const invIds=invData.map(i=>i.id);
+      if(invIds.length>0){
+        const {data:items,error:itemsErr}=await sb.from('invoice_items')
+          .select('*').in('invoice_id',invIds).order('position');
+        if(itemsErr) console.warn('items fetch failed (non-blocking)',itemsErr);
+        (items||[]).forEach(it=>{
+          if(!itemsByInvoice[it.invoice_id]) itemsByInvoice[it.invoice_id]=[];
+          itemsByInvoice[it.invoice_id].push(it);
+        });
+      }
+    }
+    setLoading(false);
+    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice);
+  }catch(e){
+    console.error('Investor portal error:',e);
+    setLoading(false);
+    _renderInvestorError('Erro ao carregar o portal. Tente novamente em alguns instantes.');
+  }
+}
+
+function _renderInvestorError(msg){
+  const portalEl=document.getElementById('investor-portal');
+  portalEl.innerHTML=`
+    <div style="max-width:480px;margin:80px auto;padding:32px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.08);text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">🔒</div>
+      <h2 style="color:#3D271A;margin-bottom:12px;font-weight:700">Acesso indisponível</h2>
+      <p style="color:#655A4E;font-size:14px;line-height:1.5">${msg}</p>
+    </div>`;
+}
+
+function _fmtMoney(v){return '$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function _fmtDate(d){if(!d) return '—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR');}
+function _invStatusBadge(status){
+  const map={
+    paid:{label:'✅ Pago',bg:'#E8F2E8',color:'#2D6A2D'},
+    open:{label:'⏳ Pendente',bg:'#FFF4E0',color:'#A86A2C'},
+    cancelled:{label:'❌ Cancelada',bg:'#F5E8E8',color:'#A02021'},
+  };
+  const s=map[status]||map.open;
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
+}
+
+function _renderInvestorPortal(client,projects,invoices,itemsByInvoice){
+  const portalEl=document.getElementById('investor-portal');
+
+  // Group invoices by project
+  const invByProj={};
+  invoices.forEach(inv=>{
+    if(!invByProj[inv.project_id]) invByProj[inv.project_id]=[];
+    invByProj[inv.project_id].push(inv);
+  });
+
+  const projectsHTML=projects.map(p=>{
+    const projInvoices=invByProj[p.id]||[];
+    const totalAccum=projInvoices.reduce((s,i)=>s+(+i.amount||0),0);
+    const totalPaid=projInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+    const totalOpen=projInvoices.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+
+    const invoicesHTML=projInvoices.length===0
+      ? `<div style="padding:24px;text-align:center;color:#999;font-style:italic;font-size:13px">Nenhuma invoice disponível ainda neste projeto.</div>`
+      : projInvoices.map(inv=>{
+          const items=itemsByInvoice[inv.id]||[];
+          const itemsHTML=items.length>1
+            ? `<details style="margin-top:6px;font-size:12px;color:#655A4E"><summary style="cursor:pointer;color:#3D271A;font-weight:600">Ver ${items.length} itens</summary><div style="padding:8px 0 0 14px">${items.map(it=>`<div style="display:flex;justify-content:space-between;padding:3px 0">• ${(it.description||'').replace(/</g,'&lt;')}<span>${_fmtMoney(it.amount)}</span></div>`).join('')}</div></details>`
+            : '';
+          return `
+            <div style="padding:14px 16px;border-bottom:1px solid #F0EAE2;background:#fff">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+                <div style="flex:1;min-width:200px">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span style="font-weight:700;color:#3D271A;font-size:14px">Invoice #${inv.invoice_number}</span>
+                    ${_invStatusBadge(inv.status)}
+                  </div>
+                  <div style="font-size:12px;color:#655A4E;margin-top:3px">📅 ${_fmtDate(inv.date)}${inv.description?' · '+inv.description.replace(/</g,'&lt;'):''}</div>
+                  ${itemsHTML}
+                </div>
+                <div style="font-size:18px;font-weight:800;color:#3D271A;text-align:right;min-width:120px">${_fmtMoney(inv.amount)}</div>
+              </div>
+            </div>`;
+        }).join('');
+
+    return `
+      <div style="background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden">
+        <div style="padding:20px 24px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.8;text-transform:uppercase">🏠 Projeto</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px">${(p.name||'').replace(/</g,'&lt;')}</div>
+          ${p.address && p.address!==p.name?`<div style="font-size:13px;opacity:.85;margin-top:2px">${p.address.replace(/</g,'&lt;')}</div>`:''}
+        </div>
+
+        <div style="padding:16px 20px;background:#FAF7F3;border-bottom:1px solid #F0EAE2;display:flex;gap:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">Total acumulado</div>
+            <div style="font-size:18px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(totalAccum)}</div>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">✅ Pago</div>
+            <div style="font-size:18px;font-weight:800;color:#2D6A2D;margin-top:2px">${_fmtMoney(totalPaid)}</div>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendente</div>
+            <div style="font-size:18px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
+          </div>
+        </div>
+
+        <div style="padding:18px 20px 12px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff">
+          💰 Invoices
+        </div>
+        <div>${invoicesHTML}</div>
+
+        <div style="padding:18px 20px 18px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff;border-top:1px solid #F0EAE2">
+          📸 Fotos do projeto
+          <div style="margin-top:8px;padding:18px;background:#FAF7F3;border-radius:8px;text-align:center;color:#999;font-style:italic;font-weight:400;font-size:13px;text-transform:none;letter-spacing:0">Em breve — galeria de fotos por fase (Antes / Durante / Depois).</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const noProjectsHTML=projects.length===0
+    ? `<div style="background:#fff;padding:40px;border-radius:14px;text-align:center;color:#999;font-style:italic">Nenhum projeto vinculado ao seu cadastro ainda.</div>`
+    : '';
+
+  portalEl.innerHTML=`
+    <div style="max-width:960px;margin:0 auto;padding:32px 20px">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:13px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">DEC Group USA</div>
+        <h1 style="font-size:28px;color:#3D271A;font-weight:800;margin:0">👋 Olá, ${(client.name||'Investidor').replace(/</g,'&lt;')}</h1>
+        <p style="color:#655A4E;font-size:14px;margin-top:6px">Acompanhe seus projetos abaixo</p>
+      </div>
+      ${projectsHTML}
+      ${noProjectsHTML}
+      <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
+        DEC Group USA · Portal do Investidor · Acesso seguro via link único
+      </div>
+    </div>`;
+}
+
+// ═══ END INVESTOR PORTAL ══════════════════════════════════════════════
 
 // ═══ LOAD DATA ════════════════════════════════════════════════════════
 async function loadAllData(){
@@ -4400,6 +4592,7 @@ function openInvoiceModal(id){
     document.getElementById('im-payment-method').value=inv.payment_method||'';
     document.getElementById('im-paid-date').value=inv.paid_date||'';
     document.getElementById('im-notes').value=inv.notes||'';
+    document.getElementById('im-visible-investor').checked=!!inv.visible_to_investor;
     // Load items
     const existing=invoiceItems[id]||[];
     if(existing.length>0){
@@ -4421,6 +4614,7 @@ function openInvoiceModal(id){
     });
     document.getElementById('im-status').value='open';
     document.getElementById('im-kind').value='operational';
+    document.getElementById('im-visible-investor').checked=false;
     _imItems=[{description:'',amount:0}];
   }
   onInvoiceStatusChange();
@@ -4486,6 +4680,7 @@ async function saveInvoice(){
     payment_method:status==='paid'?(document.getElementById('im-payment-method').value||''):'',
     paid_date:status==='paid'?(document.getElementById('im-paid-date').value||null):null,
     notes:document.getElementById('im-notes').value||'',
+    visible_to_investor:document.getElementById('im-visible-investor').checked,
   };
   let result;
   if(id){
@@ -5409,22 +5604,84 @@ function renderClients(){
   }
   document.getElementById('cl-count').textContent='— '+list.length+' client(s)';
   if(list.length===0){
-    tbody.innerHTML=`<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No clients registered. Click on <strong>+ New Client</strong> to start.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No clients registered. Click on <strong>+ New Client</strong> to start.</td></tr>`;
     return;
   }
-  tbody.innerHTML=list.map(c=>`
+  tbody.innerHTML=list.map(c=>{
+    const hasToken=!!c.investor_token;
+    const tokenCell=hasToken
+      ? `<button onclick="copyInvestorLink('${c.id}')" title="Copiar link do investidor" style="padding:5px 10px;font-size:11px;background:#F2F4EC;border:1px solid #C8D4B5;border-radius:5px;cursor:pointer;color:var(--p3);font-weight:600">📋 Copiar link</button>
+         <button onclick="regenerateInvestorToken('${c.id}')" title="Gerar novo link (invalida o anterior)" style="padding:5px 8px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--gray3);margin-left:4px">🔄</button>`
+      : `<button onclick="generateInvestorToken('${c.id}')" style="padding:5px 12px;font-size:11px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-weight:600">🔗 Gerar link</button>`;
+    return `
     <tr style="border-bottom:1px solid #F0EAE2">
       <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${c.name||''}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.address||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.email||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.phone||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.tax_id||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">${tokenCell}</td>
       <td style="padding:10px 12px;text-align:center">
         <button onclick="openClientModal('${c.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue);margin-right:4px">✏️</button>
         <button onclick="deleteClient('${c.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+}
+
+// ═══ INVESTOR PORTAL — Token management ═══════════════════════════════
+function _genInvestorToken(){
+  // Generate a 32-char URL-safe random token using crypto
+  const arr=new Uint8Array(24);
+  crypto.getRandomValues(arr);
+  return Array.from(arr,b=>b.toString(36).padStart(2,'0')).join('').slice(0,32);
+}
+
+function _investorUrl(token){
+  return `${window.location.origin}${window.location.pathname}?investor=${encodeURIComponent(token)}`;
+}
+
+async function generateInvestorToken(clientId){
+  if(!isCEO()){toast('CEO only',false);return;}
+  const c=_clientById(clientId);
+  if(!c){toast('Client not found',false);return;}
+  const token=_genInvestorToken();
+  const {error}=await sb.from('clients').update({investor_token:token}).eq('id',clientId);
+  if(error){console.error('investor_token save',error);toast('Erro ao gerar link',false);return;}
+  // Update local state
+  const idx=clients.findIndex(x=>x.id===clientId);
+  if(idx>=0) clients[idx].investor_token=token;
+  renderClients();
+  // Auto-copy the URL after generating
+  const url=_investorUrl(token);
+  await _copyToClipboard(url);
+  toast('Link gerado e copiado: '+url.slice(0,60)+'...',true);
+}
+
+async function regenerateInvestorToken(clientId){
+  if(!confirm('Gerar um novo link vai INVALIDAR o link anterior. O investidor não conseguirá mais acessar pelo link antigo. Continuar?')) return;
+  await generateInvestorToken(clientId);
+}
+
+async function copyInvestorLink(clientId){
+  const c=_clientById(clientId);
+  if(!c||!c.investor_token){toast('Sem token gerado',false);return;}
+  const url=_investorUrl(c.investor_token);
+  const ok=await _copyToClipboard(url);
+  if(ok) toast('Link copiado: '+url.slice(0,60)+'...',true);
+  else toast('Erro ao copiar. URL: '+url,false);
+}
+
+async function _copyToClipboard(text){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){console.warn('clipboard api failed, fallback to prompt',e);}
+  // Fallback: show prompt for manual copy
+  prompt('Copie o link abaixo (Cmd+C):',text);
+  return true;
 }
 
 function openClientModal(id){
