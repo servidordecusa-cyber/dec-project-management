@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1080,6 +1082,19 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 <div id="view-home">
   <div class="port-hdr"><div><h2>🏠 Home — Overview</h2><p style="color:var(--gray3);margin-top:4px">Executive dashboard · all projects consolidated</p></div></div>
   <div class="home-grid" id="home-kpis"></div>
+  <div class="card" style="margin-top:6px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div class="card-title" style="margin:0;border:0;padding:0">🗺️ DEC Group USA — Atuação na Flórida</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:600">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#C68A4A;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #C68A4A"></span>In Progress</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#5C7A3F;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #5C7A3F"></span>Completed</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#3D271A;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #3D271A"></span>For Sale</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#B8860B;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #B8860B"></span>Sold</span>
+      </div>
+    </div>
+    <div id="home-map" style="height:420px;border-radius:8px;background:#F0EAE2;overflow:hidden"></div>
+    <div id="home-map-status" style="margin-top:8px;font-size:11px;color:var(--gray3);text-align:right"></div>
+  </div>
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:6px" id="home-charts-row">
     <div class="card">
       <div class="card-title">📈 Revenue mensal (últimos 12 meses)</div>
@@ -4068,7 +4083,163 @@ function renderHome(){
   renderHomeRevenueChart(paidInv);
   // Render alerts
   renderHomeAlerts();
+  // Render Florida map with project pins
+  renderHomeMap();
 }
+
+// ═══ FLORIDA MAP — Project pins by status ════════════════════════════
+let _homeMapInstance=null;
+let _homeMapMarkers=[];
+const STATUS_PIN_COLOR={
+  in_progress: '#C68A4A',  // amber
+  completed:   '#5C7A3F',  // olive green
+  for_sale:    '#3D271A',  // dark brown
+  sold:        '#B8860B',  // golden
+};
+
+const FLORIDA_CENTER=[28.0, -83.5];
+const FLORIDA_ZOOM=6;
+
+async function renderHomeMap(){
+  const mapEl=document.getElementById('home-map');
+  if(!mapEl) return;
+  if(typeof L==='undefined'){
+    mapEl.innerHTML='<div style="padding:40px;text-align:center;color:#999;font-style:italic">Mapa não pôde ser carregado.</div>';
+    return;
+  }
+
+  // Initialize map once (avoid re-init when re-rendering)
+  if(!_homeMapInstance){
+    _homeMapInstance=L.map('home-map',{scrollWheelZoom:false}).setView(FLORIDA_CENTER,FLORIDA_ZOOM);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom:19,
+    }).addTo(_homeMapInstance);
+    // Enable scroll-zoom only after click (better UX inside dashboards)
+    _homeMapInstance.on('click',()=>_homeMapInstance.scrollWheelZoom.enable());
+  } else {
+    // Clear previous markers
+    _homeMapMarkers.forEach(m=>_homeMapInstance.removeLayer(m));
+    _homeMapMarkers=[];
+  }
+
+  const withCoords=projects.filter(p=>p.lat!=null && p.lng!=null);
+  const needsGeocoding=projects.filter(p=>{
+    const addr=(p.address||p.name||'').trim();
+    if(!addr) return false;
+    // Geocode if no lat/lng OR address changed since last geocode
+    return p.lat==null || p.lng==null || p.geocoded_address!==addr;
+  });
+
+  const statusEl=document.getElementById('home-map-status');
+
+  withCoords.forEach(p=>{
+    const color=STATUS_PIN_COLOR[p.status]||'#999';
+    const meta=STATUS_META[p.status]||{label:p.status||'—',icon:'📍'};
+    const icon=L.divIcon({
+      className:'dec-map-pin',
+      html:`<div style="width:18px;height:18px;background:${color};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer"></div>`,
+      iconSize:[18,18],
+      iconAnchor:[9,9],
+    });
+    const marker=L.marker([p.lat,p.lng],{icon}).addTo(_homeMapInstance);
+    const address=(p.address||p.name||'').replace(/</g,'&lt;');
+    const prop=propertyMap[p.id]||{};
+    const sale=+prop.final_sale_price||0;
+    const popupHtml=`
+      <div style="font-family:inherit;min-width:180px">
+        <div style="font-weight:700;color:#3D271A;font-size:13px;margin-bottom:4px">📍 ${address}</div>
+        <div style="font-size:11px;color:#655A4E;margin-bottom:6px">${meta.icon} ${meta.label}${sale>0?' · $'+sale.toLocaleString('en-US'):''}</div>
+        <a href="javascript:void(0)" onclick="openProject('${p.id}');return false" style="font-size:11px;color:#3D271A;font-weight:700;text-decoration:underline">→ Abrir projeto</a>
+      </div>`;
+    marker.bindPopup(popupHtml);
+    _homeMapMarkers.push(marker);
+  });
+
+  // Fit map to bounds if we have multiple markers
+  if(withCoords.length>1){
+    const bounds=L.latLngBounds(withCoords.map(p=>[p.lat,p.lng]));
+    _homeMapInstance.fitBounds(bounds,{padding:[40,40],maxZoom:11});
+  } else if(withCoords.length===1){
+    _homeMapInstance.setView([withCoords[0].lat,withCoords[0].lng],12);
+  } else {
+    _homeMapInstance.setView(FLORIDA_CENTER,FLORIDA_ZOOM);
+  }
+
+  // Status text + start background geocoding if needed
+  if(statusEl){
+    const totalPins=withCoords.length;
+    const totalNeeded=needsGeocoding.length;
+    if(totalPins===0 && totalNeeded===0){
+      statusEl.textContent='Nenhum projeto com endereço para mostrar.';
+    } else if(totalNeeded>0){
+      statusEl.textContent=`📍 ${totalPins} no mapa · 🔄 Geocodando ${totalNeeded} endereço(s)...`;
+    } else {
+      statusEl.textContent=`📍 ${totalPins} projeto(s) no mapa`;
+    }
+  }
+
+  if(needsGeocoding.length>0){
+    // Geocode async (don't block UI). Re-renders map after each batch.
+    _geocodeProjectsBackground(needsGeocoding);
+  }
+}
+
+// Background batch geocoding — respects Nominatim rate limit (1 req/sec)
+let _isGeocoding=false;
+async function _geocodeProjectsBackground(list){
+  if(_isGeocoding) return;
+  _isGeocoding=true;
+  let completed=0;
+  for(const p of list){
+    const addr=(p.address||p.name||'').trim();
+    if(!addr) continue;
+    try{
+      const coords=await _geocodeAddress(addr);
+      if(coords){
+        const localIdx=projects.findIndex(x=>x.id===p.id);
+        if(localIdx>=0){
+          projects[localIdx].lat=coords.lat;
+          projects[localIdx].lng=coords.lng;
+          projects[localIdx].geocoded_address=addr;
+        }
+        await sb.from('projects')
+          .update({lat:coords.lat,lng:coords.lng,geocoded_address:addr})
+          .eq('id',p.id);
+      }
+    }catch(e){
+      console.warn('geocode failed for',addr,e);
+    }
+    completed++;
+    const statusEl=document.getElementById('home-map-status');
+    if(statusEl) statusEl.textContent=`🔄 Geocodando ${completed}/${list.length}...`;
+    // Nominatim policy: max 1 request per second
+    await new Promise(r=>setTimeout(r,1100));
+  }
+  _isGeocoding=false;
+  // Re-render map with newly added coords
+  renderHomeMap();
+}
+
+async function _geocodeAddress(address){
+  // Nominatim (OpenStreetMap) — free, no API key required.
+  // Policy: max 1 req/sec.
+  const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(address)}`;
+  try{
+    const res=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(!res.ok) return null;
+    const data=await res.json();
+    if(!data || !data[0]) return null;
+    return {
+      lat:parseFloat(data[0].lat),
+      lng:parseFloat(data[0].lon),
+    };
+  }catch(e){
+    console.warn('Nominatim error:',e);
+    return null;
+  }
+}
+// ═══ END FLORIDA MAP ══════════════════════════════════════════════════
 
 function renderHomeRevenueChart(paidInv){
   const canvas=document.getElementById('home-revenue-chart');
