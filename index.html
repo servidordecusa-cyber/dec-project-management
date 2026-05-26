@@ -6517,14 +6517,18 @@ function _invoiceSubcategoryNumber(parentBase, seq){
 }
 
 // Sort comparator for invoices: principal first, then its subcategories,
-// then next principal, etc. (within same base, sub_seq order)
+// then next principal, etc. Used with DESCENDING sort (recent first), so we
+// need to invert the sub_seq tie-break: principal (sub=0) gets a HIGHER
+// rank within the same base, so it appears ABOVE the subs after reverse sort.
 function _invoiceSortKey(inv){
   const parsed=_invoiceParseNumber(inv.invoice_number);
-  // Numeric sort by base; tie-break by sub_seq (0 = main, 1..N = subs)
   const base=parseInt(parsed.base)||0;
   const sub=parsed.subSeq||0;
-  // base*1000 ensures different bases never collide; sub adds order
-  return base*1000+sub;
+  // In descending sort: bigger value = appears first.
+  // We want: #4040 (principal) → then #4040.1 → then #4040.2
+  // So principal needs a higher value than its subs WITHIN same base.
+  // Use (999 - sub) so principal=999, sub1=998, sub2=997...
+  return base*1000+(999-sub);
 }
 
 const PAYMENT_METHOD_LABELS={
