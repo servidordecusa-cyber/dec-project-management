@@ -6192,12 +6192,16 @@ async function renderWorkingCapitalCashFlow(){
   } else {
     setEl('wc-inflows-list',allIn.map(i=>{
       const cli=_clientById(i.client_id);
+      const proj=i.project_id?projects.find(p=>p.id===i.project_id):null;
+      // Resolve project address: prefer linked project's address, fallback to invoice property_address
+      const projAddr=proj?(proj.address||proj.name||''):(i.property_address||'');
       const statusBg=i.status==='paid'?'background:#DCEFE6;color:#2D7D5F':'background:#FFF3D9;color:#A86A2C';
       const statusLbl=i.status==='paid'?'Paid':'Pending';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #F0EAE2;gap:8px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;color:#3D271A">#${i.invoice_number} · ${(cli?cli.name:'?').replace(/</g,'&lt;')}</div>
-          <div style="font-size:11px;color:#655A4E">${fmtDate(i.date)}</div>
+          ${projAddr?`<div style="font-size:11px;color:#655A4E;margin-top:2px">📍 ${projAddr.replace(/</g,'&lt;')}</div>`:''}
+          <div style="font-size:11px;color:#999;margin-top:1px">${fmtDate(i.date)}</div>
         </div>
         <div style="text-align:right">
           <div style="font-weight:800;color:#2D7D5F">${fmtUSD(i.amount)}</div>
