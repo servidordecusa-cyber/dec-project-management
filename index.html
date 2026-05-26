@@ -71,7 +71,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 /* PORTFOLIO */
 #view-portfolio{padding:26px}
-#view-home,#view-clients,#view-vendors,#view-invoices,#view-fixed,#view-financial,#view-dre{padding:26px;display:none}
+#view-home,#view-clients,#view-vendors,#view-invoices,#view-fixed,#view-financial,#view-working-capital,#view-dre{padding:26px;display:none}
 /* Global tabs bar */
 .gtabs{background:#fff;border-bottom:1.5px solid var(--gray2);padding:0 26px;display:flex;gap:4px;flex-wrap:wrap;align-items:stretch;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .gtab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--gray3);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;font-family:inherit;background:transparent;border-left:0;border-right:0;border-top:0}
@@ -256,7 +256,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
 @media(max-width:900px){.kpi-row{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}.trb{grid-template-columns:1fr 1fr}}
 @media print{
-  #login-screen,#app-loading,.topnav,.gtabs,#view-portfolio,#view-home,#view-clients,#view-vendors,#view-invoices,#view-fixed,#view-financial,#view-dre,.sidebar,.btn,.no-print{display:none!important}
+  #login-screen,#app-loading,.topnav,.gtabs,#view-portfolio,#view-home,#view-clients,#view-vendors,#view-invoices,#view-fixed,#view-financial,#view-working-capital,#view-dre,.sidebar,.btn,.no-print{display:none!important}
   #view-project{display:block!important}.proj-layout{display:block}.proj-content{padding:10px}
   .page{display:block!important}.page:not(#page-dash){display:none!important}#page-dash{display:block!important}
   .card{box-shadow:none;border:1px solid #ddd}
@@ -316,6 +316,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   <button class="gtab" data-view="invoices" onclick="goView('invoices')"><span class="ico">🧾</span>Invoices</button>
   <button class="gtab" data-view="fixed" onclick="goView('fixed')"><span class="ico">💼</span>Fixed Costs</button>
   <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico">💰</span>Financial</button>
+  <button class="gtab" data-view="working-capital" onclick="goView('working-capital')"><span class="ico">💵</span>Working Capital</button>
   <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico">📊</span>DRE</button>
 </div>
 
@@ -1412,61 +1413,6 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   <div class="port-hdr"><div><h2>💰 Financial</h2><p style="color:var(--gray3);margin-top:4px">Management summary · all projects</p></div></div>
   <div class="home-grid" id="fin-kpis"></div>
 
-  <!-- ═══ WORKING CAPITAL CASH FLOW ═══════════════════════════════ -->
-  <div class="card" style="margin-bottom:14px;border:2px solid #5C7A3F;background:linear-gradient(135deg,#fff,#F5F8F0)">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
-      <div class="card-title" style="margin:0;border:0;padding:0">💰 Working Capital · Cash Flow
-        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">Entradas via invoices · Saídas marcadas em custos</span>
-      </div>
-      <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:6px 12px;font-size:12px">🔄 Refresh</button>
-    </div>
-
-    <!-- KPIs -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
-      <div style="background:#fff;border:1px solid #5C7A3F;border-radius:10px;padding:14px;text-align:center">
-        <div style="font-size:10px;color:#5C7A3F;font-weight:700;text-transform:uppercase">📥 Entradas (Paid)</div>
-        <div style="font-size:20px;font-weight:800;color:#2D7D5F;margin-top:4px" id="wc-in-paid">$0</div>
-        <div style="font-size:10px;color:#999;margin-top:2px" id="wc-in-paid-count">0 invoice(s)</div>
-      </div>
-      <div style="background:#fff;border:1px solid #A86A2C;border-radius:10px;padding:14px;text-align:center">
-        <div style="font-size:10px;color:#A86A2C;font-weight:700;text-transform:uppercase">📥 Previstas (Open)</div>
-        <div style="font-size:20px;font-weight:800;color:#A86A2C;margin-top:4px" id="wc-in-open">$0</div>
-        <div style="font-size:10px;color:#999;margin-top:2px" id="wc-in-open-count">0 invoice(s)</div>
-      </div>
-      <div style="background:#fff;border:1px solid #C62B2B;border-radius:10px;padding:14px;text-align:center">
-        <div style="font-size:10px;color:#C62B2B;font-weight:700;text-transform:uppercase">📤 Saídas</div>
-        <div style="font-size:20px;font-weight:800;color:#C62B2B;margin-top:4px" id="wc-out-total">$0</div>
-        <div style="font-size:10px;color:#999;margin-top:2px" id="wc-out-count">0 lançamento(s)</div>
-      </div>
-      <div style="background:linear-gradient(135deg,#5C7A3F,#7A9954);color:#fff;border-radius:10px;padding:14px;text-align:center">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:.9">💎 Saldo</div>
-        <div style="font-size:22px;font-weight:800;margin-top:4px" id="wc-balance">$0</div>
-        <div style="font-size:10px;opacity:.85;margin-top:2px" id="wc-balance-hint">Disponível pra usar</div>
-      </div>
-    </div>
-
-    <!-- 2 columns: inflows / outflows -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <!-- Inflows -->
-      <div style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:14px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div style="font-size:16px">📥</div>
-          <div style="font-weight:700;color:#3D271A;font-size:13px">Entradas (Invoices Working Capital)</div>
-        </div>
-        <div id="wc-inflows-list" style="max-height:300px;overflow-y:auto;font-size:12px"></div>
-      </div>
-
-      <!-- Outflows -->
-      <div style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:14px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div style="font-size:16px">📤</div>
-          <div style="font-weight:700;color:#3D271A;font-size:13px">Saídas (Custos marcados como WC)</div>
-        </div>
-        <div id="wc-outflows-list" style="max-height:300px;overflow-y:auto;font-size:12px"></div>
-      </div>
-    </div>
-  </div>
-
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
       <div class="card-title" style="margin:0;border:0;padding:0">📊 Summary by project
@@ -1501,6 +1447,68 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <tbody id="fin-tbody"></tbody>
         <tfoot id="fin-tfoot"></tfoot>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- WORKING CAPITAL -->
+<div id="view-working-capital">
+  <div class="port-hdr">
+    <div>
+      <h2>💵 Working Capital</h2>
+      <p style="color:var(--gray3);margin-top:4px">Fluxo de caixa · Entradas via invoices Working Capital · Saídas marcadas em custos</p>
+    </div>
+    <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:7px 14px;font-size:13px">🔄 Refresh</button>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+    <div style="background:#fff;border:1px solid #5C7A3F;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div style="font-size:11px;color:#5C7A3F;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📥 Entradas (Paid)</div>
+      <div style="font-size:24px;font-weight:800;color:#2D7D5F;margin-top:6px" id="wc-in-paid">$0</div>
+      <div style="font-size:11px;color:#999;margin-top:3px" id="wc-in-paid-count">0 invoice(s)</div>
+    </div>
+    <div style="background:#fff;border:1px solid #A86A2C;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div style="font-size:11px;color:#A86A2C;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📥 Previstas (Open)</div>
+      <div style="font-size:24px;font-weight:800;color:#A86A2C;margin-top:6px" id="wc-in-open">$0</div>
+      <div style="font-size:11px;color:#999;margin-top:3px" id="wc-in-open-count">0 invoice(s)</div>
+    </div>
+    <div style="background:#fff;border:1px solid #C62B2B;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div style="font-size:11px;color:#C62B2B;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📤 Saídas</div>
+      <div style="font-size:24px;font-weight:800;color:#C62B2B;margin-top:6px" id="wc-out-total">$0</div>
+      <div style="font-size:11px;color:#999;margin-top:3px" id="wc-out-count">0 lançamento(s)</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#5C7A3F,#7A9954);color:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 2px 6px rgba(92,122,63,.25)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.9">💎 Saldo</div>
+      <div style="font-size:28px;font-weight:800;margin-top:6px" id="wc-balance">$0</div>
+      <div style="font-size:11px;opacity:.85;margin-top:3px" id="wc-balance-hint">Disponível pra usar</div>
+    </div>
+  </div>
+
+  <!-- 2 columns: inflows / outflows -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <!-- Inflows -->
+    <div class="card" style="margin:0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--gray2)">
+        <div style="font-size:20px">📥</div>
+        <div>
+          <div style="font-weight:700;color:#3D271A;font-size:14px">Entradas</div>
+          <div style="font-size:11px;color:var(--gray3)">Invoices tipo Working Capital</div>
+        </div>
+      </div>
+      <div id="wc-inflows-list" style="max-height:500px;overflow-y:auto;font-size:12px"></div>
+    </div>
+
+    <!-- Outflows -->
+    <div class="card" style="margin:0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--gray2)">
+        <div style="font-size:20px">📤</div>
+        <div>
+          <div style="font-weight:700;color:#3D271A;font-size:14px">Saídas</div>
+          <div style="font-size:11px;color:var(--gray3)">Custos pagos com WC: 🔨 Actual · 📌 Fixed · 🔄 Recurring</div>
+        </div>
+      </div>
+      <div id="wc-outflows-list" style="max-height:500px;overflow-y:auto;font-size:12px"></div>
     </div>
   </div>
 </div>
@@ -1803,6 +1811,14 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <input id="vn-notes" maxlength="200" placeholder="What was purchased">
     </div>
 
+    <div class="fg" style="background:#F5F8F0;padding:10px 12px;border-radius:7px;border:1px dashed #2D7D5F">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+        <input id="vn-paid-from-wc" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#2D7D5F">
+        <span style="font-weight:600;color:#2D7D5F">💰 Pago com Working Capital</span>
+      </label>
+      <div style="font-size:11px;color:#655A4E;margin-top:4px;margin-left:28px">Marca se este custo foi pago com dinheiro do fundo de Working Capital.</div>
+    </div>
+
     <div class="mactions">
       <button class="btn btn-ghost" onclick="closeVendorNoteModal()">Cancel</button>
       <button class="btn btn-ghost" onclick="skipVendorNote()" id="vn-skip-btn" style="display:none">⏭ Pular esta</button>
@@ -1881,6 +1897,14 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
     <div class="fg"><label>Notes (short summary)</label>
       <input id="vnr-notes" maxlength="200" placeholder="What was paid">
+    </div>
+
+    <div class="fg" style="background:#F5F8F0;padding:10px 12px;border-radius:7px;border:1px dashed #2D7D5F">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+        <input id="vnr-paid-from-wc" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#2D7D5F">
+        <span style="font-weight:600;color:#2D7D5F">💰 Pago com Working Capital</span>
+      </label>
+      <div style="font-size:11px;color:#655A4E;margin-top:4px;margin-left:28px">Marca se essa conta foi paga com dinheiro do fundo de Working Capital.</div>
     </div>
 
     <div class="mactions">
@@ -2377,19 +2401,19 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','vendors','invoices','fixed','financial','dre'];
+const GLOBAL_VIEWS=['home','portfolio','clients','vendors','invoices','fixed','financial','working-capital','dre'];
 
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','vendors','invoices','fixed','financial','dre'];
+  const ceoOnly=['home','clients','vendors','invoices','fixed','financial','working-capital','dre'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-vendors','view-invoices','view-fixed','view-financial','view-dre'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-vendors','view-invoices','view-fixed','view-financial','view-working-capital','view-dre'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -2414,6 +2438,7 @@ function goView(view){
   else if(view==='invoices' && isCEO()) renderInvoices();
   else if(view==='fixed' && isCEO()) renderFixedCosts();
   else if(view==='financial' && isCEO()) renderFinancial();
+  else if(view==='working-capital' && isCEO()) renderWorkingCapitalCashFlow();
   else if(view==='dre' && isCEO()) renderDRE();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -3091,6 +3116,10 @@ function openVendorNoteModal() {
   document.getElementById('vn-item-name').value = ex.suggested_item_name || '';
   document.getElementById('vn-notes').value = ex.notes || '';
 
+  // Working Capital checkbox — default unchecked
+  const wcEl = document.getElementById('vn-paid-from-wc');
+  if (wcEl) wcEl.checked = false;
+
   document.getElementById('modal-vendor-note').classList.add('open');
 }
 
@@ -3195,6 +3224,7 @@ async function approveVendorNote() {
   const gid = document.getElementById('vn-group').value;
   const itemName = (document.getElementById('vn-item-name').value || '').trim();
   const notes = document.getElementById('vn-notes').value || '';
+  const paidFromWC = !!document.getElementById('vn-paid-from-wc').checked;
 
   if (!gid) { toast('Selecione a phase', false); return; }
   if (!itemName) { toast('Informe o nome do item', false); return; }
@@ -3226,6 +3256,7 @@ async function approveVendorNote() {
         est_qty: 0, actual_qty: 1,
         est_unit_cost: 0, actual_unit_cost: total,
         category: category || '',
+        paid_from_wc: paidFromWC,
       };
       const upRes = await sb.from('budget_items').upsert({
         project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
@@ -3235,6 +3266,7 @@ async function approveVendorNote() {
         est_qty: 0, actual_qty: 1,
         est_unit_cost: 0, actual_unit_cost: total,
         category: category || '',
+        paid_from_wc: paidFromWC,
       }, { onConflict: 'project_id,room_id,item_slug' });
       if (upRes.error) throw new Error('Failed to save item: ' + upRes.error.message);
     } else {
@@ -3256,10 +3288,13 @@ async function approveVendorNote() {
       cur.actual_note = newNote;
       cur.actual_supplier = newSupplier;
       if (!cur.category && category) cur.category = category;
+      // OR the WC flag — if any payment was from WC, keep it true
+      if (paidFromWC) cur.paid_from_wc = true;
       const upRes = await sb.from('budget_items').upsert({
         project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
         actual: newActual, actual_note: newNote, actual_supplier: newSupplier,
         category: cur.category || category || '',
+        paid_from_wc: !!cur.paid_from_wc,
       }, { onConflict: 'project_id,room_id,item_slug' });
       if (upRes.error) throw new Error('Failed to update item: ' + upRes.error.message);
     }
@@ -3754,6 +3789,10 @@ function openRecurringNoteModal() {
   // Notes
   document.getElementById('vnr-notes').value = ex.notes || '';
 
+  // Working Capital checkbox — default unchecked
+  const wcEl = document.getElementById('vnr-paid-from-wc');
+  if (wcEl) wcEl.checked = false;
+
   document.getElementById('modal-vendor-note-recurring').classList.add('open');
 }
 
@@ -3838,6 +3877,7 @@ async function approveRecurringNote() {
   const yearOffset = parseInt(yearOffsetStr);
   const month = parseInt(monthStr);
   const notes = document.getElementById('vnr-notes').value || '';
+  const paidFromWC = !!document.getElementById('vnr-paid-from-wc').checked;
 
   // Validation
   if (!itemName || RC_ITEMS.indexOf(itemName) < 0) { toast('Selecione um item recurring válido', false); return; }
@@ -3871,7 +3911,14 @@ async function approveRecurringNote() {
       recurringMap[CID][itemName] = { company: '', account: '', notes: '', months: {} };
     }
     if (!recurringMap[CID][itemName].months) recurringMap[CID][itemName].months = {};
+    if (!recurringMap[CID][itemName].wc_flags) recurringMap[CID][itemName].wc_flags = {};
     recurringMap[CID][itemName].months[key] = total;
+    // Set WC flag based on user checkbox
+    if (paidFromWC) {
+      recurringMap[CID][itemName].wc_flags[key] = true;
+    } else {
+      delete recurringMap[CID][itemName].wc_flags[key];
+    }
 
     // Also update company name if it was empty and we have a vendor
     if (vendorName && !recurringMap[CID][itemName].company) {
@@ -6101,7 +6148,6 @@ async function renderWorkingCapitalCashFlow(){
 
 function renderFinancial(){
   if(!isCEO()) return;
-  renderWorkingCapitalCashFlow();
   const q=(document.getElementById('fin-search')?.value||'').toLowerCase().trim();
   const statusFlt=document.getElementById('fin-flt-status')?.value||'';
   let list=projects.slice();
