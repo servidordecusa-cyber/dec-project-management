@@ -368,6 +368,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="sb-lnk ceo-only" id="snav-property" onclick="sp('property',this,'')" style="display:none">💎 Property &amp; Finance</div>
         <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
         <div class="sb-lnk ceo-only" id="snav-recurring" onclick="sp('recurring',this,'')" style="display:none">🔄 Recurring Costs</div>
+        <div class="sb-lnk ceo-only" id="snav-supply" onclick="sp('supply',this,'')" style="display:none">📊 Supply Chain</div>
       </div>
       <div class="sb-sync"><div class="sync-dot"></div>Live · Auto-saved</div>
     </div>
@@ -1145,6 +1146,89 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             </div>
           </div>
         </div><!-- end rcd-pane-notas -->
+      </div>
+
+      <!-- Supply Chain Analysis (CEO ONLY) -->
+      <div class="page" id="page-supply">
+        <div class="page-title">📊 Supply Chain <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-sub">Análise dos seus gastos · Insights e oportunidades de economia</div>
+
+        <!-- Filters card -->
+        <div style="background:linear-gradient(135deg,#F5EBDA,#ECEFE3);border:2px solid #5C7A3F;border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 2px 12px rgba(92,122,63,0.12)">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <div style="font-size:24px">🤖</div>
+            <div>
+              <div style="font-weight:800;color:#3D271A;font-size:15px">Assistente de Supply Chain</div>
+              <div style="font-size:12px;color:#655A4E;margin-top:2px">Analiso seus custos atuais e te entrego insights e oportunidades de economia</div>
+            </div>
+            <div style="margin-left:auto;font-size:10px;color:#999;text-align:right">Powered by Claude Haiku 4.5<br>~$0.05–0.15/análise</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr auto;gap:10px;align-items:end">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#655A4E;margin-bottom:4px">Escopo</div>
+              <select id="sc-scope" onchange="onSupplyScopeChange()" style="width:100%;padding:8px 10px;border:1px solid var(--gray2);border-radius:6px;background:#fff;font-family:inherit;font-size:13px">
+                <option value="global">🌐 Todos os projetos</option>
+                <option value="project">📁 Um projeto específico</option>
+              </select>
+            </div>
+            <div id="sc-project-wrap" style="display:none">
+              <div style="font-size:11px;font-weight:700;color:#655A4E;margin-bottom:4px">Projeto</div>
+              <select id="sc-project" style="width:100%;padding:8px 10px;border:1px solid var(--gray2);border-radius:6px;background:#fff;font-family:inherit;font-size:13px"></select>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#655A4E;margin-bottom:4px">Categoria</div>
+              <select id="sc-category" style="width:100%;padding:8px 10px;border:1px solid var(--gray2);border-radius:6px;background:#fff;font-family:inherit;font-size:13px">
+                <option value="all">Todas</option>
+                <option value="material">Material</option>
+                <option value="labor">Labor</option>
+                <option value="equipment">Equipment</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <button id="sc-run-btn" onclick="runSupplyChainAnalysis()" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2);white-space:nowrap">🔍 Analisar</button>
+            </div>
+          </div>
+          <div id="sc-status" style="margin-top:10px;font-size:12px;color:#655A4E;min-height:18px"></div>
+        </div>
+
+        <!-- Results -->
+        <div id="sc-results" style="display:none">
+          <!-- Summary -->
+          <div id="sc-summary-card" style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px;margin-bottom:16px"></div>
+
+          <!-- Key findings + Opportunities (2 columns) -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+            <div id="sc-findings-card" style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px"></div>
+            <div id="sc-opportunities-card" style="background:linear-gradient(135deg,#fff,#ECEFE3);border:2px solid #5C7A3F;border-radius:10px;padding:18px"></div>
+          </div>
+
+          <!-- Top vendors + categories (2 columns) -->
+          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px">
+            <div id="sc-vendors-card" style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px"></div>
+            <div id="sc-category-card" style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px"></div>
+          </div>
+
+          <!-- Price anomalies -->
+          <div id="sc-anomalies-card" style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px;margin-bottom:16px"></div>
+
+          <!-- Top items -->
+          <div id="sc-items-card" style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:18px;margin-bottom:16px"></div>
+
+          <!-- Red flags (only if there are any) -->
+          <div id="sc-redflags-card" style="display:none;background:#FFF5F5;border:1px solid #E4A2A3;border-radius:10px;padding:18px;margin-bottom:16px"></div>
+
+          <!-- Footer with meta -->
+          <div id="sc-meta" style="font-size:10px;color:#999;text-align:center;padding:10px"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="sc-empty" style="text-align:center;padding:60px 20px;color:#999">
+          <div style="font-size:48px;margin-bottom:12px">📊</div>
+          <div style="font-weight:700;color:#655A4E;font-size:14px;margin-bottom:6px">Clique em "Analisar" para começar</div>
+          <div style="font-size:12px">Eu vou olhar todos os seus custos lançados e te entregar insights úteis</div>
+        </div>
       </div>
 
     </div>
@@ -3869,6 +3953,345 @@ async function viewRecurringNoteHistoryFile(noteId) {
   window.open(data.signedUrl, '_blank');
 }
 // ═══ END VENDOR NOTES — RECURRING COSTS MODE ══════════════════════════
+
+// ═══ SUPPLY CHAIN ANALYSIS ════════════════════════════════════════════
+const SC_EDGE_URL = `${SURL}/functions/v1/supply-chain-analysis`;
+let _scLastResult = null;
+
+function onSupplyScopeChange() {
+  const scope = document.getElementById('sc-scope').value;
+  const wrap = document.getElementById('sc-project-wrap');
+  if (wrap) wrap.style.display = scope === 'project' ? 'block' : 'none';
+}
+
+async function _scLoadProjectsDropdown() {
+  // Populate project dropdown with all projects (CEO sees all)
+  const sel = document.getElementById('sc-project');
+  if (!sel) return;
+  const { data, error } = await sb.from('projects').select('id, name, address').order('name', { ascending: true });
+  if (error || !data) {
+    sel.innerHTML = '<option value="">(erro ao carregar)</option>';
+    return;
+  }
+  sel.innerHTML = data.map(p => `<option value="${p.id}">${(p.name || p.address || '(sem nome)').replace(/</g,'&lt;')}</option>`).join('');
+}
+
+function _scSetStatus(msg, isError) {
+  const el = document.getElementById('sc-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#A02021' : '#655A4E';
+}
+
+async function runSupplyChainAnalysis() {
+  if (!isCEO()) { toast('CEO only', false); return; }
+
+  const scope = document.getElementById('sc-scope').value || 'global';
+  const projectId = scope === 'project' ? (document.getElementById('sc-project').value || null) : null;
+  const category = document.getElementById('sc-category').value || 'all';
+
+  if (scope === 'project' && !projectId) {
+    toast('Selecione um projeto', false);
+    return;
+  }
+
+  const btn = document.getElementById('sc-run-btn');
+  if (btn) btn.disabled = true;
+  _scSetStatus('🤖 Analisando seus dados (5-15s)...');
+
+  // Hide results and empty state
+  document.getElementById('sc-results').style.display = 'none';
+  document.getElementById('sc-empty').style.display = 'none';
+
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const accessToken = session && session.access_token;
+    const resp = await fetch(SC_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + accessToken,
+        'apikey': SKEY,
+      },
+      body: JSON.stringify({
+        scope,
+        project_id: projectId,
+        filters: { category },
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      let msg = 'Erro ' + resp.status;
+      try { const e = JSON.parse(errText); if (e && e.message) msg = e.message; else if (e && e.error) msg = e.error; } catch(_){}
+      throw new Error(msg);
+    }
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.message || 'Análise falhou');
+
+    _scLastResult = result;
+    _scRenderResult(result);
+    _scSetStatus('✅ Análise concluída');
+  } catch (err) {
+    console.error('Supply chain analysis error:', err);
+    _scSetStatus('❌ ' + (err.message || 'Erro ao analisar'), true);
+    document.getElementById('sc-empty').style.display = 'block';
+    toast(err.message || 'Erro na análise', false);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function _scFmtUSD(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function _scEsc(s) {
+  return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function _scRenderResult(result) {
+  const insights = result.data || {};
+  const agg = result.aggregated || {};
+  const meta = result.meta || {};
+
+  // Show results panel
+  document.getElementById('sc-results').style.display = 'block';
+  document.getElementById('sc-empty').style.display = 'none';
+
+  // ─── Summary ───────────────────────────────────────────────────────
+  const summary = agg.summary || {};
+  const sumHtml = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="font-size:22px">📋</div>
+      <div style="font-weight:800;color:#3D271A;font-size:15px">Resumo</div>
+    </div>
+    <div style="font-size:13px;color:#3D271A;line-height:1.5;margin-bottom:12px">${_scEsc(insights.summary_text || 'Sem resumo disponível.')}</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div style="background:#F5EBDA;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;color:#655A4E;font-weight:700;text-transform:uppercase">Total gasto</div>
+        <div style="font-size:18px;font-weight:800;color:#3D271A;margin-top:3px">${_scFmtUSD(summary.total_spent)}</div>
+      </div>
+      <div style="background:#F5EBDA;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;color:#655A4E;font-weight:700;text-transform:uppercase">Lançamentos</div>
+        <div style="font-size:18px;font-weight:800;color:#3D271A;margin-top:3px">${summary.items_analyzed || 0}</div>
+      </div>
+      <div style="background:#F5EBDA;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;color:#655A4E;font-weight:700;text-transform:uppercase">Vendors</div>
+        <div style="font-size:18px;font-weight:800;color:#3D271A;margin-top:3px">${summary.vendors_count || 0}</div>
+      </div>
+      <div style="background:#F5EBDA;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:10px;color:#655A4E;font-weight:700;text-transform:uppercase">Projetos</div>
+        <div style="font-size:18px;font-weight:800;color:#3D271A;margin-top:3px">${summary.projects_count || 0}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('sc-summary-card').innerHTML = sumHtml;
+
+  // ─── Key findings ──────────────────────────────────────────────────
+  const findings = Array.isArray(insights.key_findings) ? insights.key_findings : [];
+  const findingsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:20px">🔑</div>
+      <div style="font-weight:800;color:#3D271A;font-size:14px">Principais descobertas</div>
+    </div>
+    ${findings.length > 0 ? `
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#3D271A;line-height:1.7">
+        ${findings.map(f => `<li style="margin-bottom:6px">${_scEsc(f)}</li>`).join('')}
+      </ul>
+    ` : '<div style="color:#999;font-size:12px;text-align:center;padding:20px">Nenhuma descoberta significativa</div>'}
+  `;
+  document.getElementById('sc-findings-card').innerHTML = findingsHtml;
+
+  // ─── Opportunities ─────────────────────────────────────────────────
+  const opps = Array.isArray(insights.opportunities) ? insights.opportunities : [];
+  const totalSavings = opps.reduce((s, o) => s + (Number(o.potential_savings_usd) || 0), 0);
+  const oppsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:20px">💡</div>
+      <div style="font-weight:800;color:#3D271A;font-size:14px">Oportunidades de economia</div>
+      ${totalSavings > 0 ? `<div style="margin-left:auto;background:#5C7A3F;color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">~${_scFmtUSD(totalSavings)} potencial</div>` : ''}
+    </div>
+    ${opps.length > 0 ? `
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${opps.map(o => `
+          <div style="background:#fff;border:1px solid #5C7A3F;border-radius:8px;padding:11px">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:4px">
+              <div style="font-weight:700;color:#3D271A;font-size:13px">${_scEsc(o.title)}</div>
+              ${(Number(o.potential_savings_usd) > 0) ? `<div style="background:#ECEFE3;color:#5C7A3F;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap">${_scFmtUSD(o.potential_savings_usd)}</div>` : ''}
+            </div>
+            <div style="font-size:12px;color:#655A4E;line-height:1.5">${_scEsc(o.description)}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<div style="color:#999;font-size:12px;text-align:center;padding:20px">Nenhuma oportunidade identificada</div>'}
+  `;
+  document.getElementById('sc-opportunities-card').innerHTML = oppsHtml;
+
+  // ─── Top vendors ───────────────────────────────────────────────────
+  const vendors = Array.isArray(agg.top_vendors) ? agg.top_vendors : [];
+  const vendorsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:20px">🏆</div>
+      <div style="font-weight:800;color:#3D271A;font-size:14px">Top vendors</div>
+    </div>
+    ${vendors.length > 0 ? `
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--gray2);color:#655A4E;font-weight:700">
+            <th style="text-align:left;padding:6px 4px">Vendor</th>
+            <th style="text-align:right;padding:6px 4px">Total</th>
+            <th style="text-align:right;padding:6px 4px">%</th>
+            <th style="text-align:right;padding:6px 4px">Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${vendors.map((v, i) => `
+            <tr style="border-bottom:1px solid #F0EAE2">
+              <td style="padding:7px 4px;color:#3D271A;font-weight:${i < 3 ? '700' : '500'}">${i + 1}. ${_scEsc(v.name)}</td>
+              <td style="padding:7px 4px;text-align:right;color:#3D271A;font-weight:700">${_scFmtUSD(v.total)}</td>
+              <td style="padding:7px 4px;text-align:right;color:#655A4E">${v.percentage}%</td>
+              <td style="padding:7px 4px;text-align:right;color:#655A4E">${v.count}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '<div style="color:#999;font-size:12px;text-align:center;padding:20px">Sem dados</div>'}
+  `;
+  document.getElementById('sc-vendors-card').innerHTML = vendorsHtml;
+
+  // ─── Category breakdown ────────────────────────────────────────────
+  const cats = Array.isArray(agg.by_category) ? agg.by_category : [];
+  const catsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:20px">📦</div>
+      <div style="font-weight:800;color:#3D271A;font-size:14px">Por categoria</div>
+    </div>
+    ${cats.length > 0 ? cats.map(c => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:#3D271A;font-weight:700;text-transform:capitalize">${_scEsc(c.name)}</span>
+          <span style="color:#655A4E">${_scFmtUSD(c.total)} (${c.percentage}%)</span>
+        </div>
+        <div style="background:#F0EAE2;border-radius:4px;height:8px;overflow:hidden">
+          <div style="background:linear-gradient(90deg,#5C7A3F,#7A9954);height:100%;width:${Math.min(100, c.percentage)}%"></div>
+        </div>
+      </div>
+    `).join('') : '<div style="color:#999;font-size:12px;text-align:center;padding:20px">Sem dados</div>'}
+  `;
+  document.getElementById('sc-category-card').innerHTML = catsHtml;
+
+  // ─── Price anomalies ───────────────────────────────────────────────
+  const anomaliesData = Array.isArray(agg.price_anomalies) ? agg.price_anomalies : [];
+  const anomaliesText = Array.isArray(insights.anomalies_to_review) ? insights.anomalies_to_review : [];
+  let anomaliesHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:20px">⚠️</div>
+      <div style="font-weight:800;color:#3D271A;font-size:14px">Variações de preço entre vendors</div>
+      ${anomaliesData.length > 0 ? `<div style="margin-left:auto;background:#F5EBDA;color:#A86A2C;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">${anomaliesData.length} itens</div>` : ''}
+    </div>
+  `;
+  if (anomaliesText.length > 0) {
+    anomaliesHtml += `
+      <div style="background:#FFF9F0;border-left:3px solid #A86A2C;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#3D271A;line-height:1.5">
+        <div style="font-weight:700;margin-bottom:4px">🔍 Pontos pra investigar:</div>
+        <ul style="margin:0;padding-left:18px">
+          ${anomaliesText.map(a => `<li style="margin-bottom:3px">${_scEsc(a)}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
+  if (anomaliesData.length > 0) {
+    anomaliesHtml += `
+      <table style="width:100%;font-size:11px;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--gray2);color:#655A4E;font-weight:700">
+            <th style="text-align:left;padding:6px 4px">Item</th>
+            <th style="text-align:right;padding:6px 4px">Total gasto</th>
+            <th style="text-align:right;padding:6px 4px">Variação</th>
+            <th style="text-align:left;padding:6px 4px">Vendors</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${anomaliesData.slice(0, 10).map(a => `
+            <tr style="border-bottom:1px solid #F0EAE2">
+              <td style="padding:7px 4px;color:#3D271A;font-weight:600">${_scEsc(a.item)}</td>
+              <td style="padding:7px 4px;text-align:right;color:#3D271A">${_scFmtUSD(a.total_spent)}</td>
+              <td style="padding:7px 4px;text-align:right;color:${a.variance_pct >= 20 ? '#A02021' : '#A86A2C'};font-weight:700">${a.variance_pct}%</td>
+              <td style="padding:7px 4px;color:#655A4E;font-size:10px">
+                ${a.vendors.map(v => `<div>${_scEsc(v.vendor)}: <strong>${_scFmtUSD(v.avg_unit_cost)}</strong>/un</div>`).join('')}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    anomaliesHtml += '<div style="color:#999;font-size:12px;text-align:center;padding:20px">Nenhuma variação significativa detectada</div>';
+  }
+  document.getElementById('sc-anomalies-card').innerHTML = anomaliesHtml;
+
+  // ─── Top items ─────────────────────────────────────────────────────
+  const items = Array.isArray(agg.top_items) ? agg.top_items : [];
+  const itemsHtml = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:20px">📋</div>
+      <div style="font-weight:800;color:#3D271A;font-size:14px">Top 20 itens (por gasto)</div>
+    </div>
+    ${items.length > 0 ? `
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--gray2);color:#655A4E;font-weight:700">
+            <th style="text-align:left;padding:6px 4px">Item</th>
+            <th style="text-align:right;padding:6px 4px">Total</th>
+            <th style="text-align:right;padding:6px 4px">Vezes</th>
+            <th style="text-align:right;padding:6px 4px">Vendors</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((it, i) => `
+            <tr style="border-bottom:1px solid #F0EAE2">
+              <td style="padding:7px 4px;color:#3D271A">${i + 1}. ${_scEsc(it.name)}</td>
+              <td style="padding:7px 4px;text-align:right;color:#3D271A;font-weight:700">${_scFmtUSD(it.total)}</td>
+              <td style="padding:7px 4px;text-align:right;color:#655A4E">${it.times_purchased}</td>
+              <td style="padding:7px 4px;text-align:right;color:${it.vendor_count > 1 ? '#A86A2C' : '#655A4E'}">${it.vendor_count}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '<div style="color:#999;font-size:12px;text-align:center;padding:20px">Sem dados</div>'}
+  `;
+  document.getElementById('sc-items-card').innerHTML = itemsHtml;
+
+  // ─── Red flags (only if any) ───────────────────────────────────────
+  const redFlags = Array.isArray(insights.red_flags) ? insights.red_flags : [];
+  const redFlagsCard = document.getElementById('sc-redflags-card');
+  if (redFlags.length > 0) {
+    redFlagsCard.style.display = 'block';
+    redFlagsCard.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:20px">🚩</div>
+        <div style="font-weight:800;color:#A02021;font-size:14px">Pontos de atenção</div>
+      </div>
+      <ul style="margin:0;padding-left:18px;font-size:12px;color:#3D271A;line-height:1.6">
+        ${redFlags.map(r => `<li style="margin-bottom:5px">${_scEsc(r)}</li>`).join('')}
+      </ul>
+    `;
+  } else {
+    redFlagsCard.style.display = 'none';
+  }
+
+  // ─── Meta ──────────────────────────────────────────────────────────
+  const metaHtml = `
+    Modelo: ${_scEsc(meta.model || '—')} ·
+    ${meta.items_analyzed || 0} lançamentos analisados ·
+    ${meta.input_tokens ? meta.input_tokens + ' input tokens' : '—'} ·
+    ${meta.output_tokens ? meta.output_tokens + ' output tokens' : '—'}
+  `;
+  document.getElementById('sc-meta').innerHTML = metaHtml;
+}
+// ═══ END SUPPLY CHAIN ANALYSIS ════════════════════════════════════════
 
 async function removeItem(gid,islug){
   // Look up current name from itemsMap (in case it was renamed)
@@ -8432,6 +8855,7 @@ function sp(id,el,cls){
   if(id==='property' && isCEO()) recalcProfit();
   if(id==='listing' && isCEO()) {loadListingForm();renderPropertyResearchButtons('lc-research');}
   if(id==='recurring' && isCEO()) loadRecurringDetail();
+  if(id==='supply' && isCEO()) _scLoadProjectsDropdown();
   // (clients/vendors/invoices moved to global views — see goView)
   window.scrollTo({top:0,behavior:'smooth'});
 }
