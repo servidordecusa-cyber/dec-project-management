@@ -6108,48 +6108,53 @@ async function renderWorkingCapitalCashFlow(){
   }catch(e){console.warn('wc outflows recurring error:',e);}
 
   // 4. Invoice payments via Working Capital
-  //    - Status='paid' with payment_method='working_capital'
-  //    - Status='partial_paid' with any payment_method='working_capital'
-  //    These are operational/refund/etc. invoices where the client paid using WC funds.
+  //    The rule is: use EITHER the invoice_payments table OR the invoice's own
+  //    payment_method — NEVER both (otherwise we'd double-count when a Paid
+  //    invoice gets auto-promoted from Partial Paid and still has payment rows).
+  //
+  //    Logic:
+  //    - If invoice has ANY rows in invoice_payments: use ONLY those (filtered by WC method)
+  //    - Else if invoice is Paid with payment_method='working_capital': use invoice total
+  //
   //    NOTE: We EXCLUDE invoices with kind='working_capital' here because those are
   //    INFLOWS (handled above), not outflows.
   try{
-    // Paid invoices via WC
     (invoices||[]).forEach(inv=>{
-      if(inv.status!=='paid') return;
-      if(inv.kind==='working_capital') return; // skip WC type invoices (they are inflows)
-      if(inv.payment_method!=='working_capital') return;
-      const proj=inv.project_id?projects.find(p=>p.id===inv.project_id):null;
+      if(inv.status==='cancelled') return;
+      if(inv.kind==='working_capital') return; // skip WC-type invoices (those are inflows)
+      const payments=invoicePayments[inv.id]||[];
       const cli=clients.find(c=>c.id===inv.client_id);
-      outflows.push({
-        source:'invoice',
-        date:inv.paid_date||inv.date||null,
-        amount:+inv.amount||0,
-        project:proj?(proj.name||proj.address||'?'):(cli?cli.name:'?'),
-        project_id:inv.project_id,
-        description:'Invoice #'+inv.invoice_number+(cli?' · '+cli.name:''),
-        category:'invoice',
-      });
-    });
-    // Partial payments via WC (from invoice_payments table)
-    Object.entries(invoicePayments||{}).forEach(([invId,payments])=>{
-      const inv=_invoiceById(invId);
-      if(!inv) return;
-      if(inv.kind==='working_capital') return; // skip WC type invoices
-      (payments||[]).forEach(p=>{
-        if(p.payment_method!=='working_capital') return;
-        const proj=inv.project_id?projects.find(pp=>pp.id===inv.project_id):null;
-        const cli=clients.find(c=>c.id===inv.client_id);
-        outflows.push({
-          source:'invoice_partial',
-          date:p.payment_date||null,
-          amount:+p.amount||0,
-          project:proj?(proj.name||proj.address||'?'):(cli?cli.name:'?'),
-          project_id:inv.project_id,
-          description:'Invoice #'+inv.invoice_number+' (parcial)'+(cli?' · '+cli.name:''),
-          category:'invoice_partial',
+      const proj=inv.project_id?projects.find(p=>p.id===inv.project_id):null;
+      const projLabel=proj?(proj.name||proj.address||'?'):(cli?cli.name:'?');
+
+      if(payments.length>0){
+        // Has partial payments — use ONLY those, filtered by WC method
+        payments.forEach(p=>{
+          if(p.payment_method!=='working_capital') return;
+          outflows.push({
+            source:'invoice_partial',
+            date:p.payment_date||null,
+            amount:+p.amount||0,
+            project:projLabel,
+            project_id:inv.project_id,
+            description:'Invoice #'+inv.invoice_number+' (parcial)'+(cli?' · '+cli.name:''),
+            category:'invoice_partial',
+          });
         });
-      });
+      } else {
+        // No partial payments — use invoice-level payment_method (only if Paid)
+        if(inv.status!=='paid') return;
+        if(inv.payment_method!=='working_capital') return;
+        outflows.push({
+          source:'invoice',
+          date:inv.paid_date||inv.date||null,
+          amount:+inv.amount||0,
+          project:projLabel,
+          project_id:inv.project_id,
+          description:'Invoice #'+inv.invoice_number+(cli?' · '+cli.name:''),
+          category:'invoice',
+        });
+      }
     });
   }catch(e){console.warn('wc outflows invoices error:',e);}
 
