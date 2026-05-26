@@ -1551,8 +1551,16 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   <div class="modal" style="max-width:720px">
     <h2 id="im-title">➕ New Invoice</h2>
     <input type="hidden" id="im-id">
+    <!-- Parent invoice selector (optional — for subcategories) -->
+    <div class="fg" style="background:#F5EBDA;padding:10px 12px;border-radius:7px;border:1px dashed #A86A2C">
+      <label style="font-size:11px;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:4px;display:block">📎 Subcategoria de:</label>
+      <select id="im-parent" onchange="onInvoiceParentChange()" style="width:100%;padding:8px 10px;border:1px solid var(--gray2);border-radius:6px;background:#fff;font-family:inherit;font-size:13px">
+        <option value="">— Não é subcategoria (invoice principal) —</option>
+      </select>
+      <div style="font-size:10px;color:#655A4E;margin-top:5px">Se selecionar uma invoice principal, esta vira subcategoria (ex: #4040.1). Cliente e Property address serão herdados.</div>
+    </div>
     <div class="fgrid">
-      <div class="fg"><label>Number *</label><input id="im-number" type="number" min="1" placeholder="112"></div>
+      <div class="fg"><label>Number *</label><input id="im-number" type="text" placeholder="112" autocomplete="off"></div>
       <div class="fg"><label>Date *</label><input id="im-date" type="date"></div>
     </div>
     <div class="fgrid">
@@ -1572,6 +1580,8 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <option value="operational">🔨 Operational (during construction)</option>
           <option value="final_roi">💎 Final ROI (after sale)</option>
           <option value="refund">💸 Refund (reimbursement of advance)</option>
+          <option value="third_party_asset_manager">🏦 Third Party Asset Manager</option>
+          <option value="working_capital">💰 Working Capital</option>
         </select>
       </div>
       <div class="fg"></div>
@@ -6462,18 +6472,50 @@ function _invoiceYearPrefix(year){
 }
 
 // Extract sequence part (without prefix) from a full invoice number
-// e.g. 7112 → 112, 8001 → 001
+// e.g. "7112" → 112, "8001" → 001, "7040.1" → 40 (ignores .1 part)
+// For subcategory awareness use _invoiceParseNumber instead.
 function _invoiceSequence(fullNum){
-  const s=String(fullNum||'');
+  const s=String(fullNum||'').split('.')[0]; // ignore subcategory part
   if(s.length<=3) return parseInt(s)||0;
   return parseInt(s.substring(1))||0;
 }
 
 // Build full invoice number from year + sequence
-// 2026, 112 → 7112    2027, 1 → 8001
+// 2026, 112 → "7112"    2027, 1 → "8001"
+// Returns STRING (since invoice_number is now text)
 function _invoiceFullNumber(year,sequence){
   const prefix=_invoiceYearPrefix(year);
-  return parseInt(String(prefix)+String(sequence).padStart(3,'0'));
+  return String(prefix)+String(sequence).padStart(3,'0');
+}
+
+// Parse invoice number into {base, subSeq}
+// "7040" → {base:"7040", subSeq:null}
+// "7040.1" → {base:"7040", subSeq:1}
+function _invoiceParseNumber(num){
+  const s=String(num||'');
+  const dotIdx=s.indexOf('.');
+  if(dotIdx<0) return {base:s, subSeq:null};
+  return {
+    base:s.substring(0,dotIdx),
+    subSeq:parseInt(s.substring(dotIdx+1))||null
+  };
+}
+
+// Build subcategory number from parent base + seq
+// "7040", 1 → "7040.1"
+function _invoiceSubcategoryNumber(parentBase, seq){
+  return String(parentBase)+'.'+seq;
+}
+
+// Sort comparator for invoices: principal first, then its subcategories,
+// then next principal, etc. (within same base, sub_seq order)
+function _invoiceSortKey(inv){
+  const parsed=_invoiceParseNumber(inv.invoice_number);
+  // Numeric sort by base; tie-break by sub_seq (0 = main, 1..N = subs)
+  const base=parseInt(parsed.base)||0;
+  const sub=parsed.subSeq||0;
+  // base*1000 ensures different bases never collide; sub adds order
+  return base*1000+sub;
 }
 
 const PAYMENT_METHOD_LABELS={
@@ -6502,11 +6544,13 @@ const DEC_COMPANY={
 async function loadInvoices(){
   if(!isCEO()){invoices=[];invoiceItems={};return;}
   const [invRes,itemsRes]=await Promise.all([
-    sb.from('invoices').select('*').order('invoice_number',{ascending:false}),
+    // Note: order in JS using _invoiceSortKey because text-column sort doesn't
+    // respect numeric ordering (e.g. "7100" < "8" alphabetically)
+    sb.from('invoices').select('*'),
     sb.from('invoice_items').select('*').order('position')
   ]);
   if(invRes.error){console.error('invoices load',invRes.error);return;}
-  invoices=invRes.data||[];
+  invoices=(invRes.data||[]).sort((a,b)=>_invoiceSortKey(b)-_invoiceSortKey(a));
   invoiceItems={};
   (itemsRes.data||[]).forEach(it=>{
     if(!invoiceItems[it.invoice_id]) invoiceItems[it.invoice_id]=[];
@@ -6518,10 +6562,10 @@ function _suggestNextInvoiceNumber(year){
   // Default to current year if not specified
   if(!year) year=new Date().getFullYear();
   const prefix=_invoiceYearPrefix(year);
-  // Find max sequence used FOR THIS YEAR PREFIX
+  // Find max sequence used FOR THIS YEAR PREFIX (only MAIN invoices, no subcategories)
   const sameYearInvs=invoices.filter(i=>{
-    const fullStr=String(i.invoice_number||'');
-    return fullStr.length>=4 && fullStr.startsWith(String(prefix));
+    const fullStr=String(i.invoice_number||'').split('.')[0]; // ignore subcategory part
+    return fullStr.length>=4 && fullStr.startsWith(String(prefix)) && !i.parent_invoice_id;
   });
   if(sameYearInvs.length===0){
     // First invoice for this year
@@ -6589,10 +6633,15 @@ function renderInvoices(){
     const meta=INVOICE_STATUS_META[i.status]||INVOICE_STATUS_META.open;
     const dateBR=i.date?new Date(i.date+'T00:00:00').toLocaleDateString('pt-BR'):'—';
     const rowStyle=i.status==='cancelled'?'opacity:.6;text-decoration:line-through':'';
+    const isSub=!!i.parent_invoice_id;
     const kindIcon=i.kind==='final_roi'
       ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#B8860B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>'
       :i.kind==='refund'
         ?'<span title="Refund" style="display:inline-block;background:#FFE5D9;color:#C62B2B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💸 REF</span>'
+      :i.kind==='third_party_asset_manager'
+        ?'<span title="Third Party Asset Manager" style="display:inline-block;background:#E8E1F5;color:#5B3B8C;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🏦 TPAM</span>'
+      :i.kind==='working_capital'
+        ?'<span title="Working Capital" style="display:inline-block;background:#DCEFE6;color:#2D7D5F;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💰 WC</span>'
         :'<span title="Operational" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
     // Build description summary from items
     const items=invoiceItems[i.id]||[];
@@ -6605,8 +6654,12 @@ function renderInvoices(){
       // Legacy
       descSummary=(i.description||'').slice(0,55);
     }
-    return `<tr style="border-bottom:1px solid #F0EAE2;${rowStyle}">
-      <td style="padding:10px 12px;font-weight:700;color:var(--navy)">#${i.invoice_number}</td>
+    // Subcategory styling: lighter background, indent on number column
+    const subBg=isSub?'background:#FBF8F2;':'';
+    const subIndent=isSub?'padding-left:32px;':'';
+    const subPrefix=isSub?'<span style="color:#A86A2C;font-size:11px;margin-right:4px">↳</span>':'';
+    return `<tr style="border-bottom:1px solid #F0EAE2;${subBg}${rowStyle}">
+      <td style="padding:10px 12px;font-weight:700;color:var(--navy);${subIndent}">${subPrefix}#${i.invoice_number}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${cName}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${projName}</td>
@@ -6691,6 +6744,7 @@ function onInvoiceProjectChange(){
 
 function openInvoiceModal(id){
   populateInvoiceModalDropdowns();
+  _populateParentInvoiceDropdown(id);
   document.getElementById('im-id').value=id||'';
   const title=document.getElementById('im-title');
   if(id){
@@ -6708,6 +6762,8 @@ function openInvoiceModal(id){
     document.getElementById('im-paid-date').value=inv.paid_date||'';
     document.getElementById('im-notes').value=inv.notes||'';
     document.getElementById('im-visible-investor').checked=!!inv.visible_to_investor;
+    document.getElementById('im-parent').value=inv.parent_invoice_id||'';
+    _applyParentLock(!!inv.parent_invoice_id);
     // Load items
     const existing=invoiceItems[id]||[];
     if(existing.length>0){
@@ -6730,6 +6786,8 @@ function openInvoiceModal(id){
     document.getElementById('im-status').value='open';
     document.getElementById('im-kind').value='operational';
     document.getElementById('im-visible-investor').checked=false;
+    document.getElementById('im-parent').value='';
+    _applyParentLock(false);
     _imItems=[{description:'',amount:0}];
   }
   onInvoiceStatusChange();
@@ -6742,6 +6800,8 @@ function openInvoiceModal(id){
     dateEl.onchange=function(){
       const d=dateEl.value;
       if(!d) return;
+      // Don't override number if this is a subcategory
+      if(document.getElementById('im-parent').value) return;
       const yr=new Date(d+'T00:00:00').getFullYear();
       numEl.value=_suggestNextInvoiceNumber(yr);
     };
@@ -6752,18 +6812,98 @@ function openInvoiceModal(id){
   setTimeout(()=>document.getElementById('im-number').focus(),50);
 }
 
+// Populate the "Subcategoria de:" dropdown with all main invoices
+// (excluding the one being edited, to prevent self-reference)
+function _populateParentInvoiceDropdown(currentInvId){
+  const sel=document.getElementById('im-parent');
+  if(!sel) return;
+  // Show only PRINCIPAL invoices (no parent_invoice_id) as parent candidates.
+  // Sort by invoice_number descending (most recent first)
+  const candidates=(invoices||[])
+    .filter(inv=>!inv.parent_invoice_id && inv.id!==currentInvId)
+    .sort((a,b)=>(_invoiceSortKey(b)-_invoiceSortKey(a)));
+  const opts=['<option value="">— Não é subcategoria (invoice principal) —</option>'];
+  for(const inv of candidates){
+    const cli=clients.find(c=>c.id===inv.client_id);
+    const label='#'+(inv.invoice_number||'?')+' · '+(cli?cli.name:'?').replace(/</g,'&lt;')+' · $'+(Number(inv.amount)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+    opts.push('<option value="'+inv.id+'">'+label+'</option>');
+  }
+  sel.innerHTML=opts.join('');
+}
+
+// Called when user changes parent dropdown.
+// If parent selected: lock client + property + auto-generate sub number
+// If not: unlock and let user enter freely
+function onInvoiceParentChange(){
+  const parentId=document.getElementById('im-parent').value;
+  if(!parentId){
+    _applyParentLock(false);
+    // Re-suggest a fresh main number for the current year
+    const dateVal=document.getElementById('im-date').value;
+    const yr=dateVal?new Date(dateVal+'T00:00:00').getFullYear():new Date().getFullYear();
+    document.getElementById('im-number').value=_suggestNextInvoiceNumber(yr);
+    return;
+  }
+  const parent=_invoiceById(parentId);
+  if(!parent) return;
+  // Inherit client + property address
+  document.getElementById('im-client').value=parent.client_id||'';
+  document.getElementById('im-project').value=parent.project_id||'';
+  document.getElementById('im-property-address').value=parent.property_address||'';
+  // Auto-compute next subcategory sequence
+  const usedSeqs=(invoices||[])
+    .filter(i=>i.parent_invoice_id===parentId)
+    .map(i=>i.subcategory_seq||0);
+  const nextSeq=usedSeqs.length>0 ? Math.max(...usedSeqs)+1 : 1;
+  document.getElementById('im-number').value=_invoiceSubcategoryNumber(parent.invoice_number, nextSeq);
+  _applyParentLock(true);
+}
+
+// Lock/unlock fields when subcategory mode is active
+function _applyParentLock(locked){
+  ['im-client','im-project','im-property-address'].forEach(k=>{
+    const el=document.getElementById(k);
+    if(el){
+      el.disabled=locked;
+      el.style.opacity=locked?'0.7':'1';
+      el.style.cursor=locked?'not-allowed':'';
+    }
+  });
+}
+
 function closeInvoiceModal(){
   document.getElementById('modal-invoice').classList.remove('open');
 }
 
 async function saveInvoice(){
   if(!isCEO()){toast('CEO only can manage invoices',false);return;}
-  const num=parseInt(document.getElementById('im-number').value);
+  // Invoice number is now TEXT (supports "7040.1" for subcategories)
+  const numRaw=String(document.getElementById('im-number').value||'').trim();
   const date=document.getElementById('im-date').value;
   const client_id=document.getElementById('im-client').value;
-  if(!num||num<1){toast('Invoice number is required',false);return;}
+  const parentId=document.getElementById('im-parent').value||null;
+  if(!numRaw){toast('Invoice number is required',false);return;}
+  // Allow digits, dots and dashes
+  if(!/^[0-9.]+$/.test(numRaw)){toast('Invoice number can only contain digits and dots',false);return;}
   if(!date){toast('Date is required',false);return;}
   if(!client_id){toast('Client is required',false);return;}
+  // If subcategory, validate the format
+  const parsedNum=_invoiceParseNumber(numRaw);
+  if(parentId){
+    if(!parsedNum.subSeq){
+      toast('Número de subcategoria deve ter formato como "7040.1"',false);
+      return;
+    }
+    // Confirm parent's base matches
+    const parent=_invoiceById(parentId);
+    if(parent && String(parent.invoice_number)!==parsedNum.base){
+      toast('Número da subcategoria deve começar com "'+parent.invoice_number+'." (parent)',false);
+      return;
+    }
+  } else if(parsedNum.subSeq){
+    toast('Para criar subcategoria, selecione a invoice principal no dropdown',false);
+    return;
+  }
   // Validate items
   const validItems=_imItems
     .map(it=>({description:(it.description||'').trim(),amount:Math.round((+it.amount||0)*100)/100}))
@@ -6774,16 +6914,16 @@ async function saveInvoice(){
   const totalAmount=validItems.reduce((s,i)=>s+i.amount,0);
   const id=document.getElementById('im-id').value;
   // Check duplicate invoice_number (unless editing the same)
-  const dupe=invoices.find(i=>i.invoice_number===num && i.id!==id);
+  const dupe=invoices.find(i=>String(i.invoice_number)===numRaw && i.id!==id);
   if(dupe){
-    if(!confirm('Invoice #'+num+' already exists. Continue anyway?')) return;
+    if(!confirm('Invoice #'+numRaw+' already exists. Continue anyway?')) return;
   }
   const status=document.getElementById('im-status').value||'open';
   const kind=document.getElementById('im-kind').value||'operational';
   // The invoice 'description' column stores a short summary (first item description for legacy display)
   const summary=validItems.length===1?validItems[0].description:`${validItems.length} items`;
   const payload={
-    invoice_number:num,
+    invoice_number:numRaw,
     date,
     client_id,
     project_id:document.getElementById('im-project').value||null,
@@ -6796,6 +6936,8 @@ async function saveInvoice(){
     paid_date:status==='paid'?(document.getElementById('im-paid-date').value||null):null,
     notes:document.getElementById('im-notes').value||'',
     visible_to_investor:document.getElementById('im-visible-investor').checked,
+    parent_invoice_id:parentId,
+    subcategory_seq:parsedNum.subSeq||null,
   };
   let result;
   if(id){
@@ -6833,7 +6975,7 @@ async function saveInvoice(){
   } else {
     invoices.push(result.data);
   }
-  invoices.sort((a,b)=>(b.invoice_number||0)-(a.invoice_number||0));
+  invoices.sort((a,b)=>_invoiceSortKey(b)-_invoiceSortKey(a));
   renderInvoices();
   // If a project is currently open and its Property & Finance is active, recompute
   if(CID && document.getElementById('page-property')?.classList.contains('active')){
