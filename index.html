@@ -1669,6 +1669,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="fg"><label>Status</label>
         <select id="im-status" onchange="onInvoiceStatusChange()">
           <option value="open">Pending</option>
+          <option value="partial_paid">Partial Paid</option>
           <option value="paid">Paid</option>
           <option value="cancelled">Cancelled</option>
         </select>
@@ -1685,10 +1686,35 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <option value="zelle">Zelle</option>
           <option value="ach">ACH</option>
           <option value="credit_card">Credit Card</option>
+          <option value="working_capital">💰 Working Capital</option>
           <option value="other">Other</option>
         </select>
       </div>
       <div class="fg"><label>Payment date</label><input id="im-paid-date" type="date"></div>
+    </div>
+
+    <!-- Partial payments section (only shown when status = partial_paid) -->
+    <div id="im-partial-wrap" style="display:none;background:#FFF8E7;border:1.5px dashed #B8860B;border-radius:8px;padding:14px;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:#B8860B;text-transform:uppercase;letter-spacing:.4px">💵 Pagamentos parciais</div>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="addPartialPayment()">+ Adicionar pagamento</button>
+      </div>
+      <div id="im-partial-list"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:8px;border-top:1.5px solid #E5D9B8;font-size:12px">
+        <div>
+          <span style="color:#655A4E">Total invoice:</span>
+          <strong id="im-partial-invoice-total" style="color:var(--navy)">$0.00</strong>
+        </div>
+        <div>
+          <span style="color:#655A4E">Pago:</span>
+          <strong id="im-partial-paid-total" style="color:#2D7D5F">$0.00</strong>
+          <span style="color:#655A4E;margin-left:14px">Saldo:</span>
+          <strong id="im-partial-balance" style="color:#B8860B">$0.00</strong>
+        </div>
+      </div>
+      <div id="im-partial-complete-hint" style="display:none;font-size:11px;color:#2D7D5F;margin-top:8px;padding:6px 10px;background:#DCEFE6;border-radius:6px">
+        ✅ Pagamentos completos! Status mudará automaticamente para Paid ao salvar.
+      </div>
     </div>
     <div class="fg"><label>Notes</label><textarea id="im-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Notes..."></textarea></div>
     <div style="margin-top:12px;padding:12px 14px;background:#FAF7F3;border-left:3px solid var(--gold);border-radius:6px">
@@ -1992,6 +2018,7 @@ let vendors=[];      // [{id, name, specialty, address, email, phone, tax_id, no
 let vendorDocs={};   // {vendor_id: [{id, vendor_id, doc_type, name, storage_path, expiration_date, ...}]}
 let invoices=[];     // [{id, invoice_number, client_id, date, amount, ...}]
 let invoiceItems={}; // {invoice_id: [{id, description, amount, position}]}
+let invoicePayments={}; // {invoice_id: [{id, amount, payment_method, payment_date}]} — for partial_paid status
 let fixedCosts=[];   // [{id, date, category, description, amount, notes}]
 let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
@@ -6080,6 +6107,52 @@ async function renderWorkingCapitalCashFlow(){
     });
   }catch(e){console.warn('wc outflows recurring error:',e);}
 
+  // 4. Invoice payments via Working Capital
+  //    - Status='paid' with payment_method='working_capital'
+  //    - Status='partial_paid' with any payment_method='working_capital'
+  //    These are operational/refund/etc. invoices where the client paid using WC funds.
+  //    NOTE: We EXCLUDE invoices with kind='working_capital' here because those are
+  //    INFLOWS (handled above), not outflows.
+  try{
+    // Paid invoices via WC
+    (invoices||[]).forEach(inv=>{
+      if(inv.status!=='paid') return;
+      if(inv.kind==='working_capital') return; // skip WC type invoices (they are inflows)
+      if(inv.payment_method!=='working_capital') return;
+      const proj=inv.project_id?projects.find(p=>p.id===inv.project_id):null;
+      const cli=clients.find(c=>c.id===inv.client_id);
+      outflows.push({
+        source:'invoice',
+        date:inv.paid_date||inv.date||null,
+        amount:+inv.amount||0,
+        project:proj?(proj.name||proj.address||'?'):(cli?cli.name:'?'),
+        project_id:inv.project_id,
+        description:'Invoice #'+inv.invoice_number+(cli?' · '+cli.name:''),
+        category:'invoice',
+      });
+    });
+    // Partial payments via WC (from invoice_payments table)
+    Object.entries(invoicePayments||{}).forEach(([invId,payments])=>{
+      const inv=_invoiceById(invId);
+      if(!inv) return;
+      if(inv.kind==='working_capital') return; // skip WC type invoices
+      (payments||[]).forEach(p=>{
+        if(p.payment_method!=='working_capital') return;
+        const proj=inv.project_id?projects.find(pp=>pp.id===inv.project_id):null;
+        const cli=clients.find(c=>c.id===inv.client_id);
+        outflows.push({
+          source:'invoice_partial',
+          date:p.payment_date||null,
+          amount:+p.amount||0,
+          project:proj?(proj.name||proj.address||'?'):(cli?cli.name:'?'),
+          project_id:inv.project_id,
+          description:'Invoice #'+inv.invoice_number+' (parcial)'+(cli?' · '+cli.name:''),
+          category:'invoice_partial',
+        });
+      });
+    });
+  }catch(e){console.warn('wc outflows invoices error:',e);}
+
   const outTotal=outflows.reduce((s,o)=>s+o.amount,0);
 
   // Sort outflows by date desc (entries without date go last)
@@ -6134,7 +6207,7 @@ async function renderWorkingCapitalCashFlow(){
     setEl('wc-outflows-list','<div style="text-align:center;color:#999;padding:24px;font-style:italic">Nenhum custo marcado como pago com Working Capital ainda.<br><br>Pra marcar: edita um Actual Cost, Fixed Cost ou Recurring (Shift+click) com a flag WC.</div>');
   } else {
     setEl('wc-outflows-list',outflows.map(o=>{
-      const srcIcon=o.source==='actual'?'🔨':o.source==='fixed'?'📌':o.source==='recurring'?'🔄':'·';
+      const srcIcon=o.source==='actual'?'🔨':o.source==='fixed'?'📌':o.source==='recurring'?'🔄':(o.source==='invoice'||o.source==='invoice_partial')?'🧾':'·';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #F0EAE2;gap:8px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;color:#3D271A;font-size:12px">${srcIcon} ${o.description.replace(/</g,'&lt;')}</div>
@@ -6783,10 +6856,11 @@ function _invoiceSortKey(inv){
 
 const PAYMENT_METHOD_LABELS={
   wire:'Wire', check:'Check', cash:'Cash', zelle:'Zelle',
-  ach:'ACH', credit_card:'Credit Card', other:'Other',
+  ach:'ACH', credit_card:'Credit Card', working_capital:'💰 Working Capital', other:'Other',
 };
 const INVOICE_STATUS_META={
   open: {label:'PENDING', color:'#A86A2C', bg:'#F5EBDA'},
+  partial_paid:{label:'Partial Paid', color:'#B8860B', bg:'#FFF8E7'},
   paid: {label:'Paid',      color:'#5C7A3F', bg:'#ECEFE3'},
   cancelled:{label:'Cancelled',color:'#655A4E', bg:'#E8E0D5'},
 };
@@ -6805,12 +6879,13 @@ const DEC_COMPANY={
 };
 
 async function loadInvoices(){
-  if(!isCEO()){invoices=[];invoiceItems={};return;}
-  const [invRes,itemsRes]=await Promise.all([
+  if(!isCEO()){invoices=[];invoiceItems={};invoicePayments={};return;}
+  const [invRes,itemsRes,payRes]=await Promise.all([
     // Note: order in JS using _invoiceSortKey because text-column sort doesn't
     // respect numeric ordering (e.g. "7100" < "8" alphabetically)
     sb.from('invoices').select('*'),
-    sb.from('invoice_items').select('*').order('position')
+    sb.from('invoice_items').select('*').order('position'),
+    sb.from('invoice_payments').select('*').order('payment_date')
   ]);
   if(invRes.error){console.error('invoices load',invRes.error);return;}
   invoices=(invRes.data||[]).sort((a,b)=>_invoiceSortKey(b)-_invoiceSortKey(a));
@@ -6819,6 +6894,15 @@ async function loadInvoices(){
     if(!invoiceItems[it.invoice_id]) invoiceItems[it.invoice_id]=[];
     invoiceItems[it.invoice_id].push(it);
   });
+  invoicePayments={};
+  if(!payRes.error){
+    (payRes.data||[]).forEach(p=>{
+      if(!invoicePayments[p.invoice_id]) invoicePayments[p.invoice_id]=[];
+      invoicePayments[p.invoice_id].push(p);
+    });
+  } else {
+    console.warn('invoice_payments load:',payRes.error.message);
+  }
 }
 
 function _suggestNextInvoiceNumber(year){
@@ -6921,13 +7005,20 @@ function renderInvoices(){
     const subBg=isSub?'background:#FBF8F2;':'';
     const subIndent=isSub?'padding-left:32px;':'';
     const subPrefix=isSub?'<span style="color:#A86A2C;font-size:11px;margin-right:4px">↳</span>':'';
+    // Partial paid progress
+    let amountCell=fmt(i.amount||0);
+    if(i.status==='partial_paid'){
+      const payments=invoicePayments[i.id]||[];
+      const paidSum=payments.reduce((s,p)=>s+(+p.amount||0),0);
+      amountCell=`${fmt(i.amount||0)}<div style="font-size:10px;color:#B8860B;font-weight:600;margin-top:2px">$${paidSum.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} pago</div>`;
+    }
     return `<tr style="border-bottom:1px solid #F0EAE2;${subBg}${rowStyle}">
       <td style="padding:10px 12px;font-weight:700;color:var(--navy);${subIndent}">${subPrefix}#${i.invoice_number}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${cName}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${projName}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${kindIcon}${descSummary}</td>
-      <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--gold)">${fmt(i.amount||0)}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--gold)">${amountCell}</td>
       <td style="padding:10px 12px;text-align:center">
         <span style="background:${meta.bg};color:${meta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${meta.label}</span>
       </td>
@@ -6945,6 +7036,92 @@ function _invoiceById(id){return invoices.find(i=>i.id===id);}
 function onInvoiceStatusChange(){
   const status=document.getElementById('im-status').value;
   document.getElementById('im-paid-wrap').style.display=status==='paid'?'grid':'none';
+  document.getElementById('im-partial-wrap').style.display=status==='partial_paid'?'block':'none';
+  if(status==='partial_paid'){
+    renderPartialPayments();
+  }
+}
+
+// In-memory partial payments being edited in the modal
+let _imPartials=[];
+
+function renderPartialPayments(){
+  const wrap=document.getElementById('im-partial-list');
+  if(!wrap) return;
+  if(_imPartials.length===0){
+    wrap.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic;background:#fff;border:1px dashed #E5D9B8;border-radius:6px">Nenhum pagamento ainda. Clique em <strong>+ Adicionar pagamento</strong> acima.</div>`;
+    _updatePartialTotals();
+    return;
+  }
+  wrap.innerHTML=_imPartials.map((p,idx)=>{
+    return `<div style="display:grid;grid-template-columns:120px 1fr 130px 40px;gap:8px;align-items:center;padding:6px 0">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:12px;color:#655A4E">$</span>
+        <input type="number" min="0.01" step="0.01" value="${p.amount||''}" placeholder="0.00"
+          oninput="onPartialChange(${idx},'amount',this.value)"
+          style="padding:6px 8px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;text-align:right">
+      </div>
+      <select onchange="onPartialChange(${idx},'method',this.value)"
+        style="padding:6px 8px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+        <option value="">— Método —</option>
+        <option value="wire"${p.method==='wire'?' selected':''}>Wire</option>
+        <option value="check"${p.method==='check'?' selected':''}>Check</option>
+        <option value="cash"${p.method==='cash'?' selected':''}>Cash</option>
+        <option value="zelle"${p.method==='zelle'?' selected':''}>Zelle</option>
+        <option value="ach"${p.method==='ach'?' selected':''}>ACH</option>
+        <option value="credit_card"${p.method==='credit_card'?' selected':''}>Credit Card</option>
+        <option value="working_capital"${p.method==='working_capital'?' selected':''}>💰 Working Capital</option>
+        <option value="other"${p.method==='other'?' selected':''}>Other</option>
+      </select>
+      <input type="date" value="${p.date||''}"
+        onchange="onPartialChange(${idx},'date',this.value)"
+        style="padding:6px 8px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+      <button class="btn btn-ghost" style="padding:4px 8px;font-size:14px;color:var(--red)" title="Remover" onclick="removePartial(${idx})">🗑</button>
+    </div>`;
+  }).join('');
+  _updatePartialTotals();
+}
+
+function addPartialPayment(){
+  const today=new Date().toISOString().slice(0,10);
+  _imPartials.push({amount:0, method:'', date:today});
+  renderPartialPayments();
+}
+
+function removePartial(idx){
+  _imPartials.splice(idx,1);
+  renderPartialPayments();
+}
+
+function onPartialChange(idx,field,value){
+  if(!_imPartials[idx]) return;
+  if(field==='amount'){
+    _imPartials[idx].amount=parseFloat(value)||0;
+  } else {
+    _imPartials[idx][field]=value||'';
+  }
+  _updatePartialTotals();
+}
+
+function _updatePartialTotals(){
+  const invoiceTotal=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
+  const paidTotal=_imPartials.reduce((s,p)=>s+(+p.amount||0),0);
+  const balance=invoiceTotal-paidTotal;
+  const fmt=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const itEl=document.getElementById('im-partial-invoice-total');
+  const ptEl=document.getElementById('im-partial-paid-total');
+  const bEl=document.getElementById('im-partial-balance');
+  if(itEl) itEl.textContent=fmt(invoiceTotal);
+  if(ptEl) ptEl.textContent=fmt(paidTotal);
+  if(bEl){
+    bEl.textContent=fmt(balance);
+    bEl.style.color=balance===0?'#2D7D5F':(balance<0?'#C62B2B':'#B8860B');
+  }
+  // Show "complete" hint when paid = invoice total (with tolerance for floating point)
+  const hint=document.getElementById('im-partial-complete-hint');
+  if(hint){
+    hint.style.display=(invoiceTotal>0 && Math.abs(balance)<0.01)?'block':'none';
+  }
 }
 
 // In-memory items being edited in the modal
@@ -6990,6 +7167,10 @@ function recalcInvoiceItemsTotal(){
   const tot=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
   const el=document.getElementById('im-items-total');
   if(el) el.textContent=fmt(tot);
+  // Also update partial payments totals if visible
+  if(document.getElementById('im-partial-wrap')?.style.display!=='none'){
+    _updatePartialTotals();
+  }
 }
 
 // v8.51: when project changes in invoice modal, auto-fill property address if empty
@@ -7010,6 +7191,7 @@ function openInvoiceModal(id){
   _populateParentInvoiceDropdown(id);
   document.getElementById('im-id').value=id||'';
   const title=document.getElementById('im-title');
+  _imPartials=[]; // reset partial payments
   if(id){
     const inv=_invoiceById(id);
     if(!inv) return;
@@ -7036,6 +7218,15 @@ function openInvoiceModal(id){
       _imItems=inv.description||inv.amount
         ? [{description:inv.description||'',amount:+inv.amount||0}]
         : [];
+    }
+    // Load partial payments if status is partial_paid
+    if(inv.status==='partial_paid' && invoicePayments[id]){
+      _imPartials=invoicePayments[id].map(p=>({
+        id:p.id,
+        amount:+p.amount||0,
+        method:p.payment_method||'',
+        date:p.payment_date||''
+      }));
     }
   } else {
     title.textContent='➕ New Invoice';
@@ -7181,8 +7372,72 @@ async function saveInvoice(){
   if(dupe){
     if(!confirm('Invoice #'+numRaw+' already exists. Continue anyway?')) return;
   }
-  const status=document.getElementById('im-status').value||'open';
+  let status=document.getElementById('im-status').value||'open';
   const kind=document.getElementById('im-kind').value||'operational';
+
+  // ─── PARTIAL PAID: validate + auto-promote to Paid if complete ──────
+  let partialPayments=[];
+  if(status==='partial_paid'){
+    // Filter out empty rows; validate the rest
+    partialPayments=_imPartials
+      .filter(p=>p.amount>0 || p.method || p.date)
+      .map(p=>({
+        id:p.id||null,
+        amount:Math.round((+p.amount||0)*100)/100,
+        method:(p.method||'').trim(),
+        date:(p.date||'').trim()
+      }));
+    if(partialPayments.length===0){
+      toast('Adicione pelo menos um pagamento parcial',false);
+      return;
+    }
+    const bad=partialPayments.find(p=>!p.amount||p.amount<=0||!p.method||!p.date);
+    if(bad){
+      toast('Cada pagamento parcial precisa de valor > 0, método e data',false);
+      return;
+    }
+    const paidSum=partialPayments.reduce((s,p)=>s+p.amount,0);
+    if(paidSum>totalAmount+0.01){
+      toast(`Total dos pagamentos ($${paidSum.toFixed(2)}) excede o valor da invoice ($${totalAmount.toFixed(2)})`,false);
+      return;
+    }
+    // Auto-promote to Paid if sum matches invoice total
+    if(Math.abs(paidSum-totalAmount)<0.01){
+      status='paid';
+      // Use the most recent partial payment as the "main" payment method/date
+      const last=partialPayments[partialPayments.length-1];
+      // Set the modal fields so saveInvoice payload picks them up
+      document.getElementById('im-payment-method').value=last.method;
+      document.getElementById('im-paid-date').value=last.date;
+    }
+  }
+
+  // ─── EDIT EXISTING: alert if value changed and had partial payments ──
+  if(id){
+    const existingInv=_invoiceById(id);
+    if(existingInv && existingInv.status==='partial_paid'){
+      const existingTotal=+existingInv.amount||0;
+      if(Math.abs(existingTotal-totalAmount)>0.01 && status==='partial_paid'){
+        // Value changed and still partial — that's fine
+      } else if(Math.abs(existingTotal-totalAmount)>0.01 && status!=='partial_paid'){
+        // Value changed AND switched away from partial_paid
+        if(!confirm('⚠️ O valor da invoice mudou e o status saiu de Partial Paid.\n\nIsso vai APAGAR todos os pagamentos parciais existentes.\n\nContinuar?')){
+          return;
+        }
+      }
+    }
+  }
+
+  // ─── CANCEL: confirm if had partial payments ────────────────────────
+  if(status==='cancelled' && id){
+    const existingPayments=invoicePayments[id]||[];
+    if(existingPayments.length>0){
+      if(!confirm(`⚠️ Esta invoice tem ${existingPayments.length} pagamento(s) parcial(is) registrado(s).\n\nAo cancelar, todos os pagamentos serão removidos. Continuar?`)){
+        return;
+      }
+    }
+  }
+
   // The invoice 'description' column stores a short summary (first item description for legacy display)
   const summary=validItems.length===1?validItems[0].description:`${validItems.length} items`;
   const payload={
@@ -7230,6 +7485,30 @@ async function saveInvoice(){
     invoiceItems[invoiceId]=itemsRes.data||[];
   } else {
     invoiceItems[invoiceId]=[];
+  }
+
+  // ─── SAVE PARTIAL PAYMENTS ──────────────────────────────────────────
+  // Always delete existing payments for this invoice (simpler than diff)
+  if(id){
+    await sb.from('invoice_payments').delete().eq('invoice_id',invoiceId);
+  }
+  // If status is partial_paid OR was auto-promoted to paid from partial, insert payments
+  if(partialPayments.length>0){
+    const paymentsPayload=partialPayments.map(p=>({
+      invoice_id:invoiceId,
+      amount:p.amount,
+      payment_method:p.method,
+      payment_date:p.date,
+    }));
+    const payRes=await sb.from('invoice_payments').insert(paymentsPayload).select();
+    if(payRes.error){
+      console.error('payments save',payRes.error);
+      toast('Error saving payments: '+payRes.error.message,false);
+      return;
+    }
+    invoicePayments[invoiceId]=payRes.data||[];
+  } else {
+    invoicePayments[invoiceId]=[];
   }
   // Update local state
   if(id){
