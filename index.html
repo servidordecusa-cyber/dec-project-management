@@ -1411,6 +1411,62 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 <div id="view-financial">
   <div class="port-hdr"><div><h2>💰 Financial</h2><p style="color:var(--gray3);margin-top:4px">Management summary · all projects</p></div></div>
   <div class="home-grid" id="fin-kpis"></div>
+
+  <!-- ═══ WORKING CAPITAL CASH FLOW ═══════════════════════════════ -->
+  <div class="card" style="margin-bottom:14px;border:2px solid #5C7A3F;background:linear-gradient(135deg,#fff,#F5F8F0)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
+      <div class="card-title" style="margin:0;border:0;padding:0">💰 Working Capital · Cash Flow
+        <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">Entradas via invoices · Saídas marcadas em custos</span>
+      </div>
+      <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:6px 12px;font-size:12px">🔄 Refresh</button>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+      <div style="background:#fff;border:1px solid #5C7A3F;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:#5C7A3F;font-weight:700;text-transform:uppercase">📥 Entradas (Paid)</div>
+        <div style="font-size:20px;font-weight:800;color:#2D7D5F;margin-top:4px" id="wc-in-paid">$0</div>
+        <div style="font-size:10px;color:#999;margin-top:2px" id="wc-in-paid-count">0 invoice(s)</div>
+      </div>
+      <div style="background:#fff;border:1px solid #A86A2C;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:#A86A2C;font-weight:700;text-transform:uppercase">📥 Previstas (Open)</div>
+        <div style="font-size:20px;font-weight:800;color:#A86A2C;margin-top:4px" id="wc-in-open">$0</div>
+        <div style="font-size:10px;color:#999;margin-top:2px" id="wc-in-open-count">0 invoice(s)</div>
+      </div>
+      <div style="background:#fff;border:1px solid #C62B2B;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:#C62B2B;font-weight:700;text-transform:uppercase">📤 Saídas</div>
+        <div style="font-size:20px;font-weight:800;color:#C62B2B;margin-top:4px" id="wc-out-total">$0</div>
+        <div style="font-size:10px;color:#999;margin-top:2px" id="wc-out-count">0 lançamento(s)</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#5C7A3F,#7A9954);color:#fff;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:.9">💎 Saldo</div>
+        <div style="font-size:22px;font-weight:800;margin-top:4px" id="wc-balance">$0</div>
+        <div style="font-size:10px;opacity:.85;margin-top:2px" id="wc-balance-hint">Disponível pra usar</div>
+      </div>
+    </div>
+
+    <!-- 2 columns: inflows / outflows -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <!-- Inflows -->
+      <div style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-size:16px">📥</div>
+          <div style="font-weight:700;color:#3D271A;font-size:13px">Entradas (Invoices Working Capital)</div>
+        </div>
+        <div id="wc-inflows-list" style="max-height:300px;overflow-y:auto;font-size:12px"></div>
+      </div>
+
+      <!-- Outflows -->
+      <div style="background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-size:16px">📤</div>
+          <div style="font-weight:700;color:#3D271A;font-size:13px">Saídas (Custos marcados como WC)</div>
+        </div>
+        <div id="wc-outflows-list" style="max-height:300px;overflow-y:auto;font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
       <div class="card-title" style="margin:0;border:0;padding:0">📊 Summary by project
@@ -1657,6 +1713,13 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="fg"></div>
     </div>
     <div class="fg"><label>Notes</label><textarea id="fcm-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Additional notes..."></textarea></div>
+    <div class="fg">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input id="fcm-paid-from-wc" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#2D7D5F">
+        <span>💰 Pago com Working Capital</span>
+      </label>
+      <div style="font-size:11px;color:var(--gray3);margin-top:4px;margin-left:28px">Marca se esse custo saiu do fundo de Working Capital.</div>
+    </div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeFixedCostModal()">Cancel</button><button class="btn btn-primary" onclick="saveFixedCost()">Save →</button></div>
   </div>
 </div>
@@ -2549,7 +2612,7 @@ function buildBudgetRooms(){
       const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-${type}-${g.id}">$0</span></div>`;
       // Table header — Actual has extra 📎 column
       const thead=type==='act'
-        ? `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
+        ? `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:42px;text-align:center" title="Pago com Working Capital">💰 WC</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
         : `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:110px">Supplier</th><th style="width:55px">Qty</th><th style="width:90px">Unit Cost ($)</th><th style="width:100px">${lbl}</th><th style="width:110px">Notes</th><th style="width:40px"></th></tr></thead>`;
       card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-${type}-${g.id}"></tbody></table>
         <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
@@ -2567,7 +2630,7 @@ function renderItems(type,gid){
   if(!tb) return;
   const items=(itemsMap[CID]||{})[gid]||[];
   if(items.length===0){
-    const colspan=type==='act'?9:8;
+    const colspan=type==='act'?10:8;
     tb.innerHTML=`<tr><td colspan="${colspan}" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
     return;
   }
@@ -2579,6 +2642,10 @@ function renderItems(type,gid){
 function rowHTML(type,gid,item,islug){
   const attachCell=type==='act'
     ? `<td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="openAttach('${gid}','${encodeURIComponent(item)}','${islug}')" id="att-btn-${gid}-${islug}">📎 <span id="att-count-${gid}-${islug}">0</span></button></td>`
+    : '';
+  // WC (Working Capital) checkbox — only on Actual Costs, not Estimate
+  const wcCell=type==='act'
+    ? `<td style="text-align:center"><label style="display:inline-flex;align-items:center;cursor:pointer;font-size:11px;color:#2D7D5F" title="Pago com Working Capital"><input type="checkbox" id="bwc-${gid}-${islug}" onchange="onBWC('${gid}','${islug}',this)" style="width:16px;height:16px;cursor:pointer;accent-color:#2D7D5F"></label></td>`
     : '';
   return `<tr id="row-${type}-${gid}-${islug}">
     <td><span class="item-name" contenteditable="true" data-gid="${gid}" data-islug="${islug}" style="display:block;min-width:200px;font-size:13px;font-weight:600;outline:none;border-bottom:1px dashed transparent;padding:2px 0;line-height:1.3;word-break:break-word" onblur="renameBudgetItem('${gid}','${islug}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${item}</span></td>
@@ -2603,6 +2670,7 @@ function rowHTML(type,gid,item,islug){
         oninput="onBI('${type}','${gid}','${islug}',this)" placeholder="0"></div></td>
     <td><input class="ci" type="text" id="bc-${type}-${gid}-${islug}"
       oninput="onBC('${type}','${gid}','${islug}',this)" placeholder="Notes..."></td>
+    ${wcCell}
     ${attachCell}
     <td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 6px;font-size:14px;color:var(--red)" title="Remove item" onclick="removeItem('${gid}','${islug}')">🗑</button></td>
   </tr>`;
@@ -2635,6 +2703,9 @@ function hydrateRow(type,gid,islug){
     const cnt=((attachMap[CID]||{})[gid]||{})[islug];
     const cntEl=document.getElementById('att-count-'+gid+'-'+islug);
     if(cntEl) cntEl.textContent=(cnt||[]).length;
+    // WC checkbox
+    const wcEl=document.getElementById('bwc-'+gid+'-'+islug);
+    if(wcEl) wcEl.checked=!!d.paid_from_wc;
   }
 }
 
@@ -5899,8 +5970,138 @@ function calcProjectFinancials(pid){
   return {emd,cash,otherAcq,commission,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
 }
 
+// ═══ WORKING CAPITAL CASH FLOW ════════════════════════════════════════
+async function renderWorkingCapitalCashFlow(){
+  if(!isCEO()) return;
+
+  // ─── INFLOWS: invoices kind = 'working_capital' ─────────────────
+  const wcInvoices=(invoices||[]).filter(i=>i.kind==='working_capital'&&i.status!=='cancelled');
+  const paidIn=wcInvoices.filter(i=>i.status==='paid');
+  const openIn=wcInvoices.filter(i=>i.status==='open');
+  const inPaidTotal=paidIn.reduce((s,i)=>s+(+i.amount||0),0);
+  const inOpenTotal=openIn.reduce((s,i)=>s+(+i.amount||0),0);
+
+  // ─── OUTFLOWS: collect from 3 sources (budget_items, fixed_costs, recurring) ───
+  // 1. Budget items (Actual Costs) flagged paid_from_wc
+  let outflows=[];
+  try{
+    const {data:bi}=await sb.from('budget_items').select('*').eq('paid_from_wc',true).gt('actual',0);
+    (bi||[]).forEach(it=>{
+      const proj=projects.find(p=>p.id===it.project_id);
+      outflows.push({
+        source:'actual',
+        date:null, // budget_items doesn't have date
+        amount:+it.actual||0,
+        project:proj?(proj.name||proj.address||'?'):'?',
+        project_id:it.project_id,
+        description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+it.actual_supplier:''),
+        category:it.category||'',
+      });
+    });
+  }catch(e){console.warn('wc outflows budget_items error:',e);}
+
+  // 2. Fixed costs
+  try{
+    const {data:fc}=await sb.from('fixed_costs').select('*').eq('paid_from_wc',true);
+    (fc||[]).forEach(it=>{
+      outflows.push({
+        source:'fixed',
+        date:it.date,
+        amount:+it.amount||0,
+        project:'(Fixed Cost)',
+        project_id:null,
+        description:it.description||'',
+        category:it.category||'',
+      });
+    });
+  }catch(e){console.warn('wc outflows fixed_costs error:',e);}
+
+  // 3. Recurring detail months
+  try{
+    const {data:rd}=await sb.from('recurring_detail_months').select('*').eq('paid_from_wc',true).gt('amount',0);
+    (rd||[]).forEach(it=>{
+      const proj=projects.find(p=>p.id===it.project_id);
+      outflows.push({
+        source:'recurring',
+        date:null,
+        amount:+it.amount||0,
+        project:proj?(proj.name||proj.address||'?'):'?',
+        project_id:it.project_id,
+        description:(it.item_name||'')+' · mês '+it.month+'/ano '+(it.year_offset+1),
+        category:'recurring',
+      });
+    });
+  }catch(e){console.warn('wc outflows recurring error:',e);}
+
+  const outTotal=outflows.reduce((s,o)=>s+o.amount,0);
+
+  // Sort outflows by date desc (entries without date go last)
+  outflows.sort((a,b)=>{
+    if(!a.date && !b.date) return 0;
+    if(!a.date) return 1;
+    if(!b.date) return -1;
+    return b.date.localeCompare(a.date);
+  });
+
+  // Balance = paid in - outflows (we only count "real" money: paid invoices)
+  const balance=inPaidTotal-outTotal;
+
+  // ─── UPDATE KPIs ────────────────────────────────────────────────
+  const fmtUSD=(n)=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const setEl=(id,html)=>{const e=document.getElementById(id);if(e) e.innerHTML=html;};
+  setEl('wc-in-paid',fmtUSD(inPaidTotal));
+  setEl('wc-in-paid-count',paidIn.length+' invoice(s)');
+  setEl('wc-in-open',fmtUSD(inOpenTotal));
+  setEl('wc-in-open-count',openIn.length+' invoice(s)');
+  setEl('wc-out-total',fmtUSD(outTotal));
+  setEl('wc-out-count',outflows.length+' lançamento(s)');
+  setEl('wc-balance',fmtUSD(balance));
+  const hint=balance>=0?'Disponível pra usar':'⚠️ Saldo negativo';
+  setEl('wc-balance-hint',hint);
+
+  // ─── INFLOWS LIST ───────────────────────────────────────────────
+  const fmtDate=(d)=>d?new Date(d+'T00:00:00').toLocaleDateString('pt-BR'):'—';
+  const allIn=[...paidIn,...openIn].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(allIn.length===0){
+    setEl('wc-inflows-list','<div style="text-align:center;color:#999;padding:24px;font-style:italic">Nenhuma invoice tipo Working Capital ainda.</div>');
+  } else {
+    setEl('wc-inflows-list',allIn.map(i=>{
+      const cli=_clientById(i.client_id);
+      const statusBg=i.status==='paid'?'background:#DCEFE6;color:#2D7D5F':'background:#FFF3D9;color:#A86A2C';
+      const statusLbl=i.status==='paid'?'Paid':'Pending';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #F0EAE2;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;color:#3D271A">#${i.invoice_number} · ${(cli?cli.name:'?').replace(/</g,'&lt;')}</div>
+          <div style="font-size:11px;color:#655A4E">${fmtDate(i.date)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800;color:#2D7D5F">${fmtUSD(i.amount)}</div>
+          <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;${statusBg}">${statusLbl}</span>
+        </div>
+      </div>`;
+    }).join(''));
+  }
+
+  // ─── OUTFLOWS LIST ──────────────────────────────────────────────
+  if(outflows.length===0){
+    setEl('wc-outflows-list','<div style="text-align:center;color:#999;padding:24px;font-style:italic">Nenhum custo marcado como pago com Working Capital ainda.<br><br>Pra marcar: edita um Actual Cost, Fixed Cost ou Recurring (Shift+click) com a flag WC.</div>');
+  } else {
+    setEl('wc-outflows-list',outflows.map(o=>{
+      const srcIcon=o.source==='actual'?'🔨':o.source==='fixed'?'📌':o.source==='recurring'?'🔄':'·';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #F0EAE2;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;color:#3D271A;font-size:12px">${srcIcon} ${o.description.replace(/</g,'&lt;')}</div>
+          <div style="font-size:11px;color:#655A4E">${o.project.replace(/</g,'&lt;')}${o.date?' · '+fmtDate(o.date):''}</div>
+        </div>
+        <div style="font-weight:800;color:#C62B2B;text-align:right">-${fmtUSD(o.amount)}</div>
+      </div>`;
+    }).join(''));
+  }
+}
+
 function renderFinancial(){
   if(!isCEO()) return;
+  renderWorkingCapitalCashFlow();
   const q=(document.getElementById('fin-search')?.value||'').toLowerCase().trim();
   const statusFlt=document.getElementById('fin-flt-status')?.value||'';
   let list=projects.slice();
@@ -6397,6 +6598,7 @@ function openFixedCostModal(id){
     document.getElementById('fcm-description').value=f.description||'';
     document.getElementById('fcm-amount').value=f.amount||'';
     document.getElementById('fcm-notes').value=f.notes||'';
+    document.getElementById('fcm-paid-from-wc').checked=!!f.paid_from_wc;
   } else {
     title.textContent='➕ New Fixed Cost';
     document.getElementById('fcm-date').value=new Date().toISOString().slice(0,10);
@@ -6404,6 +6606,7 @@ function openFixedCostModal(id){
     ['fcm-description','fcm-amount','fcm-notes'].forEach(k=>{
       const el=document.getElementById(k);if(el) el.value='';
     });
+    document.getElementById('fcm-paid-from-wc').checked=false;
   }
   document.getElementById('modal-fixed').classList.add('open');
   setTimeout(()=>document.getElementById('fcm-description').focus(),50);
@@ -6428,6 +6631,7 @@ async function saveFixedCost(){
     date,category,description,
     amount:Math.round(amount*100)/100,
     notes:document.getElementById('fcm-notes').value||'',
+    paid_from_wc:!!document.getElementById('fcm-paid-from-wc').checked,
   };
   let result;
   if(id){
@@ -8099,13 +8303,16 @@ async function loadRecurringDetailData(){
   recurringMap[CID]={};
   (metaRes.data||[]).forEach(r=>{
     recurringMap[CID][r.item_name]={
-      company:r.company||'',account:r.account||'',notes:r.notes||'',months:{}
+      company:r.company||'',account:r.account||'',notes:r.notes||'',months:{},wc_flags:{}
     };
   });
   (monthsRes.data||[]).forEach(r=>{
-    if(!recurringMap[CID][r.item_name]) recurringMap[CID][r.item_name]={months:{}};
+    if(!recurringMap[CID][r.item_name]) recurringMap[CID][r.item_name]={months:{},wc_flags:{}};
     if(!recurringMap[CID][r.item_name].months) recurringMap[CID][r.item_name].months={};
-    recurringMap[CID][r.item_name].months[_rcKey(r.year_offset,r.month)]=+r.amount||0;
+    if(!recurringMap[CID][r.item_name].wc_flags) recurringMap[CID][r.item_name].wc_flags={};
+    const key=_rcKey(r.year_offset,r.month);
+    recurringMap[CID][r.item_name].months[key]=+r.amount||0;
+    if(r.paid_from_wc) recurringMap[CID][r.item_name].wc_flags[key]=true;
   });
 }
 
@@ -8221,15 +8428,22 @@ function renderRecurringDetail(){
   tbody.innerHTML=RC_ITEMS.map(itemName=>{
     const row=data[itemName]||{months:{}};
     const months=row.months||{};
+    const wcFlags=row.wc_flags||{};
     // Cells for the 12 months of the active year
     const monthCells=[];
     for(let m=1;m<=12;m++){
-      const val=months[_rcKey(yOff,m)];
+      const key=_rcKey(yOff,m);
+      const val=months[key];
       const displayVal=(val==null||val===0)?'':val;
-      monthCells.push(`<td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
+      const isWC=!!wcFlags[key];
+      const wcStyle=isWC?'background:#DCEFE6;border-color:#2D7D5F;':'';
+      const wcTitle=isWC?'💰 Pago com Working Capital (Shift+click pra desmarcar)':'Shift+click pra marcar como pago com WC';
+      monthCells.push(`<td style="padding:4px 2px;border-bottom:1px solid #F0EAE2;position:relative" title="${wcTitle}">
         <input type="number" min="0" step="0.01" value="${displayVal}" placeholder="0"
           oninput="updateRCDMonth('${itemName.replace(/'/g,"\\'")}',${yOff},${m},this.value)"
-          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;text-align:right">
+          onclick="onRCDCellClick(event,'${itemName.replace(/'/g,"\\'")}',${yOff},${m})"
+          style="padding:5px 6px;font-size:12px;border:1px solid ${isWC?'#2D7D5F':'var(--gray2)'};border-radius:5px;outline:none;width:100%;text-align:right;${wcStyle}">
+        ${isWC?'<span style="position:absolute;top:1px;right:4px;font-size:8px;color:#2D7D5F;font-weight:800;pointer-events:none">💰</span>':''}
       </td>`);
     }
     // Subtotal of THIS year (12 cells)
@@ -8333,7 +8547,9 @@ async function saveRCDMonth(itemName,yearOffset,month){
   if(!CID||!isCEO()) return;
   const row=recurringMap[CID][itemName]||{months:{}};
   const months=row.months||{};
-  const amount=months[_rcKey(yearOffset,month)];
+  const wcFlags=row.wc_flags||{};
+  const key=_rcKey(yearOffset,month);
+  const amount=months[key];
   if(amount==null){
     // Delete the row instead of upserting amount=0/null
     const {error}=await sb.from('recurring_detail_months')
@@ -8341,6 +8557,9 @@ async function saveRCDMonth(itemName,yearOffset,month){
       .eq('project_id',CID).eq('item_name',itemName)
       .eq('year_offset',yearOffset).eq('month',month);
     if(error){console.error('rcd month delete',error);toast('Error saving',false);return;}
+    // Also clear WC flag locally
+    delete wcFlags[key];
+    if(row.wc_flags) delete row.wc_flags[key];
   } else {
     const payload={
       project_id:CID,
@@ -8348,6 +8567,7 @@ async function saveRCDMonth(itemName,yearOffset,month){
       year_offset:yearOffset,
       month:month,
       amount:amount,
+      paid_from_wc:!!wcFlags[key],
       updated_at:new Date().toISOString(),
     };
     const {error}=await sb.from('recurring_detail_months')
@@ -8363,6 +8583,29 @@ async function saveRCDMonth(itemName,yearOffset,month){
     recurringMap[CID][itemName].__metaSaved=true;
   }
   showSaved();
+}
+
+// Shift+click on a recurring cell toggles "Paid from Working Capital"
+async function onRCDCellClick(event,itemName,yearOffset,month){
+  if(!event.shiftKey) return;
+  event.preventDefault();
+  if(!CID||!isCEO()) return;
+  if(!recurringMap[CID]) recurringMap[CID]={};
+  if(!recurringMap[CID][itemName]) recurringMap[CID][itemName]={months:{},wc_flags:{}};
+  if(!recurringMap[CID][itemName].wc_flags) recurringMap[CID][itemName].wc_flags={};
+  const wcFlags=recurringMap[CID][itemName].wc_flags;
+  const months=recurringMap[CID][itemName].months||{};
+  const key=_rcKey(yearOffset,month);
+  // Only allow marking if there's an amount > 0
+  if(!months[key]||months[key]<=0){
+    toast('Marque com Working Capital apenas células com valor > 0',false);
+    return;
+  }
+  wcFlags[key]=!wcFlags[key];
+  // Persist
+  await saveRCDMonth(itemName,yearOffset,month);
+  // Re-render to update visuals
+  renderRecurringDetail();
 }
 
 function recalcRCDTotals(){
@@ -8609,7 +8852,7 @@ function _itemName(roomId,islug){
 function _ensureBI(roomId,islug){
   if(!budgetMap[CID]) budgetMap[CID]={};
   if(!budgetMap[CID][roomId]) budgetMap[CID][roomId]={};
-  if(!budgetMap[CID][roomId][islug]) budgetMap[CID][roomId][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,category:''};
+  if(!budgetMap[CID][roomId][islug]) budgetMap[CID][roomId][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,category:'',paid_from_wc:false};
 }
 async function _saveBI(roomId,islug){
   const d=budgetMap[CID][roomId][islug];
@@ -8619,7 +8862,8 @@ async function _saveBI(roomId,islug){
     est_supplier:d.est_supplier||'',actual_supplier:d.actual_supplier||'',
     est_qty:d.est_qty||0,actual_qty:d.actual_qty||0,
     est_unit_cost:d.est_unit_cost||0,actual_unit_cost:d.actual_unit_cost||0,
-    category:d.category||''},
+    category:d.category||'',
+    paid_from_wc:!!d.paid_from_wc},
     {onConflict:'project_id,room_id,item_slug'});
   showSaved();
 }
@@ -8696,6 +8940,13 @@ async function onBCat(type,roomId,islug,el){
   const other=type==='est'?'act':'est';
   const otherEl=document.getElementById('bcat-'+other+'-'+roomId+'-'+islug);
   if(otherEl) otherEl.value=el.value||'';
+  _saveBI(roomId,islug);
+}
+
+// Working Capital flag — only on Actual rows
+async function onBWC(roomId,islug,el){
+  _ensureBI(roomId,islug);
+  budgetMap[CID][roomId][islug].paid_from_wc=el.checked;
   _saveBI(roomId,islug);
 }
 // Inline rename of item name
