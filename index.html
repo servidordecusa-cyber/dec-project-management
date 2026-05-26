@@ -4854,11 +4854,13 @@ function renderOperationalInvoicesView(){
   if(!block||!list||!subtotalEl) return;
   if(!CID||!isCEO()){block.style.display='none';return;}
   // Filter operational invoices for current project (exclude cancelled)
-  const projInvoices=invoices.filter(i=>
-    i.project_id===CID &&
-    (i.kind||'operational')==='operational' &&
-    i.status!=='cancelled'
-  ).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  // third_party_asset_manager is treated as operational (counts as revenue in DRE)
+  const projInvoices=invoices.filter(i=>{
+    if(i.project_id!==CID) return false;
+    if(i.status==='cancelled') return false;
+    const k=i.kind||'operational';
+    return k==='operational' || k==='third_party_asset_manager';
+  }).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   if(projInvoices.length===0){
     block.style.display='none';
     return;
@@ -5235,8 +5237,14 @@ function generateReport(){
     <tbody>
       ${(()=>{
         // List operational invoices (the costs the client paid via DEC invoices)
+        // Include third_party_asset_manager as it's also operational revenue
         const opInvoices=invoices
-          .filter(i=>i.project_id===CID && i.status!=='cancelled' && (i.kind||'operational')==='operational')
+          .filter(i=>{
+            if(i.project_id!==CID) return false;
+            if(i.status==='cancelled') return false;
+            const k=i.kind||'operational';
+            return k==='operational'||k==='third_party_asset_manager';
+          })
           .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
         if(opInvoices.length===0) return '';
         return opInvoices.map(inv=>{
@@ -5334,12 +5342,13 @@ function calcDREPeriod(startKey,endKey){
     if(!key||key<startKey||key>endKey) return;
     const k=inv.kind||'operational';
     if(k==='refund') return; // Refund não é receita
+    if(k==='working_capital') return; // Working Capital é fluxo de caixa, não receita
     const isPaid=inv.status==='paid';
     const v=+inv.amount||0;
     if(k==='final_roi'){
       if(isPaid) roiPaid+=v; else if(inv.status==='open') roiOpen+=v;
     } else {
-      // operational (default)
+      // operational (default) + third_party_asset_manager
       if(isPaid) opPaid+=v; else if(inv.status==='open') opOpen+=v;
     }
   });
