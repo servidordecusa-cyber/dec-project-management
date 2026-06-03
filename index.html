@@ -330,6 +330,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <div class="kpi" style="border-left-color:#7B5E8B"><label>🔧 Rehab Completed</label><div class="val" id="pk-rehab">—</div></div>
     <div class="kpi" style="border-left-color:var(--blue)"><label>🏷️ For Sale</label><div class="val" id="pk-sale">—</div></div>
     <div class="kpi" style="border-left-color:var(--gold)"><label>💰 Sold</label><div class="val" id="pk-sold">—</div></div>
+    <div class="kpi" style="border-left-color:#C62B2B"><label>⛔ Cancelled</label><div class="val" id="pk-cancelled">—</div></div>
   </div>
   <!-- Filtros de status -->
   <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center">
@@ -339,6 +340,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <button class="port-flt" data-flt="rehab_completed" onclick="setPortFilter('rehab_completed')">🔧 Rehab Completed</button>
     <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ For Sale</button>
     <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')">💰 Sold</button>
+    <button class="port-flt" data-flt="cancelled" onclick="setPortFilter('cancelled')">⛔ Cancelled</button>
     <div style="width:1px;height:24px;background:var(--gray2);margin:0 4px"></div>
     <label for="port-client-filter" style="font-size:12px;color:var(--gray3);font-weight:600">👥 Cliente:</label>
     <select id="port-client-filter" onchange="setPortClientFilter(this.value)" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:180px">
@@ -479,6 +481,21 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
           <div id="pf-research" style="margin-top:14px"></div>
+          <!-- Cancelled section -->
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
+            <div class="fg" style="background:#FDF2F0;padding:12px 14px;border-radius:8px;border:1px dashed #C62B2B">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+                <input id="pf-cancelled" type="checkbox" onchange="onCancelledToggle()" style="width:18px;height:18px;cursor:pointer;accent-color:#C62B2B">
+                <span style="font-weight:700;color:#C62B2B">⛔ Cancel this project</span>
+              </label>
+              <div style="font-size:11px;color:#655A4E;margin-top:4px;margin-left:28px">Cancelled projects are flagged but costs continue to appear in Financial reports.</div>
+              <div id="pf-cancelled-details" style="display:none;margin-top:10px;margin-left:28px">
+                <label style="font-size:11px;color:#655A4E;display:block;margin-bottom:4px">Reason (optional)</label>
+                <textarea id="pf-cancelled-reason" rows="2" placeholder="e.g. Client backed out, financing fell through..." oninput="debouncePF()" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical;background:#fff"></textarea>
+                <div id="pf-cancelled-when" style="font-size:10px;color:var(--gray3);margin-top:4px"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="card" style="margin-top:16px">
           <div class="card-title">📍 Location &amp; Utilities</div>
@@ -2615,7 +2632,7 @@ function renderPortfolio(){
     ? projects.filter(p=>filterIds.has(p.customer))
     : projects;
   // Group filtered projects by status
-  const groups={in_progress:[],completed:[],rehab_completed:[],for_sale:[],sold:[]};
+  const groups={in_progress:[],completed:[],rehab_completed:[],for_sale:[],sold:[],cancelled:[]};
   filteredProjects.forEach(p=>{
     const st=projectStatus(p.id);
     if(groups[st]) groups[st].push(p);
@@ -2624,10 +2641,14 @@ function renderPortfolio(){
   // otherwise show totals across all projects
   const totalShown=filteredProjects.length;
   const totalAll=projects.length;
+  const cancelledCount=groups.cancelled.length;
+  const activeCount=totalShown-cancelledCount;
   document.getElementById('proj-count-lbl').textContent=
     _portClientFilter
       ? `${totalShown} of ${totalAll} project${totalAll!==1?'s':''}`
-      : `${totalAll} project${totalAll!==1?'s':''}`;
+      : (cancelledCount>0
+          ? `${activeCount} of ${totalShown} active`
+          : `${totalAll} project${totalAll!==1?'s':''}`);
   document.getElementById('port-sub').textContent='Last updated: '+new Date().toLocaleString();
   document.getElementById('pk-total').textContent=totalShown;
   document.getElementById('pk-prog').textContent=groups.in_progress.length;
@@ -2636,10 +2657,12 @@ function renderPortfolio(){
   if(rehabEl) rehabEl.textContent=groups.rehab_completed.length;
   document.getElementById('pk-sale').textContent=groups.for_sale.length;
   document.getElementById('pk-sold').textContent=groups.sold.length;
+  const cancEl=document.getElementById('pk-cancelled');
+  if(cancEl) cancEl.textContent=cancelledCount;
   // Render sections (filtered)
   const wrap=document.getElementById('proj-sections');
   wrap.innerHTML='';
-  const order=['in_progress','completed','rehab_completed','for_sale','sold'];
+  const order=['in_progress','completed','rehab_completed','for_sale','sold','cancelled'];
   const visible=_portFilter==='all'?order:[_portFilter];
   visible.forEach(st=>{
     const meta=STATUS_META[st];
@@ -2738,6 +2761,8 @@ function calcPhasePct(pid,ph){
 function projectStatus(pid){
   // First check the project type
   const proj=projects.find(p=>p.id===pid);
+  // CANCELLED is final and overrides everything else
+  if(proj && proj.cancelled) return 'cancelled';
   const isRehab=proj && proj.project_type==='rehab';
   // For REHAB projects: simplified lifecycle (no purchase/sale)
   //   In Progress  →  Rehab Completed (when Gantt = 100%)
@@ -2764,6 +2789,7 @@ const STATUS_META={
   rehab_completed:  {label:'Rehab Completed', icon:'🔧', color:'#7B5E8B', bg:'#EDE5F1'},
   for_sale:         {label:'For Sale',        icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
   sold:             {label:'Sold',            icon:'💰', color:'#B8860B', bg:'#FAF3E0'},
+  cancelled:        {label:'Cancelled',       icon:'⛔', color:'#C62B2B', bg:'#FDF2F0'},
 };
 
 // Project type labels (used in dropdowns and badges)
@@ -4783,11 +4809,20 @@ function loadProjectForms(p){
     ['pf-water-acc','water_account'],
     ['pf-power-acc','power_account'],
     ['pf-type','project_type'],
+    ['pf-cancelled-reason','cancelled_reason'],
   ];
   extras.forEach(([elId,key])=>{
     const el=document.getElementById(elId);
     if(el) el.value=p[key]||'';
   });
+  // Cancelled checkbox + details visibility
+  const cancEl=document.getElementById('pf-cancelled');
+  if(cancEl){
+    cancEl.checked=!!p.cancelled;
+    const details=document.getElementById('pf-cancelled-details');
+    if(details) details.style.display=p.cancelled?'block':'none';
+  }
+  _updateCancelledDisplay();
   // Apply Rehab visibility AFTER loading the type
   applyRehabVisibility();
   // Re-render tasks for each phase (hydration happens in renderPhaseTasks)
@@ -4818,12 +4853,24 @@ async function savePF(){
   // Reflect in the read-only Project Name field
   const nameEl=document.getElementById('pf-name');
   if(nameEl) nameEl.value=syncedName;
+  const isCancelled=!!document.getElementById('pf-cancelled')?.checked;
+  // Find existing cancelled_at to preserve it (only set when transitioning false → true)
+  const existing=projects.find(x=>x.id===CID)||{};
+  let cancelledAt=existing.cancelled_at||null;
+  if(isCancelled && !existing.cancelled){
+    cancelledAt=new Date().toISOString(); // first time being cancelled
+  } else if(!isCancelled){
+    cancelledAt=null; // un-cancelled
+  }
   const payload={name:syncedName,customer:v('pf-customer'),pm:v('pf-pm'),
     address:address,start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
     zip_code:v('pf-zip'),county:v('pf-county'),building_permit:v('pf-permit'),
     water_account:v('pf-water-acc'),
     power_account:v('pf-power-acc'),
-    project_type:v('pf-type')||null};
+    project_type:v('pf-type')||null,
+    cancelled:isCancelled,
+    cancelled_reason:isCancelled?(v('pf-cancelled-reason')||null):null,
+    cancelled_at:cancelledAt};
   await sb.from('projects').update(payload).eq('id',CID);
   const i=projects.findIndex(x=>x.id===CID);
   if(i>=0) projects[i]={...projects[i],...payload};
@@ -4839,9 +4886,40 @@ async function savePF(){
   // Sync address into the Listing Checklist read-only address field if visible
   const lcAddrEl=document.getElementById('lc-address');
   if(lcAddrEl) lcAddrEl.value=address;
+  // Update "Cancelled at" display
+  _updateCancelledDisplay();
   // Apply Rehab-specific visibility (hide purchase/sale sections)
   applyRehabVisibility();
   showSaved();
+}
+
+// Show/hide the reason textarea when cancelled checkbox toggles
+function onCancelledToggle(){
+  const checked=document.getElementById('pf-cancelled')?.checked;
+  const details=document.getElementById('pf-cancelled-details');
+  if(details) details.style.display=checked?'block':'none';
+  if(checked){
+    // Confirm before marking as cancelled (cannot easily undo costs already incurred)
+    if(!confirm('⛔ Marcar este projeto como CANCELADO?\n\nO projeto aparecerá na seção Cancelled do Dashboard. Os custos continuarão aparecendo nos relatórios financeiros (como perda).')){
+      document.getElementById('pf-cancelled').checked=false;
+      if(details) details.style.display='none';
+      return;
+    }
+  }
+  savePF();
+}
+
+// Update the "Cancelled at" timestamp display
+function _updateCancelledDisplay(){
+  const el=document.getElementById('pf-cancelled-when');
+  if(!el || !CID) return;
+  const proj=projects.find(p=>p.id===CID);
+  if(proj && proj.cancelled && proj.cancelled_at){
+    const d=new Date(proj.cancelled_at);
+    el.textContent='⛔ Cancelado em '+d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  } else {
+    el.textContent='';
+  }
 }
 
 // When project_type = 'rehab', hide the Property & Finance + Listing Checklist
