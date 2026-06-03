@@ -8560,26 +8560,50 @@ function findActualDuplicates(projectId, amount, supplier, excludeKeys){
       // Skip the row being edited
       if(excludeKeys && excludeKeys.gid===g.id && excludeKeys.islug===islug) return;
       const rowAmount=+d.actual||0;
-      if(rowAmount<=0) return;
+      const rowUnitCost=+d.actual_unit_cost||0;
+      const rowQty=+d.actual_qty||0;
+      // Need at least some value tracked
+      if(rowAmount<=0 && rowUnitCost<=0) return;
       const rowSupplier=(d.actual_supplier||'').trim();
       if(!rowSupplier) return;
       const supplierMatch=_supplierMatches(rowSupplier, supplier);
-      // Match value with tolerance for floating point (1 cent)
-      const amountMatch=Math.abs(rowAmount-amount)<0.01;
-      if(window.DEBUG_DUPLICATES){
-        console.log(`  [row ${g.id}/${islug}] amount=${rowAmount} (match=${amountMatch}) supplier="${rowSupplier}" (match=${supplierMatch})`);
-      }
-      if(!amountMatch) return;
       if(!supplierMatch) return;
+      // Match the amount against MULTIPLE possible signatures:
+      //   1. actual_unit_cost matches → individual note amount
+      //   2. actual matches → single-entry item
+      //   3. amount × qty matches actual → matches one of multiple equal entries
+      const matchesUnitCost = rowUnitCost>0 && Math.abs(rowUnitCost-amount)<0.01;
+      const matchesActual = rowAmount>0 && Math.abs(rowAmount-amount)<0.01;
+      // Check if rowAmount is a multiple of the new amount (signals previously merged duplicates)
+      const matchesMultiple = rowAmount>0 && amount>0 && rowQty>1
+        && Math.abs(rowAmount-(amount*rowQty))<0.01;
+      const anyMatch = matchesUnitCost || matchesActual || matchesMultiple;
+      if(window.DEBUG_DUPLICATES){
+        console.log(`  [row ${g.id}/${islug}] actual=${rowAmount} unit=${rowUnitCost} qty=${rowQty} | unitMatch=${matchesUnitCost} actualMatch=${matchesActual} multipleMatch=${matchesMultiple} supplier="${rowSupplier}" (match=${supplierMatch})`);
+      }
+      if(!anyMatch) return;
       // Get item name from itemsMap
       const items=(itemsMap[projectId]||{})[g.id]||[];
       const item=items.find(i=>i.slug===islug);
+      // Show the most informative amount in the duplicate message
+      let displayAmount, displayNote;
+      if(matchesUnitCost && rowQty>1){
+        displayAmount=rowUnitCost;
+        displayNote=` (${rowQty}x lançadas, total ${'$'+rowAmount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})})`;
+      } else if(matchesMultiple){
+        displayAmount=amount;
+        displayNote=` (${rowQty}x lançadas — total ${'$'+rowAmount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})})`;
+      } else {
+        displayAmount=rowAmount;
+        displayNote='';
+      }
       matches.push({
         gid:g.id,
         groupName:g.name,
         item_name:item?item.name:islug,
-        amount:rowAmount,
+        amount:displayAmount,
         supplier_name:vendorName(rowSupplier)||rowSupplier,
+        note:displayNote,
       });
     });
   });
@@ -8637,7 +8661,7 @@ function formatDuplicateMessage(source, dups){
   msg+=`Já existe ${dups.length===1?'um lançamento parecido':dups.length+' lançamentos parecidos'} nesse projeto:\n\n`;
   dups.slice(0,5).forEach(d=>{
     if(source==='actual'){
-      msg+=`• ${d.groupName} — ${d.item_name}\n  ${fmt(d.amount)} · ${d.supplier_name}\n`;
+      msg+=`• ${d.groupName} — ${d.item_name}\n  ${fmt(d.amount)} · ${d.supplier_name}${d.note||''}\n`;
     } else if(source==='recurring'){
       msg+=`• ${d.itemName} (${d.monthLabel})\n  ${fmt(d.amount)} · ${d.company}\n`;
     }
