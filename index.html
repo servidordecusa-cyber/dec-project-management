@@ -3583,6 +3583,7 @@ async function vendorNoteCreateVendor() {
   const ex = _vnCurrent.extracted || {};
   const name = (ex.vendor || '').trim();
   if (!name) { toast('Nome do vendor vazio', false); return; }
+  // Exact match (case-insensitive) — already auto-selected
   const existing = (vendors || []).find(v => (v.name || '').toLowerCase() === name.toLowerCase());
   if (existing) {
     _vnCurrent.vendor_id_to_use = existing.id;
@@ -3590,6 +3591,24 @@ async function vendorNoteCreateVendor() {
     document.getElementById('vn-vendor-new-row').style.display = 'none';
     toast('Vendor já existia — selecionado', true);
     return;
+  }
+  // Fuzzy match (Home Depot vs HOME DEPOT LLC etc) — show chooser
+  const matches = findSimilarEntities(name, vendors, null);
+  if (matches.length > 0) {
+    const choice = await showDuplicateChooser(name, matches, 'vendor');
+    if (choice === '__cancel__') return;
+    if (choice !== '__create__') {
+      // User picked an existing similar vendor
+      const picked = vendors.find(v => v.id === choice);
+      if (picked) {
+        _vnCurrent.vendor_id_to_use = picked.id;
+        document.getElementById('vn-vendor-select').value = picked.id;
+        document.getElementById('vn-vendor-new-row').style.display = 'none';
+        toast('Usando "' + picked.name + '" em vez de criar duplicata', true);
+      }
+      return;
+    }
+    // '__create__' falls through
   }
   const { data, error } = await sb.from('vendors').insert({ name }).select().single();
   if (error) { console.error('create vendor', error); toast('Erro ao criar vendor', false); return; }
@@ -8546,6 +8565,174 @@ async function loadVendors(){
 
 function _vendorById(id){return vendors.find(v=>v.id===id);}
 
+// ═══ NAME NORMALIZATION + FUZZY MATCH ═════════════════════════════════
+// Used for client/vendor duplicate detection.
+
+// Common business suffixes to strip when normalizing
+const _BIZ_SUFFIXES=[
+  'llc','l.l.c','inc','incorporated','corp','corporation','co','company',
+  'ltd','limited','lp','llp','plc','sa','s.a','sl','gmbh','ag','bv','pty',
+  'group','holdings','holding','industries','enterprises','partners',
+  'services','solutions','systems','international','intl','usa','us','of'
+];
+
+/**
+ * Normalize a name for matching: lowercase, strip accents, remove suffixes,
+ * remove punctuation, collapse whitespace.
+ */
+function _normName(name){
+  if(!name) return '';
+  let s=String(name)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // remove accents
+    .replace(/[.,;:'"!?()&\-\/\\]/g,' ')              // remove punctuation
+    .replace(/\s+/g,' ').trim();
+  // Remove standalone business suffix words
+  const tokens=s.split(' ').filter(t=>t && !_BIZ_SUFFIXES.includes(t));
+  return tokens.join(' ').trim();
+}
+
+/**
+ * Compute Levenshtein distance between two strings (case-sensitive — feed
+ * already-normalized strings here).
+ */
+function _levenshtein(a, b){
+  if(a===b) return 0;
+  if(!a.length) return b.length;
+  if(!b.length) return a.length;
+  const matrix=[];
+  for(let i=0;i<=b.length;i++){matrix[i]=[i];}
+  for(let j=0;j<=a.length;j++){matrix[0][j]=j;}
+  for(let i=1;i<=b.length;i++){
+    for(let j=1;j<=a.length;j++){
+      if(b.charAt(i-1)===a.charAt(j-1)){
+        matrix[i][j]=matrix[i-1][j-1];
+      } else {
+        matrix[i][j]=Math.min(
+          matrix[i-1][j-1]+1, // substitution
+          matrix[i][j-1]+1,   // insertion
+          matrix[i-1][j]+1    // deletion
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+/**
+ * Similarity ratio 0..1 (1 = identical, 0 = nothing alike).
+ */
+function _similarity(a, b){
+  if(!a && !b) return 1;
+  if(!a || !b) return 0;
+  const maxLen=Math.max(a.length, b.length);
+  if(maxLen===0) return 1;
+  return 1-(_levenshtein(a, b)/maxLen);
+}
+
+/**
+ * Find similar entities to `inputName` in `list` (array of {id, name}).
+ * Returns sorted matches: [{id, name, score, kind: 'exact'|'fuzzy'}]
+ * - 'exact': matches after normalization
+ * - 'fuzzy': similarity >= 0.85 OR one name fully contains the other
+ */
+function findSimilarEntities(inputName, list, excludeId){
+  if(!inputName || !list || !list.length) return [];
+  const inputNorm=_normName(inputName);
+  if(!inputNorm) return [];
+  const results=[];
+  list.forEach(item=>{
+    if(!item.name) return;
+    if(excludeId && item.id===excludeId) return;
+    const itemNorm=_normName(item.name);
+    if(!itemNorm) return;
+    // Exact normalized match
+    if(itemNorm===inputNorm){
+      results.push({id:item.id, name:item.name, score:1, kind:'exact'});
+      return;
+    }
+    // Substring containment (e.g. "Home Depot" matches "Home Depot Pro Services")
+    if(itemNorm.length>=3 && inputNorm.length>=3){
+      if(itemNorm.includes(inputNorm) || inputNorm.includes(itemNorm)){
+        results.push({id:item.id, name:item.name, score:0.95, kind:'fuzzy'});
+        return;
+      }
+    }
+    // Levenshtein similarity threshold
+    const sim=_similarity(itemNorm, inputNorm);
+    if(sim>=0.85){
+      results.push({id:item.id, name:item.name, score:sim, kind:'fuzzy'});
+    }
+  });
+  // Sort: exact first, then by score descending
+  results.sort((a,b)=>{
+    if(a.kind==='exact' && b.kind!=='exact') return -1;
+    if(b.kind==='exact' && a.kind!=='exact') return 1;
+    return b.score-a.score;
+  });
+  return results.slice(0, 5); // top 5
+}
+
+/**
+ * Build a HTML message for a possible-duplicate confirmation modal.
+ * Returns the inner HTML to inject into the modal body.
+ */
+function _buildDuplicateChooserHtml(inputName, matches, entityType){
+  const typeLabel=entityType==='vendor'?'fornecedor':'cliente';
+  let html=`<div style="padding:18px">
+    <div style="font-size:14px;color:#3D271A;margin-bottom:14px;line-height:1.5">
+      Você está cadastrando <strong>"${inputName.replace(/</g,'&lt;')}"</strong> mas já existe ${matches.length===1?'um '+typeLabel:matches.length+' '+typeLabel+'s'} parecido${matches.length>1?'s':''}:
+    </div>
+    <div style="background:#FFF8E7;border:1.5px dashed #B8860B;border-radius:8px;padding:12px;margin-bottom:16px;max-height:280px;overflow-y:auto">`;
+  matches.forEach(m=>{
+    const badge=m.kind==='exact'
+      ? `<span style="background:#DCEFE6;color:#2D7D5F;padding:2px 8px;border-radius:9px;font-size:10px;font-weight:700;margin-left:8px">✓ MATCH EXATO</span>`
+      : `<span style="background:#FFF3D9;color:#A86A2C;padding:2px 8px;border-radius:9px;font-size:10px;font-weight:700;margin-left:8px">~ ${Math.round(m.score*100)}%</span>`;
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #F0EAE2">
+      <div>
+        <strong style="color:#3D271A">${m.name.replace(/</g,'&lt;')}</strong>${badge}
+      </div>
+      <button onclick="_dupChooserPick('${m.id}')" style="background:#3D271A;color:#fff;border:0;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">Usar este</button>
+    </div>`;
+  });
+  html+=`</div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+      <button onclick="_dupChooserPick('__cancel__')" style="background:transparent;border:1px solid var(--gray2);color:#655A4E;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">Cancelar</button>
+      <button onclick="_dupChooserPick('__create__')" style="background:#B8860B;color:#fff;border:0;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">+ Criar novo mesmo assim</button>
+    </div>
+  </div>`;
+  return html;
+}
+
+// Promise-based modal: returns selected id, '__cancel__', or '__create__'
+let _dupChooserResolver=null;
+function _dupChooserPick(value){
+  if(_dupChooserResolver){
+    _dupChooserResolver(value);
+    _dupChooserResolver=null;
+  }
+  const m=document.getElementById('modal-dup-chooser');
+  if(m) m.remove();
+}
+function showDuplicateChooser(inputName, matches, entityType){
+  return new Promise(resolve=>{
+    _dupChooserResolver=resolve;
+    // Build modal
+    const modal=document.createElement('div');
+    modal.id='modal-dup-chooser';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML=`<div style="background:#fff;border-radius:12px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+      <div style="background:linear-gradient(135deg,#FFF8E7,#F5EBDA);padding:16px 20px;border-bottom:1px solid #E8DDC9">
+        <div style="font-size:16px;font-weight:800;color:#3D271A">⚠️ Possível duplicata detectada</div>
+      </div>
+      ${_buildDuplicateChooserHtml(inputName, matches, entityType)}
+    </div>`;
+    // Click outside cancels
+    modal.onclick=(e)=>{ if(e.target===modal) _dupChooserPick('__cancel__'); };
+    document.body.appendChild(modal);
+  });
+}
+
 // ═══ DUPLICATE DETECTION ══════════════════════════════════════════════
 // Centralized helpers to detect potentially duplicated cost entries.
 // Returns array of matching items (empty = no duplicates).
@@ -8821,6 +9008,29 @@ async function saveVendor(){
   const name=(document.getElementById('vm-name').value||'').trim();
   if(!name){toast('Name do fornecedor é obrigatório',false);return;}
   const id=document.getElementById('vm-id').value;
+  // ─── DUPLICATE DETECTION ──────────────────────────────────────
+  let existingName='';
+  if(id){
+    const existing=vendors.find(v=>v.id===id);
+    existingName=(existing&&existing.name)||'';
+  }
+  const nameChanged=_normName(name)!==_normName(existingName);
+  if(nameChanged){
+    const matches=findSimilarEntities(name, vendors, id||null);
+    if(matches.length>0){
+      const choice=await showDuplicateChooser(name, matches, 'vendor');
+      if(choice==='__cancel__') return;
+      if(choice!=='__create__'){
+        // User picked an existing vendor — close modal and toast
+        closeVendorModal();
+        const picked=vendors.find(v=>v.id===choice);
+        if(picked){
+          toast('Usando "'+picked.name+'" em vez de criar duplicata',true);
+        }
+        return;
+      }
+    }
+  }
   const payload={
     name,
     specialty:document.getElementById('vm-specialty').value||'',
@@ -9197,6 +9407,41 @@ async function saveClient(){
   const name=(document.getElementById('cm-name').value||'').trim();
   if(!name){toast('Name do cliente é obrigatório',false);return;}
   const id=document.getElementById('cm-id').value;
+  // ─── DUPLICATE DETECTION (only on CREATE or when name changed) ──
+  let existingName='';
+  if(id){
+    const existing=clients.find(c=>c.id===id);
+    existingName=(existing&&existing.name)||'';
+  }
+  const nameChanged=_normName(name)!==_normName(existingName);
+  if(nameChanged){
+    const matches=findSimilarEntities(name, clients, id||null);
+    if(matches.length>0){
+      const choice=await showDuplicateChooser(name, matches, 'client');
+      if(choice==='__cancel__') return;
+      if(choice!=='__create__'){
+        // User picked an existing client — switch to using that one instead
+        // Close current modal, open the chosen client for review
+        closeClientModal();
+        const picked=clients.find(c=>c.id===choice);
+        if(picked){
+          toast('Usando "'+picked.name+'" em vez de criar duplicata',true);
+          // If a project modal had a client field expecting a new client, set it
+          const npEl=document.getElementById('np-customer');
+          if(npEl){
+            npEl.value=picked.id;
+          }
+          const pfEl=document.getElementById('pf-customer');
+          if(pfEl && CID){
+            pfEl.value=picked.id;
+            savePF();
+          }
+        }
+        return;
+      }
+      // '__create__' falls through — user confirmed creating a new one
+    }
+  }
   const payload={
     name,
     address:document.getElementById('cm-address').value||'',
