@@ -2482,7 +2482,43 @@ function goPortfolio(){goView('portfolio');}
 
 // Current active filter for portfolio
 let _portFilter='all';
-let _portClientFilter=''; // empty string = all clients
+let _portClientFilter=''; // empty string = all clients; can be a client.id OR 'group:joel'
+
+// Client groups: visually combine multiple client companies under one "owner"
+// (does NOT change anything in the database — just affects the Projects filter)
+const CLIENT_GROUPS=[
+  {
+    key:'joel',
+    label:'Joel',
+    members:['Avena Investments LLC','Carolina Treche','Urutau Investments LLC','Urutu Investments LLC'],
+  },
+];
+
+// Build a Set of all client NAMES that are part of any group (used to hide them
+// from the individual dropdown options, since they're represented by the group)
+function _clientNamesInGroups(){
+  const s=new Set();
+  CLIENT_GROUPS.forEach(g=>g.members.forEach(n=>s.add(n)));
+  return s;
+}
+
+// Resolve a filter value (either client.id or 'group:<key>') to a Set of client IDs
+function _resolveClientFilterIds(filterValue){
+  if(!filterValue) return null; // null = no filter
+  if(filterValue.startsWith('group:')){
+    const groupKey=filterValue.slice(6);
+    const group=CLIENT_GROUPS.find(g=>g.key===groupKey);
+    if(!group) return new Set();
+    // Find all client IDs whose name is in the group's members list
+    const ids=new Set();
+    clients.forEach(c=>{
+      if(group.members.includes(c.name)) ids.add(c.id);
+    });
+    return ids;
+  }
+  // Single client ID
+  return new Set([filterValue]);
+}
 
 function setPortFilter(f){
   _portFilter=f;
@@ -2498,7 +2534,8 @@ function setPortClientFilter(clientId){
   renderPortfolio();
 }
 
-// Populate client dropdown with all clients that have at least one project
+// Populate client dropdown with all clients that have at least one project,
+// plus any groups whose members appear in the project list
 function _populatePortClientFilter(){
   const sel=document.getElementById('port-client-filter');
   if(!sel) return;
@@ -2507,22 +2544,49 @@ function _populatePortClientFilter(){
   projects.forEach(p=>{
     if(p.customer) clientIdsWithProjects.add(p.customer);
   });
-  // Build sorted list of client {id, name}
-  const list=Array.from(clientIdsWithProjects)
+  // Names that are part of groups (to hide from individual list)
+  const groupedNames=_clientNamesInGroups();
+  // Build sorted list of INDIVIDUAL clients (excluding those in groups)
+  const individuals=Array.from(clientIdsWithProjects)
     .map(cid=>{
       const c=clients.find(cl=>cl.id===cid);
       return c?{id:c.id,name:c.name||'(sem nome)'}:null;
     })
     .filter(Boolean)
+    .filter(c=>!groupedNames.has(c.name)) // hide grouped ones
     .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  // Build list of ACTIVE groups (at least 1 member has a project)
+  const activeGroups=CLIENT_GROUPS.filter(g=>{
+    return clients.some(c=>g.members.includes(c.name) && clientIdsWithProjects.has(c.id));
+  }).map(g=>{
+    // Count how many member companies actually have projects
+    const memberCount=clients.filter(c=>g.members.includes(c.name) && clientIdsWithProjects.has(c.id)).length;
+    return {key:'group:'+g.key, label:'👤 '+g.label+' ('+memberCount+' empresa'+(memberCount!==1?'s':'')+')'};
+  }).sort((a,b)=>a.label.localeCompare(b.label));
   const currentValue=sel.value;
-  sel.innerHTML='<option value="">Todos os clientes</option>'+
-    list.map(c=>`<option value="${c.id}">${c.name.replace(/</g,'&lt;')}</option>`).join('');
+  // Render: All + Groups (highlighted) + Individuals
+  let html='<option value="">Todos os clientes</option>';
+  if(activeGroups.length>0){
+    html+='<optgroup label="Grupos">';
+    activeGroups.forEach(g=>{
+      html+=`<option value="${g.key}">${g.label.replace(/</g,'&lt;')}</option>`;
+    });
+    html+='</optgroup>';
+  }
+  if(individuals.length>0){
+    html+=activeGroups.length>0?'<optgroup label="Clientes individuais">':'';
+    individuals.forEach(c=>{
+      html+=`<option value="${c.id}">${c.name.replace(/</g,'&lt;')}</option>`;
+    });
+    if(activeGroups.length>0) html+='</optgroup>';
+  }
+  sel.innerHTML=html;
   // Restore selection if still valid
-  if(currentValue && list.some(c=>c.id===currentValue)){
+  const allValidValues=new Set(['', ...activeGroups.map(g=>g.key), ...individuals.map(c=>c.id)]);
+  if(currentValue && allValidValues.has(currentValue)){
     sel.value=currentValue;
   } else {
-    _portClientFilter=''; // reset if selected client no longer has projects
+    _portClientFilter=''; // reset if selected option no longer valid
   }
 }
 
@@ -2530,8 +2594,10 @@ function renderPortfolio(){
   // Populate the client filter dropdown (idempotent — restores selection)
   _populatePortClientFilter();
   // Apply client filter first: subset of projects to consider
-  const filteredProjects=_portClientFilter
-    ? projects.filter(p=>p.customer===_portClientFilter)
+  // The filter value can be a client.id OR 'group:<key>' — resolveClientFilterIds handles both
+  const filterIds=_resolveClientFilterIds(_portClientFilter);
+  const filteredProjects=filterIds
+    ? projects.filter(p=>filterIds.has(p.customer))
     : projects;
   // Group filtered projects by status
   const groups={in_progress:[],completed:[],for_sale:[],sold:[]};
