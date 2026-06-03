@@ -485,6 +485,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
                 <option value="mobile_home">🚐 Mobile Home</option>
                 <option value="rehab">🔧 Rehab (no purchase/sale)</option>
                 <option value="manufactured_home">🏭 Manufactured Home</option>
+                <option value="land">🌳 Land (Terreno)</option>
               </select>
             </div>
             <div class="fg"></div>
@@ -2821,6 +2822,7 @@ const PROJECT_TYPE_META={
   mobile_home:       {label:'Mobile Home',       icon:'🚐'},
   rehab:             {label:'Rehab',             icon:'🔧'},
   manufactured_home: {label:'Manufactured Home', icon:'🏭'},
+  land:              {label:'Land',              icon:'🌳'},
 };
 function calcRoomTotal(pid,type){
   const bm=budgetMap[pid]||{};
