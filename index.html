@@ -415,6 +415,17 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="page" id="page-act">
         <div class="page-title">💰 Actual Costs</div><div class="page-sub">Enter what was actually spent</div>
 
+        <!-- Vendor filter — search for a specific vendor's notes -->
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0;padding:10px 14px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;flex-wrap:wrap">
+          <span style="font-size:18px">🔍</span>
+          <label for="act-vendor-filter" style="font-size:12px;color:#655A4E;font-weight:700">Filtrar por fornecedor:</label>
+          <select id="act-vendor-filter" onchange="onActVendorFilterChange()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:220px;flex:1;max-width:300px">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+          <button id="act-vendor-clear" onclick="clearActVendorFilter()" style="display:none;padding:6px 12px;font-size:12px;background:#fff;border:1px solid var(--gray2);border-radius:6px;cursor:pointer;color:#C62B2B">✕ Limpar</button>
+          <span id="act-vendor-count" style="font-size:11px;color:var(--gray3);font-style:italic"></span>
+        </div>
+
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
             <div>
@@ -1086,6 +1097,17 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="page" id="page-recurring">
         <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
+
+        <!-- Vendor filter — search for a specific vendor's notes -->
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0;padding:10px 14px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;flex-wrap:wrap">
+          <span style="font-size:18px">🔍</span>
+          <label for="rcd-vendor-filter" style="font-size:12px;color:#655A4E;font-weight:700">Filtrar por fornecedor:</label>
+          <select id="rcd-vendor-filter" onchange="onRcdVendorFilterChange()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:220px;flex:1;max-width:300px">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+          <button id="rcd-vendor-clear" onclick="clearRcdVendorFilter()" style="display:none;padding:6px 12px;font-size:12px;background:#fff;border:1px solid var(--gray2);border-radius:6px;cursor:pointer;color:#C62B2B">✕ Limpar</button>
+          <span id="rcd-vendor-count" style="font-size:11px;color:var(--gray3);font-style:italic"></span>
+        </div>
 
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
@@ -2846,6 +2868,7 @@ function buildBudgetRooms(){
       const lbl=type==='est'?'Estimated Amount ($)':'Actual Spent ($)';
       const card=document.createElement('div');
       card.className='broom-card';
+      card.id='group-'+type+'-'+g.id;
       // Header
       const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-${type}-${g.id}">$0</span></div>`;
       // Table header — Actual has extra 📎 column
@@ -2875,6 +2898,169 @@ function renderItems(type,gid){
   tb.innerHTML=items.map(it=>rowHTML(type,gid,it.name,it.slug)).join('');
   // Hydrate values
   items.forEach(it=>hydrateRow(type,gid,it.slug));
+  // Re-apply vendor filter if active (only on Actual rows)
+  if(type==='act' && _actVendorFilter){
+    _applyActVendorFilter();
+  }
+}
+
+// ═══ ACTUAL COSTS VENDOR FILTER ═══════════════════════════════════════
+let _actVendorFilter=''; // empty = no filter
+
+function _populateActVendorFilter(){
+  const sel=document.getElementById('act-vendor-filter');
+  if(!sel) return;
+  // Collect vendors actually used in this project's actual costs
+  const usedVendorIds=new Set();
+  const bm=budgetMap[CID]||{};
+  Object.values(bm).forEach(roomData=>{
+    Object.values(roomData||{}).forEach(d=>{
+      const sup=(d.actual_supplier||'').trim();
+      if(sup) usedVendorIds.add(sup);
+    });
+  });
+  // Resolve to vendor names (sup might be UUID or legacy name)
+  const list=Array.from(usedVendorIds).map(sup=>{
+    // Check if it's a UUID format
+    if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sup)){
+      const v=vendors.find(x=>x.id===sup);
+      return v?{value:sup, name:v.name||'(no name)'}:{value:sup,name:'(vendor desconhecido)'};
+    }
+    return {value:sup, name:sup};
+  }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const current=sel.value;
+  sel.innerHTML='<option value="">— Todos os fornecedores —</option>'+
+    list.map(v=>`<option value="${v.value.replace(/"/g,'&quot;')}">${(v.name||'').replace(/</g,'&lt;')}</option>`).join('');
+  if(current && list.some(v=>v.value===current)){
+    sel.value=current;
+  } else if(current){
+    _actVendorFilter=''; // reset
+  }
+}
+
+function onActVendorFilterChange(){
+  const sel=document.getElementById('act-vendor-filter');
+  _actVendorFilter=sel?sel.value:'';
+  _applyActVendorFilter();
+}
+
+function clearActVendorFilter(){
+  _actVendorFilter='';
+  const sel=document.getElementById('act-vendor-filter');
+  if(sel) sel.value='';
+  _applyActVendorFilter();
+}
+
+function _applyActVendorFilter(){
+  const bm=budgetMap[CID]||{};
+  let shown=0, total=0;
+  // Iterate every actual row and decide if hide/show
+  GROUPS.forEach(g=>{
+    let groupShown=0, groupTotal=0;
+    const items=(itemsMap[CID]||{})[g.id]||[];
+    items.forEach(it=>{
+      const row=document.getElementById('row-act-'+g.id+'-'+it.slug);
+      if(!row) return;
+      groupTotal++;
+      total++;
+      if(!_actVendorFilter){
+        row.style.display='';
+        groupShown++;
+        shown++;
+        return;
+      }
+      const d=(bm[g.id]||{})[it.slug]||{};
+      const sup=(d.actual_supplier||'').trim();
+      const matches=sup===_actVendorFilter;
+      row.style.display=matches?'':'none';
+      if(matches){ groupShown++; shown++; }
+    });
+    // Hide the whole group if it has items but none match the filter
+    const groupEl=document.getElementById('group-act-'+g.id);
+    if(groupEl && _actVendorFilter){
+      groupEl.style.display=(groupTotal>0 && groupShown===0)?'none':'';
+    } else if(groupEl){
+      groupEl.style.display='';
+    }
+  });
+  // Update count + clear button visibility
+  const countEl=document.getElementById('act-vendor-count');
+  const clearBtn=document.getElementById('act-vendor-clear');
+  if(_actVendorFilter){
+    if(countEl) countEl.textContent=`${shown} de ${total} item(s) ${shown===0?'· nenhum nesse projeto':''}`;
+    if(clearBtn) clearBtn.style.display='';
+  } else {
+    if(countEl) countEl.textContent='';
+    if(clearBtn) clearBtn.style.display='none';
+  }
+}
+
+// ═══ RECURRING COSTS VENDOR FILTER ════════════════════════════════════
+let _rcdVendorFilter=''; // empty = no filter
+
+function _populateRcdVendorFilter(){
+  const sel=document.getElementById('rcd-vendor-filter');
+  if(!sel) return;
+  // Collect "company" values used in recurring items for this project
+  const data=recurringMap[CID]||{};
+  const usedCompanies=new Set();
+  RC_ITEMS.forEach(item=>{
+    const company=(data[item]?.company||'').trim();
+    if(company) usedCompanies.add(company);
+  });
+  const list=Array.from(usedCompanies).sort((a,b)=>a.localeCompare(b));
+  const current=sel.value;
+  sel.innerHTML='<option value="">— Todos os fornecedores —</option>'+
+    list.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c.replace(/</g,'&lt;')}</option>`).join('');
+  if(current && list.includes(current)){
+    sel.value=current;
+  } else if(current){
+    _rcdVendorFilter=''; // reset
+  }
+}
+
+function onRcdVendorFilterChange(){
+  const sel=document.getElementById('rcd-vendor-filter');
+  _rcdVendorFilter=sel?sel.value:'';
+  _applyRcdVendorFilter();
+}
+
+function clearRcdVendorFilter(){
+  _rcdVendorFilter='';
+  const sel=document.getElementById('rcd-vendor-filter');
+  if(sel) sel.value='';
+  _applyRcdVendorFilter();
+}
+
+function _applyRcdVendorFilter(){
+  const tbody=document.getElementById('rcd-tbody');
+  if(!tbody) return;
+  const data=recurringMap[CID]||{};
+  let shown=0, total=0;
+  const rows=tbody.querySelectorAll('tr[data-rc-item]');
+  rows.forEach(row=>{
+    const itemName=row.getAttribute('data-rc-item');
+    total++;
+    if(!_rcdVendorFilter){
+      row.style.display='';
+      shown++;
+      return;
+    }
+    const company=(data[itemName]?.company||'').trim();
+    const matches=company===_rcdVendorFilter;
+    row.style.display=matches?'':'none';
+    if(matches) shown++;
+  });
+  // Update count + clear button
+  const countEl=document.getElementById('rcd-vendor-count');
+  const clearBtn=document.getElementById('rcd-vendor-clear');
+  if(_rcdVendorFilter){
+    if(countEl) countEl.textContent=`${shown} de ${total} item(s) ${shown===0?'· nenhum nesse projeto':''}`;
+    if(clearBtn) clearBtn.style.display='';
+  } else {
+    if(countEl) countEl.textContent='';
+    if(clearBtn) clearBtn.style.display='none';
+  }
 }
 
 function rowHTML(type,gid,item,islug){
@@ -9070,7 +9256,7 @@ function renderRecurringDetail(){
     for(let y=0;y<RC_YEARS_COUNT;y++){
       for(let m=1;m<=12;m++){ allYearsTotal+=+(months[_rcKey(y,m)])||0; }
     }
-    return `<tr>
+    return `<tr data-rc-item="${itemName.replace(/"/g,'&quot;')}">
       <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #F0EAE2;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${itemName}</td>
       <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
         <input type="text" value="${(row.company||'').replace(/"/g,'&quot;')}" placeholder="Empresa"
@@ -9093,6 +9279,10 @@ function renderRecurringDetail(){
     </tr>`;
   }).join('');
   recalcRCDTotals();
+  // Repopulate the vendor filter (since vendors may have changed)
+  _populateRcdVendorFilter();
+  // Re-apply filter if active
+  if(_rcdVendorFilter) _applyRcdVendorFilter();
 }
 
 function _slugRC(name){return name.toLowerCase().replace(/[^a-z0-9]+/g,'-');}
@@ -9122,6 +9312,10 @@ async function saveRCDMeta(itemName){
   const {error}=await sb.from('recurring_detail_meta')
     .upsert(payload,{onConflict:'project_id,item_name'});
   if(error){console.error('rcd meta save',error);toast('Error saving (check permissions)',false);return;}
+  // Repopulate vendor filter (in case company name changed)
+  if(document.getElementById('page-recurring')?.classList.contains('active')){
+    _populateRcdVendorFilter();
+  }
   showSaved();
 }
 
@@ -9878,6 +10072,7 @@ function sp(id,el,cls){
   if(id==='listing' && isCEO()) {loadListingForm();renderPropertyResearchButtons('lc-research');}
   if(id==='recurring' && isCEO()) loadRecurringDetail();
   if(id==='supply' && isCEO()) _scLoadProjectsDropdown();
+  if(id==='act' && isCEO()) _populateActVendorFilter();
   // (clients/vendors/invoices moved to global views — see goView)
   window.scrollTo({top:0,behavior:'smooth'});
 }
