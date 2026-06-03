@@ -1544,7 +1544,10 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <h2>💰 Working Capital</h2>
       <p style="color:var(--gray3);margin-top:4px">Fluxo de caixa · Entradas via invoices Working Capital · Saídas marcadas em custos</p>
     </div>
-    <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:7px 14px;font-size:13px">🔄 Refresh</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:7px 14px;font-size:13px">🔄 Refresh</button>
+      <button class="btn btn-ghost" onclick="generateWorkingCapitalPDF()" style="padding:7px 14px;font-size:13px">🖨 Imprimir PDF</button>
+    </div>
   </div>
 
   <!-- KPIs -->
@@ -7200,6 +7203,178 @@ async function renderWorkingCapitalCashFlow(){
       </div>`;
     }).join(''));
   }
+}
+
+// ─── PDF: Working Capital Report ──────────────────────────────────
+async function generateWorkingCapitalPDF(){
+  if(!isCEO()){toast('CEO only',false);return;}
+  toast('Gerando PDF...',true);
+
+  // Recompute everything fresh (same logic as renderWorkingCapitalCashFlow)
+  const wcInvoices=(invoices||[]).filter(i=>i.kind==='working_capital'&&i.status!=='cancelled');
+  const paidIn=wcInvoices.filter(i=>i.status==='paid');
+  const openIn=wcInvoices.filter(i=>i.status==='open');
+  const inPaidTotal=paidIn.reduce((s,i)=>s+(+i.amount||0),0);
+  const inOpenTotal=openIn.reduce((s,i)=>s+(+i.amount||0),0);
+
+  let outflows=[];
+  try{
+    const {data:bi}=await sb.from('budget_items').select('*').eq('paid_from_wc',true).gt('actual',0);
+    (bi||[]).forEach(it=>{
+      const proj=projects.find(p=>p.id===it.project_id);
+      outflows.push({source:'actual',date:null,amount:+it.actual||0,project:proj?(proj.name||proj.address||'?'):'?',description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+it.actual_supplier:''),category:it.category||''});
+    });
+  }catch(e){console.warn(e);}
+  try{
+    const {data:fc}=await sb.from('fixed_costs').select('*').eq('paid_from_wc',true);
+    (fc||[]).forEach(it=>{
+      outflows.push({source:'fixed',date:it.date,amount:+it.amount||0,project:'(Fixed Cost)',description:it.description||'',category:it.category||''});
+    });
+  }catch(e){console.warn(e);}
+  try{
+    const {data:rd}=await sb.from('recurring_detail_months').select('*').eq('paid_from_wc',true).gt('amount',0);
+    (rd||[]).forEach(it=>{
+      const proj=projects.find(p=>p.id===it.project_id);
+      outflows.push({source:'recurring',date:null,amount:+it.amount||0,project:proj?(proj.name||proj.address||'?'):'?',description:(it.item_name||'')+(it.company?' · '+it.company:''),category:'recurring'});
+    });
+  }catch(e){console.warn(e);}
+  const outTotal=outflows.reduce((s,o)=>s+(+o.amount||0),0);
+  const balance=inPaidTotal-outTotal;
+
+  // Sort
+  const allIn=[...paidIn,...openIn].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const allOut=outflows.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const $$=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('pt-BR'):'—';
+  const today=new Date().toLocaleDateString('pt-BR');
+  const srcLabel={actual:'Actual',fixed:'Fixed',recurring:'Recurring',invoice:'Invoice',invoice_partial:'Invoice'};
+
+  const inflowsRows=allIn.length===0
+    ? `<tr><td colspan="4" style="padding:14px;text-align:center;color:#999;font-style:italic">Nenhuma invoice tipo Working Capital ainda.</td></tr>`
+    : allIn.map(i=>{
+        const cli=_clientById(i.client_id);
+        const proj=i.project_id?projects.find(p=>p.id===i.project_id):null;
+        const projAddr=proj?(proj.address||proj.name||''):(i.property_address||'');
+        return `<tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee">#${i.invoice_number} · ${(cli?cli.name:'?').replace(/</g,'&lt;')}<br><span style="color:#999;font-size:9px">${projAddr.replace(/</g,'&lt;')}</span></td>
+          <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999">${fmtDate(i.date)}</td>
+          <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee">
+            <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:${i.status==='paid'?'#DCEFE6;color:#2D7D5F':'#FFF3D9;color:#A86A2C'}">${i.status==='paid'?'PAID':'OPEN'}</span>
+          </td>
+          <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee;color:#2D7D5F;font-weight:700">${$$(i.amount)}</td>
+        </tr>`;
+      }).join('');
+
+  const outflowsRows=allOut.length===0
+    ? `<tr><td colspan="4" style="padding:14px;text-align:center;color:#999;font-style:italic">Nenhuma saída.</td></tr>`
+    : allOut.map(o=>`<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${(o.description||'').replace(/</g,'&lt;')}<br><span style="color:#999;font-size:9px">${(o.project||'').replace(/</g,'&lt;')}</span></td>
+        <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999">${o.date?fmtDate(o.date):'—'}</td>
+        <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999;font-size:10px">${srcLabel[o.source]||o.source}</td>
+        <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee;color:#C62B2B;font-weight:700">-${$$(o.amount)}</td>
+      </tr>`).join('');
+
+  const reportHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Working Capital Report</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{padding:24px 32px;color:#3D271A;background:#fff;font-size:11px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #3D271A;margin-bottom:18px}
+.h-logo img{height:60px;width:auto}
+.h-center{text-align:center;flex:1}
+.h-center .title{font-size:18px;font-weight:800;letter-spacing:1px;color:#3D271A;text-transform:uppercase}
+.h-center .subtitle{font-size:11px;color:#999;margin-top:4px;letter-spacing:1px}
+.h-right{text-align:right;font-size:11px;color:#655A4E}
+.h-right strong{color:#3D271A}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.kpi{padding:12px;border-radius:8px;text-align:center}
+.kpi.green{background:#F2F4EC;border:1.5px solid #5C7A3F}
+.kpi.orange{background:#FFF8E7;border:1.5px solid #C68A4A}
+.kpi.red{background:#F9EBEB;border:1.5px solid #C62B2B}
+.kpi.dark{background:#3D271A;color:#fff;border:1.5px solid #3D271A}
+.kpi-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.85}
+.kpi-v{font-size:18px;font-weight:800;margin-top:4px}
+.kpi.green .kpi-v{color:#2D7D5F}
+.kpi.orange .kpi-v{color:#A86A2C}
+.kpi.red .kpi-v{color:#C62B2B}
+.kpi.dark .kpi-v{color:#FFD699}
+.kpi-h{font-size:9px;opacity:.75;margin-top:2px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.section{background:#fff;border:1px solid #E8DDC9;border-radius:8px;overflow:hidden}
+.section h3{background:#3D271A;color:#fff;padding:8px 12px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-weight:700}
+.section h3 small{font-weight:400;color:rgba(255,255,255,0.7);font-size:9px;letter-spacing:0;text-transform:none;margin-left:6px}
+table{width:100%;border-collapse:collapse}
+th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655A4E;font-weight:700;border-bottom:1.5px solid #C68A4A;text-transform:uppercase;letter-spacing:.3px}
+.totrow{background:#3D271A;color:#fff;font-weight:800}
+.totrow td{padding:8px 10px;font-size:12px;border-bottom:0}
+.footer{margin-top:24px;padding-top:12px;border-top:1px solid #D5C9BC;text-align:center;font-size:9px;color:#999;letter-spacing:.5px}
+@media print{body{padding:14px}.header{margin-bottom:14px}}
+@page{size:A4;margin:10mm}
+</style></head><body>
+<div class="header">
+  <div class="h-logo"><img src="${DEC_LOGO_B64}" alt="DEC Group"></div>
+  <div class="h-center">
+    <div class="title">Working Capital Report</div>
+    <div class="subtitle">Cash Flow · Inflows &amp; Outflows</div>
+  </div>
+  <div class="h-right">
+    <div><strong>Issued on:</strong> ${today}</div>
+    <div><strong>Total entries:</strong> ${allIn.length+allOut.length}</div>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi green">
+    <div class="kpi-l">📥 Entradas (Paid)</div>
+    <div class="kpi-v">${$$(inPaidTotal)}</div>
+    <div class="kpi-h">${paidIn.length} invoice(s)</div>
+  </div>
+  <div class="kpi orange">
+    <div class="kpi-l">⏳ Previstas (Open)</div>
+    <div class="kpi-v">${$$(inOpenTotal)}</div>
+    <div class="kpi-h">${openIn.length} invoice(s)</div>
+  </div>
+  <div class="kpi red">
+    <div class="kpi-l">📤 Saídas</div>
+    <div class="kpi-v">${$$(outTotal)}</div>
+    <div class="kpi-h">${outflows.length} lançamento(s)</div>
+  </div>
+  <div class="kpi dark">
+    <div class="kpi-l">💎 Saldo</div>
+    <div class="kpi-v">${$$(balance)}</div>
+    <div class="kpi-h">${balance>=0?'Disponível pra usar':'⚠️ Saldo negativo'}</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="section">
+    <h3>📥 Entradas <small>· Invoices tipo Working Capital</small></h3>
+    <table>
+      <thead><tr><th>Descrição</th><th style="text-align:center;width:80px">Data</th><th style="text-align:center;width:60px">Status</th><th style="text-align:right;width:90px">Valor</th></tr></thead>
+      <tbody>${inflowsRows}</tbody>
+      <tfoot><tr class="totrow"><td colspan="3">Total Recebido</td><td style="text-align:right">${$$(inPaidTotal)}</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="section">
+    <h3>📤 Saídas <small>· Custos pagos com WC</small></h3>
+    <table>
+      <thead><tr><th>Descrição</th><th style="text-align:center;width:80px">Data</th><th style="text-align:center;width:60px">Tipo</th><th style="text-align:right;width:90px">Valor</th></tr></thead>
+      <tbody>${outflowsRows}</tbody>
+      <tfoot><tr class="totrow"><td colspan="3">Total Saídas</td><td style="text-align:right">-${$$(outTotal)}</td></tr></tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>DEC GROUP USA</strong> · Working Capital Report · Generated on ${today}
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>
+</body></html>`;
+
+  const w=window.open('','_blank','width=1000,height=900');
+  if(!w){toast('Permita pop-ups pra gerar o PDF',false);return;}
+  w.document.write(reportHTML);
+  w.document.close();
 }
 
 function renderFinancial(){
