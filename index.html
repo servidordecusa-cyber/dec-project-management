@@ -11115,7 +11115,7 @@ const BUDGET_DEFAULT_LINES=[
   {name:'Hard Money (juros)',                   kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest'},
   {name:'Down payment Hard Money',              kind:'closing', base:0,    months_cash:0, months_hm:1, is_extra:false, formula:'hm_down'},
   {name:'Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false},
-  {name:'Comissão venda 5% + closing costs 1%', kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
+  {name:'Comissão venda + closing costs',      kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
   {name:'Rehab',                                kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'rehab'},
   {name:'Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false},
   {name:'Contribuição no closing',              kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false},
@@ -11204,6 +11204,10 @@ function calcBudgetSummary(b){
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
   const hmClosingFee=+b.hm_closing_costs||0;
+  // Commission: % agent + % closing (defaults preserve old 6% = 5%+1%)
+  const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
+  const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
+  const commissionPct = commAgentPct + commClosingPct;
   // hm_loan_amount: prefer % when set; otherwise fall back to direct $ amount
   const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
   // Accumulators
@@ -11215,25 +11219,35 @@ function calcBudgetSummary(b){
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
     const mHm=+line.months_hm||1;
+    // Override rule: if a formula line has base > 0, that overrides the formula
+    // (user manually adjusted the value). 0 = use formula.
+    const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='down_cash'){
-      valCash=purchase;
-      valHm=purchase-hmLoan;
+      // Imóvel: in CASH scenario the company pays the FULL purchase price.
+      //         in HM scenario the company pays (purchase - HM loan) out of cash.
+      valCash = hasOverride ? base : purchase;
+      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
     } else if(line.formula==='hm_interest'){
-      valCash=0;
-      valHm=(hmLoan*hmInterestPct/12)*mHm;
+      // HM interest: only exists in HM scenario
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
     } else if(line.formula==='hm_down'){
-      valCash=0;
-      valHm=hmLoan*hmDownPct;
+      // HM down payment fee: only in HM scenario
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
     } else if(line.formula==='commission_6'){
-      valCash=arv*0.06;
-      valHm=arv*0.06;
+      // Commission: % agent + % closing of ARV (now configurable per budget)
+      valCash = hasOverride ? base : (arv*commissionPct);
+      valHm   = valCash;
     } else if(line.formula==='rehab'){
-      valCash=rehab;
-      valHm=rehab;
+      // Rehab — same in both scenarios (out of pocket)
+      valCash = hasOverride ? base : rehab;
+      valHm   = valCash;
     } else {
-      valCash=base*mCash;
-      valHm=base*mHm;
+      // Standard line: base × months
+      valCash = base*mCash;
+      valHm   = base*mHm;
     }
     if(line.kind==='closing'){
       cashDescontos+=valCash;
@@ -11247,7 +11261,6 @@ function calcBudgetSummary(b){
   cashEmpresa+=closingCosts;
   hmEmpresa+=closingCosts;
   // HM-specific: closing fee (fixed $ amount paid only when using HM loan)
-  // Goes into "out of pocket" because it's typically paid upfront with cash
   if(hmLoan>0) hmEmpresa+=hmClosingFee;
   // In the HM scenario, the HM principal MUST be repaid at the sale closing
   hmDescontos+=hmLoan;
@@ -11292,6 +11305,8 @@ function openBudgetEditor(budgetId){
       hm_loan_amount:0,
       hm_pct:0,
       hm_closing_costs:0,
+      commission_agent_pct:0.05,
+      commission_closing_pct:0.01,
       cash_months:4,
       hm_months:6,
       cost_lines:JSON.parse(JSON.stringify(BUDGET_DEFAULT_LINES)),
@@ -11333,19 +11348,43 @@ function renderBudgetEditorModal(){
     const hmInterestPct=+b.hm_interest_pct||0;
     const hmPct=+b.hm_pct||0;
     const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+    const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
+    const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
+    const commPct = commAgentPct + commClosingPct;
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
     const mHm=+line.months_hm||1;
+    const hasOverride = base > 0;
     let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){valCash=purchase;valHm=purchase-hmLoan;}
-    else if(line.formula==='hm_interest'){valCash=0;valHm=(hmLoan*hmInterestPct/12)*mHm;}
-    else if(line.formula==='hm_down'){valCash=0;valHm=hmLoan*hmDownPct;}
-    else if(line.formula==='commission_6'){valCash=arv*0.06;valHm=arv*0.06;}
-    else if(line.formula==='rehab'){valCash=rehab;valHm=rehab;}
-    else {valCash=base*mCash;valHm=base*mHm;}
+    if(line.formula==='down_cash'){
+      valCash = hasOverride ? base : purchase;
+      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+    } else if(line.formula==='hm_interest'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
+    } else if(line.formula==='hm_down'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
+    } else if(line.formula==='commission_6'){
+      valCash = hasOverride ? base : (arv*commPct);
+      valHm   = valCash;
+    } else if(line.formula==='rehab'){
+      valCash = hasOverride ? base : rehab;
+      valHm   = valCash;
+    } else {
+      valCash = base*mCash;
+      valHm   = base*mHm;
+    }
     const kindBadge=line.kind==='closing'
       ?`<span style="display:inline-block;padding:2px 6px;background:#FFF4E0;color:#A86A2C;border-radius:4px;font-size:9px;font-weight:700">CLOSING</span>`
       :`<span style="display:inline-block;padding:2px 6px;background:#F2F4EC;color:#5C7A3F;border-radius:4px;font-size:9px;font-weight:700">CUSTO</span>`;
+    // Auto-value tooltip for formula lines (so user knows what it would be on 0)
+    let autoHint='';
+    if(isFormula && !hasOverride){
+      autoHint=`<div style="font-size:9px;color:#5C7A3F;margin-top:2px;font-style:italic">auto</div>`;
+    } else if(isFormula && hasOverride){
+      autoHint=`<div style="font-size:9px;color:#C68A4A;margin-top:2px;font-style:italic">manual</div>`;
+    }
     return `<tr style="border-bottom:1px solid #F0EAE2">
       <td style="padding:6px 8px;font-size:12px">
         ${isExtra
@@ -11354,9 +11393,8 @@ function renderBudgetEditorModal(){
         ${kindBadge}
       </td>
       <td style="padding:6px 4px;text-align:right">
-        ${isFormula
-          ? `<span style="color:#999;font-size:11px;font-style:italic">auto</span>`
-          : `<input type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;outline:none;text-align:right">`}
+        <input type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#C68A4A':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
+        ${autoHint}
       </td>
       <td style="padding:6px 4px;text-align:center">
         ${(line.formula==='down_cash'||line.formula==='rehab'||line.formula==='commission_6'||isFormula===false)
@@ -11447,6 +11485,14 @@ function renderBudgetEditorModal(){
             <input type="number" min="0" step="0.01" value="${b.closing_costs||''}" oninput="updateBudgetField('closing_costs',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
           </div>
           <div>
+            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Comissão Agente (ex 0.05)</label>
+            <input type="number" min="0" max="1" step="0.001" value="${b.commission_agent_pct!=null?b.commission_agent_pct:0.05}" oninput="updateBudgetField('commission_agent_pct',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Closing Venda (ex 0.01)</label>
+            <input type="number" min="0" max="1" step="0.001" value="${b.commission_closing_pct!=null?b.commission_closing_pct:0.01}" oninput="updateBudgetField('commission_closing_pct',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+          </div>
+          <div>
             <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">% HM Loan (ex 0.70 = 70%)</label>
             <input type="number" min="0" max="1" step="0.01" value="${b.hm_pct||''}" oninput="updateBudgetField('hm_pct',this.value)" placeholder="0.70" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
             <div style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
@@ -11522,7 +11568,7 @@ function renderBudgetEditorModal(){
 
 function updateBudgetField(field, value){
   if(!_bdgCurrent) return;
-  if(['purchase_price','arv','rehab_estimate','closing_costs','hm_loan_amount','hm_down_pct','hm_interest_pct','hm_pct','hm_closing_costs','cash_months','hm_months'].includes(field)){
+  if(['purchase_price','arv','rehab_estimate','closing_costs','hm_loan_amount','hm_down_pct','hm_interest_pct','hm_pct','hm_closing_costs','commission_agent_pct','commission_closing_pct','cash_months','hm_months'].includes(field)){
     _bdgCurrent[field]=+value||0;
   } else {
     _bdgCurrent[field]=value;
@@ -11580,6 +11626,8 @@ async function saveBudget(){
     hm_loan_amount:+_bdgCurrent.hm_loan_amount||0,
     hm_pct:+_bdgCurrent.hm_pct||0,
     hm_closing_costs:+_bdgCurrent.hm_closing_costs||0,
+    commission_agent_pct:_bdgCurrent.commission_agent_pct!=null?+_bdgCurrent.commission_agent_pct:0.05,
+    commission_closing_pct:_bdgCurrent.commission_closing_pct!=null?+_bdgCurrent.commission_closing_pct:0.01,
     cash_months:+_bdgCurrent.cash_months||4,
     hm_months:+_bdgCurrent.hm_months||6,
     cost_lines:_bdgCurrent.cost_lines||[],
@@ -11635,15 +11683,32 @@ function generateBudgetPDF(){
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
   const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
+  const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
+  const commPct = commAgentPct + commClosingPct;
   const lineRows=b.cost_lines.map(line=>{
     const base=+line.base||0, mCash=+line.months_cash||1, mHm=+line.months_hm||1;
+    const hasOverride = base > 0;
     let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){valCash=purchase;valHm=purchase-hmLoan;}
-    else if(line.formula==='hm_interest'){valCash=0;valHm=(hmLoan*hmInterestPct/12)*mHm;}
-    else if(line.formula==='hm_down'){valCash=0;valHm=hmLoan*hmDownPct;}
-    else if(line.formula==='commission_6'){valCash=arv*0.06;valHm=arv*0.06;}
-    else if(line.formula==='rehab'){valCash=rehab;valHm=rehab;}
-    else {valCash=base*mCash;valHm=base*mHm;}
+    if(line.formula==='down_cash'){
+      valCash = hasOverride ? base : purchase;
+      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+    } else if(line.formula==='hm_interest'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
+    } else if(line.formula==='hm_down'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
+    } else if(line.formula==='commission_6'){
+      valCash = hasOverride ? base : (arv*commPct);
+      valHm   = valCash;
+    } else if(line.formula==='rehab'){
+      valCash = hasOverride ? base : rehab;
+      valHm   = valCash;
+    } else {
+      valCash = base*mCash;
+      valHm   = base*mHm;
+    }
     return `<tr>
       <td style="padding:6px 10px;border-bottom:1px solid #eee">${line.name}</td>
       <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999;font-size:10px">${line.kind==='closing'?'Closing':'Custo'}</td>
@@ -11794,20 +11859,39 @@ function downloadBudgetExcel(){
   r.push(['HM Closing Costs', +b.hm_closing_costs||0]);
   r.push(['% Down HM', hmDownPct]);
   r.push(['% Juros HM/ano', hmInterestPct]);
+  r.push(['% Comissão Agente', commAgentPctX]);
+  r.push(['% Closing Venda', commClosingPctX]);
   r.push(['Meses Cash', b.cash_months]);
   r.push(['Meses HM', b.hm_months]);
   r.push([]);
   r.push(['LINHAS DE CUSTO']);
   r.push(['Item','Tipo','Base','Meses Cash','Total Cash','Meses HM','Total HM']);
+  const commAgentPctX  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
+  const commClosingPctX= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
+  const commPctX = commAgentPctX + commClosingPctX;
   b.cost_lines.forEach(line=>{
     const base=+line.base||0, mCash=+line.months_cash||1, mHm=+line.months_hm||1;
+    const hasOverride = base > 0;
     let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){valCash=purchase;valHm=purchase-hmLoan;}
-    else if(line.formula==='hm_interest'){valCash=0;valHm=(hmLoan*hmInterestPct/12)*mHm;}
-    else if(line.formula==='hm_down'){valCash=0;valHm=hmLoan*hmDownPct;}
-    else if(line.formula==='commission_6'){valCash=arv*0.06;valHm=arv*0.06;}
-    else if(line.formula==='rehab'){valCash=rehab;valHm=rehab;}
-    else {valCash=base*mCash;valHm=base*mHm;}
+    if(line.formula==='down_cash'){
+      valCash = hasOverride ? base : purchase;
+      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+    } else if(line.formula==='hm_interest'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
+    } else if(line.formula==='hm_down'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
+    } else if(line.formula==='commission_6'){
+      valCash = hasOverride ? base : (arv*commPctX);
+      valHm   = valCash;
+    } else if(line.formula==='rehab'){
+      valCash = hasOverride ? base : rehab;
+      valHm   = valCash;
+    } else {
+      valCash = base*mCash;
+      valHm   = base*mHm;
+    }
     r.push([line.name, line.kind==='closing'?'Closing':'Custo', base, mCash, valCash, mHm, valHm]);
   });
   r.push([]);
