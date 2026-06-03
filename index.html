@@ -3636,7 +3636,10 @@ async function approveVendorNote() {
   // Use vendorId if available, else fall back to vendorName (legacy strings)
   const supplierForCheck = vendorId || vendorName;
   if (supplierForCheck) {
+    // Enable debug logging temporarily — helps diagnose missed duplicates
+    window.DEBUG_DUPLICATES = true;
     const dups = findActualDuplicates(CID, total, supplierForCheck, null);
+    window.DEBUG_DUPLICATES = false;
     if (dups.length > 0) {
       if (!confirm(formatDuplicateMessage('actual', dups))) {
         // User wants to cancel — re-enable button
@@ -3644,7 +3647,11 @@ async function approveVendorNote() {
         if (btn0) { btn0.disabled = false; btn0.textContent = '✅ Aprovar e Lançar'; }
         return;
       }
+    } else {
+      console.log('[Duplicate Check] No duplicates found for amount=' + total + ' supplier=' + supplierForCheck);
     }
+  } else {
+    console.warn('[Duplicate Check] Skipped — no supplier identified (vendorId="' + vendorId + '" vendorName="' + vendorName + '")');
   }
 
   const btn = document.getElementById('vn-approve-btn');
@@ -8543,6 +8550,10 @@ function findActualDuplicates(projectId, amount, supplier, excludeKeys){
   if(!projectId || !amount || amount<=0 || !supplier) return [];
   const matches=[];
   const bm=budgetMap[projectId]||{};
+  // Debug log to help diagnose missed duplicates
+  if(window.DEBUG_DUPLICATES){
+    console.log('[DUP CHECK] amount:', amount, 'supplier:', supplier, 'projeto:', projectId);
+  }
   GROUPS.forEach(g=>{
     const roomData=bm[g.id]||{};
     Object.entries(roomData).forEach(([islug,d])=>{
@@ -8550,10 +8561,16 @@ function findActualDuplicates(projectId, amount, supplier, excludeKeys){
       if(excludeKeys && excludeKeys.gid===g.id && excludeKeys.islug===islug) return;
       const rowAmount=+d.actual||0;
       if(rowAmount<=0) return;
-      // Match value with tolerance for floating point
-      if(Math.abs(rowAmount-amount)>0.01) return;
-      // Match supplier
-      if(!_supplierMatches(d.actual_supplier, supplier)) return;
+      const rowSupplier=(d.actual_supplier||'').trim();
+      if(!rowSupplier) return;
+      const supplierMatch=_supplierMatches(rowSupplier, supplier);
+      // Match value with tolerance for floating point (1 cent)
+      const amountMatch=Math.abs(rowAmount-amount)<0.01;
+      if(window.DEBUG_DUPLICATES){
+        console.log(`  [row ${g.id}/${islug}] amount=${rowAmount} (match=${amountMatch}) supplier="${rowSupplier}" (match=${supplierMatch})`);
+      }
+      if(!amountMatch) return;
+      if(!supplierMatch) return;
       // Get item name from itemsMap
       const items=(itemsMap[projectId]||{})[g.id]||[];
       const item=items.find(i=>i.slug===islug);
@@ -8562,10 +8579,13 @@ function findActualDuplicates(projectId, amount, supplier, excludeKeys){
         groupName:g.name,
         item_name:item?item.name:islug,
         amount:rowAmount,
-        supplier_name:vendorName(d.actual_supplier)||d.actual_supplier,
+        supplier_name:vendorName(rowSupplier)||rowSupplier,
       });
     });
   });
+  if(window.DEBUG_DUPLICATES){
+    console.log('[DUP CHECK] matches found:', matches.length, matches);
+  }
   return matches;
 }
 
