@@ -327,6 +327,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <div class="kpi"><label>📁 Total</label><div class="val" id="pk-total">—</div></div>
     <div class="kpi ko"><label>🔄 In Progress</label><div class="val" id="pk-prog">—</div></div>
     <div class="kpi kg"><label>✅ Completed</label><div class="val" id="pk-done">—</div></div>
+    <div class="kpi" style="border-left-color:#7B5E8B"><label>🔧 Rehab Completed</label><div class="val" id="pk-rehab">—</div></div>
     <div class="kpi" style="border-left-color:var(--blue)"><label>🏷️ For Sale</label><div class="val" id="pk-sale">—</div></div>
     <div class="kpi" style="border-left-color:var(--gold)"><label>💰 Sold</label><div class="val" id="pk-sold">—</div></div>
   </div>
@@ -335,6 +336,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <button class="port-flt active" data-flt="all" onclick="setPortFilter('all')">📁 Todos</button>
     <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')">🔄 In Progress</button>
     <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Completed</button>
+    <button class="port-flt" data-flt="rehab_completed" onclick="setPortFilter('rehab_completed')">🔧 Rehab Completed</button>
     <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ For Sale</button>
     <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')">💰 Sold</button>
     <div style="width:1px;height:24px;background:var(--gray2);margin:0 4px"></div>
@@ -461,6 +463,19 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             </div>
           </div></div>
           <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="pf-pm" oninput="debouncePF()"></div><div class="fg"><label>Address</label><input id="pf-address" oninput="debouncePF()"></div></div>
+          <div class="fgrid">
+            <div class="fg"><label>Type of Project <span style="font-size:10px;color:var(--gray3)">— defines what fields show</span></label>
+              <select id="pf-type" onchange="savePF()">
+                <option value="">— Select —</option>
+                <option value="single_family">🏠 Single Family</option>
+                <option value="high_end">💎 High End</option>
+                <option value="mobile_home">🚐 Mobile Home</option>
+                <option value="rehab">🔧 Rehab (no purchase/sale)</option>
+                <option value="manufactured_home">🏭 Manufactured Home</option>
+              </select>
+            </div>
+            <div class="fg"></div>
+          </div>
           <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
           <div id="pf-research" style="margin-top:14px"></div>
@@ -2600,7 +2615,7 @@ function renderPortfolio(){
     ? projects.filter(p=>filterIds.has(p.customer))
     : projects;
   // Group filtered projects by status
-  const groups={in_progress:[],completed:[],for_sale:[],sold:[]};
+  const groups={in_progress:[],completed:[],rehab_completed:[],for_sale:[],sold:[]};
   filteredProjects.forEach(p=>{
     const st=projectStatus(p.id);
     if(groups[st]) groups[st].push(p);
@@ -2617,12 +2632,14 @@ function renderPortfolio(){
   document.getElementById('pk-total').textContent=totalShown;
   document.getElementById('pk-prog').textContent=groups.in_progress.length;
   document.getElementById('pk-done').textContent=groups.completed.length;
+  const rehabEl=document.getElementById('pk-rehab');
+  if(rehabEl) rehabEl.textContent=groups.rehab_completed.length;
   document.getElementById('pk-sale').textContent=groups.for_sale.length;
   document.getElementById('pk-sold').textContent=groups.sold.length;
   // Render sections (filtered)
   const wrap=document.getElementById('proj-sections');
   wrap.innerHTML='';
-  const order=['in_progress','completed','for_sale','sold'];
+  const order=['in_progress','completed','rehab_completed','for_sale','sold'];
   const visible=_portFilter==='all'?order:[_portFilter];
   visible.forEach(st=>{
     const meta=STATUS_META[st];
@@ -2676,11 +2693,17 @@ function buildProjectCard(p,statusMeta){
   const v2=act-est;
   const vColor=v2>0?'#B85450':v2<0?'#5C7A3F':'#3D271A';
   const vTx=v2>0?'⚠ Over '+fmt(v2):v2<0?'✅ Under '+fmt(Math.abs(v2)):'On budget';
+  // Project type badge (if defined)
+  const typeMeta=p.project_type?PROJECT_TYPE_META[p.project_type]:null;
+  const typeBadge=typeMeta
+    ? `<span style="background:#FAF7F3;color:#655A4E;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:600;margin-right:6px;border:1px solid #E8E0D5">${typeMeta.icon} ${typeMeta.label}</span>`
+    : '';
   const card=document.createElement('div');
   card.className='proj-card';
   card.innerHTML=`
     <div class="pc-hdr"><div><div class="pc-name">${p.name}</div><div class="pc-sub">${customerName(p.customer)||'No client'}${p.address?' · '+p.address:''}</div></div>
       <span style="background:${statusMeta.bg};color:${statusMeta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${statusMeta.icon} ${statusMeta.label}</span></div>
+    ${typeBadge?`<div style="padding:6px 14px 0">${typeBadge}</div>`:''}
     <div class="pc-body">
       <div class="pc-pl"><span>Schedule</span><span>${pct}%</span></div>
       <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#5C7A3F':pct>50?'#C68A4A':'#3D271A'}"></div></div>
@@ -2713,6 +2736,16 @@ function calcPhasePct(pid,ph){
 // Returns one of: 'in_progress' | 'completed' | 'for_sale' | 'sold'
 // Priority: sold > for_sale > completed > in_progress
 function projectStatus(pid){
+  // First check the project type
+  const proj=projects.find(p=>p.id===pid);
+  const isRehab=proj && proj.project_type==='rehab';
+  // For REHAB projects: simplified lifecycle (no purchase/sale)
+  //   In Progress  →  Rehab Completed (when Gantt = 100%)
+  if(isRehab){
+    if(calcSched(pid)===100) return 'rehab_completed';
+    return 'in_progress';
+  }
+  // For all other types: original logic
   // 1) SOLD: sale_date is set (venda foi de fato concluída)
   const prop=(propertyMap||{})[pid]||{};
   if(prop.sale_date) return 'sold';
@@ -2726,10 +2759,20 @@ function projectStatus(pid){
 }
 
 const STATUS_META={
-  in_progress: {label:'In Progress', icon:'🔄', color:'#C68A4A', bg:'#F5EBDA'},
-  completed:   {label:'Completed',    icon:'✅', color:'#5C7A3F', bg:'#ECEFE3'},
-  for_sale:    {label:'For Sale',      icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
-  sold:        {label:'Sold',     icon:'💰', color:'#B8860B', bg:'#FAF3E0'},
+  in_progress:      {label:'In Progress',     icon:'🔄', color:'#C68A4A', bg:'#F5EBDA'},
+  completed:        {label:'Completed',       icon:'✅', color:'#5C7A3F', bg:'#ECEFE3'},
+  rehab_completed:  {label:'Rehab Completed', icon:'🔧', color:'#7B5E8B', bg:'#EDE5F1'},
+  for_sale:         {label:'For Sale',        icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
+  sold:             {label:'Sold',            icon:'💰', color:'#B8860B', bg:'#FAF3E0'},
+};
+
+// Project type labels (used in dropdowns and badges)
+const PROJECT_TYPE_META={
+  single_family:     {label:'Single Family',     icon:'🏠'},
+  high_end:          {label:'High End',          icon:'💎'},
+  mobile_home:       {label:'Mobile Home',       icon:'🚐'},
+  rehab:             {label:'Rehab',             icon:'🔧'},
+  manufactured_home: {label:'Manufactured Home', icon:'🏭'},
 };
 function calcRoomTotal(pid,type){
   const bm=budgetMap[pid]||{};
@@ -4739,11 +4782,14 @@ function loadProjectForms(p){
     ['pf-permit','building_permit'],
     ['pf-water-acc','water_account'],
     ['pf-power-acc','power_account'],
+    ['pf-type','project_type'],
   ];
   extras.forEach(([elId,key])=>{
     const el=document.getElementById(elId);
     if(el) el.value=p[key]||'';
   });
+  // Apply Rehab visibility AFTER loading the type
+  applyRehabVisibility();
   // Re-render tasks for each phase (hydration happens in renderPhaseTasks)
   PHASES.forEach(ph=>renderPhaseTasks(ph.id));
   // Re-render budget tables with current items (hydration happens in renderItems)
@@ -4776,7 +4822,8 @@ async function savePF(){
     address:address,start_date:v('pf-start')||null,end_date:v('pf-end')||null,notes:v('pf-notes'),
     zip_code:v('pf-zip'),county:v('pf-county'),building_permit:v('pf-permit'),
     water_account:v('pf-water-acc'),
-    power_account:v('pf-power-acc')};
+    power_account:v('pf-power-acc'),
+    project_type:v('pf-type')||null};
   await sb.from('projects').update(payload).eq('id',CID);
   const i=projects.findIndex(x=>x.id===CID);
   if(i>=0) projects[i]={...projects[i],...payload};
@@ -4792,7 +4839,22 @@ async function savePF(){
   // Sync address into the Listing Checklist read-only address field if visible
   const lcAddrEl=document.getElementById('lc-address');
   if(lcAddrEl) lcAddrEl.value=address;
+  // Apply Rehab-specific visibility (hide purchase/sale sections)
+  applyRehabVisibility();
   showSaved();
+}
+
+// When project_type = 'rehab', hide the Property & Finance + Listing Checklist
+// sidebar links (Rehab projects don't have purchase/sale data).
+function applyRehabVisibility(){
+  if(!CID) return;
+  const proj=projects.find(p=>p.id===CID);
+  const isRehab=proj && proj.project_type==='rehab';
+  // Hide sidebar links for Property & Finance + Listing Checklist if Rehab
+  ['snav-property','snav-listing'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=isRehab?'none':'';
+  });
 }
 
 // ═══ PROPERTY & FINANCE (CEO ONLY) ════════════════════════════════════
@@ -6138,6 +6200,38 @@ function calcProjectInvoicesRefund(pid){
 
 // Returns full financial breakdown for a single project
 function calcProjectFinancials(pid){
+  const proj=projects.find(p=>p.id===pid);
+  const isRehab=proj && proj.project_type==='rehab';
+  // Costs are tracked the same way for all project types
+  const actCosts=calcRoomTotal(pid,'actual'); // What DEC actually spent on vendors
+  const dec=(extraCostsMap[pid]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  const doc=(extraCostsMap[pid]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  const he=(extraCostsMap[pid]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
+  const rec=calcRCDTotal(pid);
+  // Operational invoices = what client paid DEC for the project (= service revenue for Rehab)
+  const invoicesOp=calcProjectInvoicesOperational(pid);
+
+  if(isRehab){
+    // REHAB: service-only project. No purchase/sale.
+    //   Revenue = invoices operational (charges to client for service)
+    //   Cost    = actual costs + DEC invoices + docs + high-end + recurring
+    //   Profit  = Revenue - Cost
+    const totalCost=actCosts+dec+doc+he+rec;
+    const serviceRevenue=invoicesOp;
+    const grossProfit=serviceRevenue-totalCost;
+    const netProfit=grossProfit; // same for Rehab — no selling costs / lender costs
+    const roi=totalCost>0?(netProfit/totalCost*100):0;
+    return {
+      isRehab:true,
+      emd:0,cash:0,otherAcq:0,commission:0,sale:0,selling:0,lenderSale:0,
+      actCosts,dec,doc,he,rec,invoicesOp,
+      totalInvested:totalCost, // for Rehab, "invested" = total cost
+      serviceRevenue,
+      grossProfit,netProfit,roi
+    };
+  }
+
+  // Non-Rehab: original logic
   const prop=propertyMap[pid]||{};
   const cash=+prop.cash||0;
   const emd=+prop.emd_cash||0;
@@ -6146,19 +6240,12 @@ function calcProjectFinancials(pid){
   const sale=+prop.final_sale_price||0;
   const selling=+prop.selling_costs||0;
   const lenderSale=+prop.lender_costs_sale||0;
-  const actCosts=calcRoomTotal(pid,'actual'); // What DEC actually spent on vendors
-  const dec=(extraCostsMap[pid]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
-  const doc=(extraCostsMap[pid]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
-  const he=(extraCostsMap[pid]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
-  const rec=calcRCDTotal(pid);
-  // Operational invoices = what client paid DEC for the project (= client's investment)
-  const invoicesOp=calcProjectInvoicesOperational(pid);
   // Total Invested (client's perspective): EMD + Cash + Other Costs + Commission + Invoices Op + Costs + Recurring + Docs + High End
   const totalInvested=emd+cash+otherAcq+commission+invoicesOp+dec+doc+he+rec;
   const grossProfit=sale-selling-lenderSale;
   const netProfit=sale>0?(grossProfit-totalInvested):0;
   const roi=totalInvested>0&&sale>0?(netProfit/totalInvested*100):0;
-  return {emd,cash,otherAcq,commission,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
+  return {isRehab:false,emd,cash,otherAcq,commission,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
 }
 
 // ═══ WORKING CAPITAL CASH FLOW ════════════════════════════════════════
