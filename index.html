@@ -2357,6 +2357,23 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     return (+pr.emd_cash||0)+(+pr.cash||0)+(+pr.other_costs||0)+(+pr.commission||0);
   };
 
+  // ─── Helper: filter invoices that should count toward investment ──
+  // Excludes REFUNDS (money returned to client — not a cost) and CANCELLED.
+  // Also exposes refund total separately so we can show it as a credit.
+  const investableInvoices=(pid)=>{
+    return (invByProj[pid]||[]).filter(i=>{
+      if(i.status==='cancelled') return false;
+      const k=(i.kind||'operational').toLowerCase();
+      if(k==='refund') return false;
+      return true;
+    });
+  };
+  const refundTotal=(pid)=>{
+    return (invByProj[pid]||[])
+      .filter(i=>i.status!=='cancelled' && ((i.kind||'').toLowerCase()==='refund'))
+      .reduce((s,i)=>s+(+i.amount||0),0);
+  };
+
   // ─── Helper: compute Gantt progress for a project (avg of phases) ───
   const gradeFor=(pid)=>{
     const tasks=scheduleByProj[pid]||[];
@@ -2371,6 +2388,25 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     const phaseAvgs=Object.values(byPhase).map(arr=>arr.reduce((a,b)=>a+b,0)/arr.length);
     if(phaseAvgs.length===0) return 0;
     return Math.round(phaseAvgs.reduce((a,b)=>a+b,0)/phaseAvgs.length);
+  };
+
+  // ─── Helper: compute project status (mirror of CEO logic, no listing checklist)
+  // Priority: cancelled > sold > rehab_completed > completed > in_progress
+  const statusFor=(p)=>{
+    if(p.cancelled===true) return 'cancelled';
+    const pr=propertyByProj[p.id]||{};
+    const progress=gradeFor(p.id);
+    if(pr.sale_date) return 'sold';
+    if(p.project_type==='rehab' && progress===100) return 'rehab_completed';
+    if(progress===100) return 'completed';
+    return 'in_progress';
+  };
+  const STATUS_BADGES={
+    in_progress:     {label:'Em andamento',     icon:'🔄', bg:'#F5EBDA', color:'#A86A2C'},
+    completed:       {label:'Obra concluída',   icon:'✅', bg:'#ECEFE3', color:'#5C7A3F'},
+    rehab_completed: {label:'Reforma concluída',icon:'🔧', bg:'#EDE5F1', color:'#7B5E8B'},
+    sold:            {label:'Vendido',          icon:'💰', bg:'#FAF3E0', color:'#B8860B'},
+    cancelled:       {label:'Cancelado',        icon:'❌', bg:'#F5E8E8', color:'#A02021'},
   };
 
   // ─── DASHBOARD AGGREGATES ─────────────────────────────────────────
@@ -2388,20 +2424,25 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     const k=p.project_type||'untyped';
     typeCount[k]=(typeCount[k]||0)+1;
   });
-  // Total invested = sum of (purchase + invoices PAID) per project
+  // Total invested = sum of (purchase + invoices PAID, excluding refunds) - refunds (money back)
+  // This matches the CEO Property & Finance treatment where refunds are not income.
   let totalInvested=0;
   let totalReturned=0; // sale prices for SOLD projects
   let totalProfit=0;   // realized profit
+  let totalRefunded=0; // for transparency (shown separately if > 0)
   projects.forEach(p=>{
     const purchase=purchaseFor(p.id);
-    const projInvs=invByProj[p.id]||[];
-    const paidInv=projInvs.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
-    totalInvested+=purchase+paidInv;
+    const paidInv=investableInvoices(p.id).filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+    const refund=refundTotal(p.id);
+    // Net invested = gross spending minus money refunded back to client
+    const netInvested=purchase+paidInv-refund;
+    totalInvested+=netInvested;
+    totalRefunded+=refund;
     const pr=propertyByProj[p.id]||{};
     if(pr.sale_date && +pr.final_sale_price>0){
       const sale=+pr.final_sale_price||0;
       totalReturned+=sale;
-      totalProfit+=(sale-(purchase+paidInv));
+      totalProfit+=(sale-netInvested);
     }
   });
 
@@ -2449,26 +2490,36 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
   // ─── PROJECTS LIST WITH TIMELINE ──────────────────────────────────
   const projectsHTML=projects.map(p=>{
-    const projInvoices=invByProj[p.id]||[];
-    const totalAccum=projInvoices.reduce((s,i)=>s+(+i.amount||0),0);
-    const totalPaid=projInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
-    const totalOpen=projInvoices.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+    // All invoices to display in the listing (includes refunds for transparency)
+    const projInvoicesAll=invByProj[p.id]||[];
+    // Only invoices that count toward investment (exclude refunds + cancelled)
+    const projInvoicesCounted=investableInvoices(p.id);
+    const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+    const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+    const refunded=refundTotal(p.id);
     const purchase=purchaseFor(p.id);
     const progress=gradeFor(p.id);
     const pr=propertyByProj[p.id]||{};
+    const status=statusFor(p);
+    const sMeta=STATUS_BADGES[status];
 
     // ─── Project type badge ───
     const tMeta=p.project_type?PROJECT_TYPE_LABELS[p.project_type]:null;
     const typeBadge=tMeta
       ? `<span style="display:inline-block;padding:3px 9px;background:rgba(255,255,255,0.2);border-radius:10px;font-size:11px;font-weight:700;margin-left:6px">${tMeta.icon} ${tMeta.label}</span>`
       : '';
+    // ─── Status badge ───
+    const statusBadge=sMeta
+      ? `<span style="display:inline-block;padding:3px 9px;background:${sMeta.bg};color:${sMeta.color};border-radius:10px;font-size:11px;font-weight:700;margin-left:6px">${sMeta.icon} ${sMeta.label}</span>`
+      : '';
 
     // ─── TIMELINE EVENTS ──────────────────────────────────────────────
     // Build a chronologically sorted list of milestones:
     //   - Purchase date (acquisition)
-    //   - Each paid invoice (operational payment)
-    //   - Progress checkpoints (25%, 50%, 75%, 100% — only if dated)
+    //   - Each paid OPERATIONAL invoice (real cost)
+    //   - Each paid REFUND invoice (money back — shown as positive return)
     //   - Sale date
+    //   - Cancelled marker (if cancelled)
     const events=[];
     if(pr.purchase_date && purchase>0){
       events.push({
@@ -2479,7 +2530,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         kind:'invest',
       });
     }
-    projInvoices.filter(i=>i.status==='paid' && (i.paid_date||i.date)).forEach(i=>{
+    // Operational invoices (real costs)
+    projInvoicesCounted.filter(i=>i.status==='paid' && (i.paid_date||i.date)).forEach(i=>{
       events.push({
         date:i.paid_date||i.date,
         icon:'🔨',
@@ -2488,9 +2540,19 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         kind:'invest',
       });
     });
-    if(progress>0 && progress<100){
+    // Refund invoices (money returned — shown as credit/return)
+    projInvoicesAll.filter(i=>i.status==='paid' && (i.kind||'').toLowerCase()==='refund' && (i.paid_date||i.date)).forEach(i=>{
       events.push({
-        date:null, // current state (no specific date)
+        date:i.paid_date||i.date,
+        icon:'↩️',
+        title:'Reembolso — Refund #'+i.invoice_number,
+        amount:+i.amount||0,
+        kind:'refund',
+      });
+    });
+    if(progress>0 && progress<100 && status!=='cancelled'){
+      events.push({
+        date:null,
         icon:'📐',
         title:'Progresso da obra: '+progress+'%',
         amount:null,
@@ -2506,13 +2568,22 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         amount:sp,
         kind:'return',
       });
-    } else if(progress===100){
+    } else if(progress===100 && status!=='cancelled'){
       events.push({
         date:null,
         icon:'✅',
-        title:'Obra concluída',
+        title:status==='rehab_completed'?'Reforma concluída':'Obra concluída',
         amount:null,
         kind:'milestone',
+      });
+    }
+    if(status==='cancelled'){
+      events.push({
+        date:p.cancelled_at||null,
+        icon:'❌',
+        title:'Projeto cancelado'+(p.cancelled_reason?' — '+p.cancelled_reason:''),
+        amount:null,
+        kind:'cancelled',
       });
     }
     // Sort by date (events with no date stay at end)
@@ -2523,21 +2594,16 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       return new Date(a.date)-new Date(b.date);
     });
 
-    // ─── PROJECT FINANCIAL SUMMARY ────────────────────────────────────
-    const projectInvested=purchase+totalPaid;
-    const projectSale=+pr.final_sale_price||0;
-    const projectProfit=projectSale>0?(projectSale-projectInvested):null;
-    const projectROI=(projectProfit!==null && projectInvested>0)?((projectProfit/projectInvested)*100):null;
-
     const timelineHTML=events.length===0
       ? `<div style="padding:18px;text-align:center;color:#999;font-style:italic;font-size:12px">Nenhum marco registrado ainda.</div>`
       : `<div style="position:relative;padding:0 6px">
           <div style="position:absolute;left:20px;top:12px;bottom:12px;width:2px;background:#E8DDC9"></div>
           ${events.map(ev=>{
             const dateStr=ev.date?_fmtDate(ev.date):'Atual';
-            const amtColor=ev.kind==='return'?'#2D6A2D':ev.kind==='invest'?'#A86A2C':'#655A4E';
-            const amtStr=ev.amount!=null?`<div style="font-weight:800;color:${amtColor};font-size:14px;text-align:right;min-width:90px">${ev.kind==='return'?'+':''}${_fmtMoney(ev.amount)}</div>`:'';
-            const dotBg=ev.kind==='return'?'#5C7A3F':ev.kind==='invest'?'#C68A4A':ev.kind==='progress'?'#3D271A':'#999';
+            const amtColor=(ev.kind==='return'||ev.kind==='refund')?'#2D6A2D':ev.kind==='invest'?'#A86A2C':'#655A4E';
+            const amtPrefix=(ev.kind==='return'||ev.kind==='refund')?'+':'';
+            const amtStr=ev.amount!=null?`<div style="font-weight:800;color:${amtColor};font-size:14px;text-align:right;min-width:90px">${amtPrefix}${_fmtMoney(ev.amount)}</div>`:'';
+            const dotBg=(ev.kind==='return'||ev.kind==='refund')?'#5C7A3F':ev.kind==='invest'?'#C68A4A':ev.kind==='progress'?'#3D271A':ev.kind==='cancelled'?'#A02021':'#999';
             return `<div style="display:flex;align-items:flex-start;gap:14px;padding:10px 0;position:relative">
               <div style="position:relative;z-index:2;width:32px;height:32px;background:${dotBg};color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;box-shadow:0 0 0 3px #fff">${ev.icon}</div>
               <div style="flex:1;min-width:0">
@@ -2550,28 +2616,40 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>`;
 
     // ─── INVOICES LIST ────────────────────────────────────────────────
-    const invoicesHTML=projInvoices.length===0
+    // Show ALL invoices (including refunds) for full transparency
+    const invoicesHTML=projInvoicesAll.length===0
       ? `<div style="padding:24px;text-align:center;color:#999;font-style:italic;font-size:13px">Nenhuma invoice disponível ainda neste projeto.</div>`
-      : projInvoices.map(inv=>{
+      : projInvoicesAll.map(inv=>{
           const items=itemsByInvoice[inv.id]||[];
+          const isRefund=(inv.kind||'').toLowerCase()==='refund';
           const itemsHTML=items.length>1
             ? `<details style="margin-top:6px;font-size:12px;color:#655A4E"><summary style="cursor:pointer;color:#3D271A;font-weight:600">Ver ${items.length} itens</summary><div style="padding:8px 0 0 14px">${items.map(it=>`<div style="display:flex;justify-content:space-between;padding:3px 0">• ${(it.description||'').replace(/</g,'&lt;')}<span>${_fmtMoney(it.amount)}</span></div>`).join('')}</div></details>`
             : '';
+          const refundBadge=isRefund?`<span style="display:inline-block;padding:3px 9px;background:#DCEFE6;color:#2D6A2D;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px">↩️ REEMBOLSO</span>`:'';
+          const amtColor=isRefund?'#2D6A2D':'#3D271A';
+          const amtPrefix=isRefund?'+':'';
           return `
             <div style="padding:14px 16px;border-bottom:1px solid #F0EAE2;background:#fff">
               <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
                 <div style="flex:1;min-width:200px">
                   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <span style="font-weight:700;color:#3D271A;font-size:14px">Invoice #${inv.invoice_number}</span>
+                    <span style="font-weight:700;color:#3D271A;font-size:14px">${isRefund?'Refund':'Invoice'} #${inv.invoice_number}</span>
                     ${_invStatusBadge(inv.status)}
+                    ${refundBadge}
                   </div>
                   <div style="font-size:12px;color:#655A4E;margin-top:3px">📅 ${_fmtDate(inv.date)}${inv.description?' · '+inv.description.replace(/</g,'&lt;'):''}</div>
                   ${itemsHTML}
                 </div>
-                <div style="font-size:18px;font-weight:800;color:#3D271A;text-align:right;min-width:120px">${_fmtMoney(inv.amount)}</div>
+                <div style="font-size:18px;font-weight:800;color:${amtColor};text-align:right;min-width:120px">${amtPrefix}${_fmtMoney(inv.amount)}</div>
               </div>
             </div>`;
         }).join('');
+
+    // ─── Per-project totals (subtract refunds from invested) ──────────
+    const projectInvested=purchase+totalPaid-refunded; // refund reduces real cost
+    const projectSale=+pr.final_sale_price||0;
+    const projectProfit=projectSale>0?(projectSale-projectInvested):null;
+    const projectROI=(projectProfit!==null && projectInvested>0)?((projectProfit/projectInvested)*100):null;
 
     // Per-project summary card (purchase / invoices / sale / profit)
     const projSummaryHTML=`
@@ -2588,6 +2666,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendentes</div>
           <div style="font-size:16px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
         </div>
+        ${refunded>0?`<div>
+          <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">↩️ Reembolsado</div>
+          <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">−${_fmtMoney(refunded)}</div>
+        </div>`:''}
         <div>
           <div style="font-size:10px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px">📊 Total investido</div>
           <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(projectInvested)}</div>
@@ -2615,11 +2697,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       </div>`:'';
 
     return `
-      <div style="background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden">
+      <div style="background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden${status==='cancelled'?';opacity:.85':''}">
         <div style="padding:20px 24px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.8;text-transform:uppercase">🏠 Projeto ${typeBadge}</div>
-          <div style="font-size:20px;font-weight:700;margin-top:4px">${(p.name||'').replace(/</g,'&lt;')}</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.8;text-transform:uppercase">🏠 Projeto ${typeBadge} ${statusBadge}</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px${status==='cancelled'?';text-decoration:line-through;opacity:.85':''}">${(p.name||'').replace(/</g,'&lt;')}</div>
           ${p.address && p.address!==p.name?`<div style="font-size:13px;opacity:.85;margin-top:2px">${p.address.replace(/</g,'&lt;')}</div>`:''}
+          ${status==='cancelled' && p.cancelled_reason?`<div style="margin-top:10px;padding:8px 12px;background:rgba(160,32,33,0.25);border-left:3px solid #FFB5B5;border-radius:6px;font-size:12px">❌ Motivo: ${p.cancelled_reason.replace(/</g,'&lt;')}</div>`:''}
         </div>
 
         ${projSummaryHTML}
