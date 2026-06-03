@@ -7238,6 +7238,47 @@ async function generateWorkingCapitalPDF(){
       outflows.push({source:'recurring',date:null,amount:+it.amount||0,project:proj?(proj.name||proj.address||'?'):'?',description:(it.item_name||'')+(it.company?' · '+it.company:''),category:'recurring'});
     });
   }catch(e){console.warn(e);}
+  // 4. Invoice payments via Working Capital (matches screen logic)
+  console.log('[WC PDF DEBUG] invoices total:', (invoices||[]).length, 'invoicePayments keys:', Object.keys(invoicePayments||{}).length);
+  let debugInvCount=0, debugPaymentCount=0, debugFullPaidCount=0;
+  try{
+    (invoices||[]).forEach(inv=>{
+      if(inv.status==='cancelled') return;
+      if(inv.kind==='working_capital') return; // skip WC-type invoices (those are inflows)
+      const payments=(invoicePayments||{})[inv.id]||[];
+      const cli=clients.find(c=>c.id===inv.client_id);
+      const proj=inv.project_id?projects.find(p=>p.id===inv.project_id):null;
+      const projLabel=proj?(proj.name||proj.address||'?'):(cli?cli.name:'?');
+      if(payments.length>0){
+        payments.forEach(p=>{
+          if(p.payment_method!=='working_capital') return;
+          debugPaymentCount++;
+          outflows.push({
+            source:'invoice_partial',
+            date:p.payment_date||null,
+            amount:+p.amount||0,
+            project:projLabel,
+            description:'Invoice #'+inv.invoice_number+' (parcial)'+(cli?' · '+cli.name:''),
+            category:'invoice_partial',
+          });
+        });
+      } else {
+        if(inv.status!=='paid') return;
+        if(inv.payment_method!=='working_capital') return;
+        debugFullPaidCount++;
+        outflows.push({
+          source:'invoice',
+          date:inv.paid_date||inv.date||null,
+          amount:+inv.amount||0,
+          project:projLabel,
+          description:'Invoice #'+inv.invoice_number+(cli?' · '+cli.name:''),
+          category:'invoice',
+        });
+      }
+      debugInvCount++;
+    });
+  }catch(e){console.warn('wc PDF invoices error:',e);}
+  console.log('[WC PDF DEBUG] processed invoices:', debugInvCount, '| invoice_partial added:', debugPaymentCount, '| full-paid invoices added:', debugFullPaidCount, '| total outflows now:', outflows.length);
   const outTotal=outflows.reduce((s,o)=>s+(+o.amount||0),0);
   const balance=inPaidTotal-outTotal;
 
