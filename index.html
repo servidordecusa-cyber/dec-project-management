@@ -2489,7 +2489,13 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     </div>`;
 
   // ─── PROJECTS LIST WITH TIMELINE ──────────────────────────────────
-  const projectsHTML=projects.map(p=>{
+  // Sort: cancelled projects always last (others keep original order)
+  const sortedProjects=[...projects].sort((a,b)=>{
+    const aCancelled=a.cancelled===true?1:0;
+    const bCancelled=b.cancelled===true?1:0;
+    return aCancelled-bCancelled;
+  });
+  const projectsHTML=sortedProjects.map(p=>{
     // All invoices to display in the listing (includes refunds for transparency)
     const projInvoicesAll=invByProj[p.id]||[];
     // Only invoices that count toward investment (exclude refunds + cancelled)
@@ -2646,43 +2652,100 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         }).join('');
 
     // ─── Per-project totals (subtract refunds from invested) ──────────
-    const projectInvested=purchase+totalPaid-refunded; // refund reduces real cost
+    // ─── PROJECT FINANCIAL METRICS ────────────────────────────────────
+    // Uses the SAME formulas as the CEO's Project Consolidated report.
+    // For non-sold: only the simple invested summary is shown.
+    // For SOLD: a full breakdown including Gross Profit, Net Profit, ROI, Client/DEC splits.
     const projectSale=+pr.final_sale_price||0;
-    const projectProfit=projectSale>0?(projectSale-projectInvested):null;
-    const projectROI=(projectProfit!==null && projectInvested>0)?((projectProfit/projectInvested)*100):null;
+    const sellingCosts=+pr.selling_costs||0;
+    const lenderSale=+pr.lender_costs_sale||0;
+    const pctClient=+pr.pct_client||0;
+    const pctDec=+pr.pct_dec||0;
+    // Total Invested = purchase + paid invoices (operational only; refunds excluded)
+    const projectInvested=purchase+totalPaid;
+    // Gross Profit = Final Sale - Selling Costs - Lender(sale)
+    const grossProfit=projectSale-sellingCosts-lenderSale;
+    // Net Profit = Gross Profit - Total Invested
+    const netProfit=grossProfit-projectInvested;
+    // ROI = Net Profit / Total Invested * 100
+    const roiTotal=projectInvested>0?(netProfit/projectInvested*100):0;
+    const lucroClient=netProfit*pctClient/100;
+    const lucroDec=netProfit*pctDec/100;
+    const roiClient=roiTotal*pctClient/100;
+    const roiDec=roiTotal*pctDec/100;
+    const pagarADec=lucroDec; // DEC receives = % DEC of profit only
 
-    // Per-project summary card (purchase / invoices / sale / profit)
-    const projSummaryHTML=`
-      <div style="padding:16px 20px;background:#FAF7F3;border-bottom:1px solid #F0EAE2;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
-        <div>
-          <div style="font-size:10px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">💰 Compra</div>
-          <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(purchase)}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">✅ Invoices pagas</div>
-          <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">${_fmtMoney(totalPaid)}</div>
-        </div>
-        <div>
-          <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendentes</div>
-          <div style="font-size:16px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
-        </div>
-        ${refunded>0?`<div>
-          <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">↩️ Reembolsado</div>
-          <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">−${_fmtMoney(refunded)}</div>
-        </div>`:''}
-        <div>
-          <div style="font-size:10px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px">📊 Total investido</div>
-          <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(projectInvested)}</div>
-        </div>
-        ${projectSale>0?`<div>
-          <div style="font-size:10px;font-weight:700;color:#5C7A3F;text-transform:uppercase;letter-spacing:.4px">💵 Vendido por</div>
-          <div style="font-size:16px;font-weight:800;color:#5C7A3F;margin-top:2px">${_fmtMoney(projectSale)}</div>
-        </div>`:''}
-        ${projectProfit!=null?`<div>
-          <div style="font-size:10px;font-weight:700;color:${projectProfit>=0?'#5C7A3F':'#A02021'};text-transform:uppercase;letter-spacing:.4px">📈 Lucro ${projectROI!=null?'('+projectROI.toFixed(1)+'%)':''}</div>
-          <div style="font-size:16px;font-weight:800;color:${projectProfit>=0?'#5C7A3F':'#A02021'};margin-top:2px">${projectProfit>=0?'+':''}${_fmtMoney(projectProfit)}</div>
-        </div>`:''}
-      </div>`;
+    // Header sub-info: Purchase Date, Final Sale Price, Execution Time (for sold projects)
+    let executionDays=null;
+    if(pr.purchase_date && pr.sale_date){
+      const s=new Date(pr.purchase_date+'T00:00:00');
+      const e=new Date(pr.sale_date+'T00:00:00');
+      executionDays=Math.max(0, Math.round((e-s)/86400000));
+    }
+
+    // ─── SUMMARY CARDS ────────────────────────────────────────────────
+    // For SOLD: show the rich block (Total Invested, Gross Profit, Net Profit, ROI, split, refund, PAID TO DEC)
+    // For non-sold: show the simple block (Compra, Pagas, Pendentes, Reembolsado, Total investido)
+    let projSummaryHTML;
+    if(status==='sold'){
+      const $fmt=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const $pct=n=>(n>=0?'':'-')+Math.abs(n).toFixed(1)+'%';
+      const rowsHTML=[
+        {label:'Total Invested',value:$fmt(projectInvested),strong:true},
+        {label:'Gross Profit',value:$fmt(grossProfit)},
+        {label:'Net Profit Total',value:$fmt(netProfit),highlight:true},
+        {label:'ROI Total',value:$pct(roiTotal),accent:netProfit>=0?'#5C7A3F':'#A02021'},
+        {label:pctClient+'% Client',value:$fmt(lucroClient)},
+        {label:'ROI Client',value:$pct(roiClient),accent:roiClient>=0?'#5C7A3F':'#A02021'},
+        {label:pctDec+'% DEC',value:$fmt(lucroDec)},
+        ...(refunded>0?[{label:'Reembolso',value:$fmt(refunded)}]:[]),
+      ].map(r=>{
+        const labelStyle=r.highlight
+          ? 'font-weight:700;color:#B8860B;font-size:13px'
+          : r.strong?'font-weight:700;color:#3D271A;font-size:13px':'font-weight:500;color:#655A4E;font-size:13px';
+        const valStyle=r.highlight
+          ? 'font-weight:800;color:#B8860B;font-size:14px;text-align:right'
+          : r.accent?`font-weight:700;color:${r.accent};font-size:14px;text-align:right`:'font-weight:600;color:#3D271A;font-size:14px;text-align:right';
+        const bg=r.highlight?'background:#FFF8E7;border-radius:4px;padding:6px 12px;margin:4px -12px':'';
+        return `<div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:8px 0;border-bottom:1px solid #F0EAE2;${bg}">
+          <span style="${labelStyle}">${r.label}</span>
+          <span style="${valStyle}">${r.value}</span>
+        </div>`;
+      }).join('');
+      projSummaryHTML=`
+        <div style="padding:18px 22px;background:#FAF7F3;border-bottom:1px solid #F0EAE2">
+          ${rowsHTML}
+          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 16px;margin-top:8px;background:#3D271A;color:#fff;border-radius:6px">
+            <span style="font-size:14px;font-weight:800;letter-spacing:.4px">PAID TO DEC</span>
+            <span style="font-size:16px;font-weight:800;color:#FFD699;text-align:right">$ ${pagarADec.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+          </div>
+        </div>`;
+    } else {
+      // Non-sold: simple summary
+      projSummaryHTML=`
+        <div style="padding:16px 20px;background:#FAF7F3;border-bottom:1px solid #F0EAE2;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">💰 Compra</div>
+            <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(purchase)}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">✅ Invoices pagas</div>
+            <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">${_fmtMoney(totalPaid)}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendentes</div>
+            <div style="font-size:16px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
+          </div>
+          ${refunded>0?`<div>
+            <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">↩️ Reembolsado</div>
+            <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">−${_fmtMoney(refunded)}</div>
+          </div>`:''}
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px">📊 Total investido</div>
+            <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(projectInvested-refunded)}</div>
+          </div>
+        </div>`;
+    }
 
     // Progress bar (Gantt %)
     const progressBarHTML=progress>0?`
@@ -2696,6 +2759,25 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>
       </div>`:'';
 
+    // ─── Sold project header enrichment ────────────────────────────
+    // Matches the "Project Consolidated" report layout: Purchase date, Final Sale Price, Execution time
+    const $fmtMoney2=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const soldHeaderHTML=status==='sold'?`
+      <div style="margin-top:14px;padding:12px 14px;background:rgba(255,255,255,0.1);border-left:3px solid #FFD699;border-radius:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;font-size:12px">
+        ${pr.purchase_date?`<div>
+          <span style="opacity:.7;font-weight:600">📅 Purchase date:</span>
+          <span style="font-weight:700;margin-left:6px">${_fmtDate(pr.purchase_date)}</span>
+        </div>`:''}
+        ${projectSale>0?`<div>
+          <span style="opacity:.7;font-weight:600">💵 Final Sale Price:</span>
+          <span style="font-weight:700;color:#FFD699;margin-left:6px">${$fmtMoney2(projectSale)}</span>
+        </div>`:''}
+        ${executionDays!=null?`<div>
+          <span style="opacity:.7;font-weight:600">⏱️ Execution time:</span>
+          <span style="font-weight:700;margin-left:6px">${executionDays} dias</span>
+        </div>`:''}
+      </div>`:'';
+
     return `
       <div style="background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden${status==='cancelled'?';opacity:.85':''}">
         <div style="padding:20px 24px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff">
@@ -2703,6 +2785,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <div style="font-size:20px;font-weight:700;margin-top:4px${status==='cancelled'?';text-decoration:line-through;opacity:.85':''}">${(p.name||'').replace(/</g,'&lt;')}</div>
           ${p.address && p.address!==p.name?`<div style="font-size:13px;opacity:.85;margin-top:2px">${p.address.replace(/</g,'&lt;')}</div>`:''}
           ${status==='cancelled' && p.cancelled_reason?`<div style="margin-top:10px;padding:8px 12px;background:rgba(160,32,33,0.25);border-left:3px solid #FFB5B5;border-radius:6px;font-size:12px">❌ Motivo: ${p.cancelled_reason.replace(/</g,'&lt;')}</div>`:''}
+          ${soldHeaderHTML}
         </div>
 
         ${projSummaryHTML}
