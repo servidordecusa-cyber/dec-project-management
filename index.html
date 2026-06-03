@@ -331,12 +331,17 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <div class="kpi" style="border-left-color:var(--gold)"><label>💰 Sold</label><div class="val" id="pk-sold">—</div></div>
   </div>
   <!-- Filtros de status -->
-  <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px">
+  <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center">
     <button class="port-flt active" data-flt="all" onclick="setPortFilter('all')">📁 Todos</button>
     <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')">🔄 In Progress</button>
     <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Completed</button>
     <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ For Sale</button>
     <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')">💰 Sold</button>
+    <div style="width:1px;height:24px;background:var(--gray2);margin:0 4px"></div>
+    <label for="port-client-filter" style="font-size:12px;color:var(--gray3);font-weight:600">👥 Cliente:</label>
+    <select id="port-client-filter" onchange="setPortClientFilter(this.value)" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:180px">
+      <option value="">Todos os clientes</option>
+    </select>
   </div>
   <div id="proj-sections"></div>
 </div>
@@ -2477,6 +2482,7 @@ function goPortfolio(){goView('portfolio');}
 
 // Current active filter for portfolio
 let _portFilter='all';
+let _portClientFilter=''; // empty string = all clients
 
 function setPortFilter(f){
   _portFilter=f;
@@ -2487,17 +2493,62 @@ function setPortFilter(f){
   renderPortfolio();
 }
 
-function renderPortfolio(){
-  // Group projects by status
-  const groups={in_progress:[],completed:[],for_sale:[],sold:[]};
+function setPortClientFilter(clientId){
+  _portClientFilter=clientId||'';
+  renderPortfolio();
+}
+
+// Populate client dropdown with all clients that have at least one project
+function _populatePortClientFilter(){
+  const sel=document.getElementById('port-client-filter');
+  if(!sel) return;
+  // Get unique client IDs that have at least 1 project
+  const clientIdsWithProjects=new Set();
   projects.forEach(p=>{
+    if(p.customer) clientIdsWithProjects.add(p.customer);
+  });
+  // Build sorted list of client {id, name}
+  const list=Array.from(clientIdsWithProjects)
+    .map(cid=>{
+      const c=clients.find(cl=>cl.id===cid);
+      return c?{id:c.id,name:c.name||'(sem nome)'}:null;
+    })
+    .filter(Boolean)
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const currentValue=sel.value;
+  sel.innerHTML='<option value="">Todos os clientes</option>'+
+    list.map(c=>`<option value="${c.id}">${c.name.replace(/</g,'&lt;')}</option>`).join('');
+  // Restore selection if still valid
+  if(currentValue && list.some(c=>c.id===currentValue)){
+    sel.value=currentValue;
+  } else {
+    _portClientFilter=''; // reset if selected client no longer has projects
+  }
+}
+
+function renderPortfolio(){
+  // Populate the client filter dropdown (idempotent — restores selection)
+  _populatePortClientFilter();
+  // Apply client filter first: subset of projects to consider
+  const filteredProjects=_portClientFilter
+    ? projects.filter(p=>p.customer===_portClientFilter)
+    : projects;
+  // Group filtered projects by status
+  const groups={in_progress:[],completed:[],for_sale:[],sold:[]};
+  filteredProjects.forEach(p=>{
     const st=projectStatus(p.id);
     if(groups[st]) groups[st].push(p);
   });
-  // Update KPIs (always show all counts, regardless of filter)
-  document.getElementById('proj-count-lbl').textContent=projects.length+' project'+(projects.length!==1?'s':'');
+  // Update KPIs — show counts of the FILTERED set when client filter is active,
+  // otherwise show totals across all projects
+  const totalShown=filteredProjects.length;
+  const totalAll=projects.length;
+  document.getElementById('proj-count-lbl').textContent=
+    _portClientFilter
+      ? `${totalShown} of ${totalAll} project${totalAll!==1?'s':''}`
+      : `${totalAll} project${totalAll!==1?'s':''}`;
   document.getElementById('port-sub').textContent='Last updated: '+new Date().toLocaleString();
-  document.getElementById('pk-total').textContent=projects.length;
+  document.getElementById('pk-total').textContent=totalShown;
   document.getElementById('pk-prog').textContent=groups.in_progress.length;
   document.getElementById('pk-done').textContent=groups.completed.length;
   document.getElementById('pk-sale').textContent=groups.for_sale.length;
