@@ -2270,12 +2270,16 @@ async function showInvestorPortal(token){
     const projIds=(projData||[]).map(p=>p.id);
     let invData=[];
     let itemsByInvoice={};
+    let propertyByProj={};
+    let scheduleByProj={};
     if(projIds.length>0){
-      const {data:invs,error:invErr}=await sb.from('invoices')
-        .select('*').eq('visible_to_investor',true).in('project_id',projIds)
-        .order('date',{ascending:false});
-      if(invErr) throw invErr;
-      invData=invs||[];
+      const [invRes, propRes, schedRes] = await Promise.all([
+        sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
+        sb.from('property_info').select('*').in('project_id',projIds),
+        sb.from('schedule_tasks').select('*').in('project_id',projIds),
+      ]);
+      if(invRes.error) throw invRes.error;
+      invData=invRes.data||[];
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
@@ -2287,9 +2291,24 @@ async function showInvestorPortal(token){
           itemsByInvoice[it.invoice_id].push(it);
         });
       }
+      // Index property by project (one record per project)
+      if(propRes && !propRes.error){
+        (propRes.data||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
+      } else if(propRes && propRes.error){
+        console.warn('property fetch failed (non-blocking):',propRes.error.message);
+      }
+      // Group schedule_tasks by project then by task_key
+      if(schedRes && !schedRes.error){
+        (schedRes.data||[]).forEach(s=>{
+          if(!scheduleByProj[s.project_id]) scheduleByProj[s.project_id]=[];
+          scheduleByProj[s.project_id].push(s);
+        });
+      } else if(schedRes && schedRes.error){
+        console.warn('schedule fetch failed (non-blocking):',schedRes.error.message);
+      }
     }
     setLoading(false);
-    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice);
+    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj);
   }catch(e){
     console.error('Investor portal error:',e);
     setLoading(false);
@@ -2319,8 +2338,10 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
-function _renderInvestorPortal(client,projects,invoices,itemsByInvoice){
+function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj){
   const portalEl=document.getElementById('investor-portal');
+  propertyByProj=propertyByProj||{};
+  scheduleByProj=scheduleByProj||{};
 
   // Group invoices by project
   const invByProj={};
@@ -2329,12 +2350,206 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice){
     invByProj[inv.project_id].push(inv);
   });
 
+  // ─── Helper: compute purchase total for a project (read from property_info)
+  // Purchase = EMD + Cash + Other Costs + Commission (matches CEO Property & Finance)
+  const purchaseFor=(pid)=>{
+    const pr=propertyByProj[pid]||{};
+    return (+pr.emd_cash||0)+(+pr.cash||0)+(+pr.other_costs||0)+(+pr.commission||0);
+  };
+
+  // ─── Helper: compute Gantt progress for a project (avg of phases) ───
+  const gradeFor=(pid)=>{
+    const tasks=scheduleByProj[pid]||[];
+    if(tasks.length===0) return 0;
+    // Group by phase, average per phase, then average of phases
+    const byPhase={};
+    tasks.forEach(t=>{
+      const phase=t.phase_id||(t.task_key||'').split('_')[0]||'_';
+      if(!byPhase[phase]) byPhase[phase]=[];
+      byPhase[phase].push(+t.pct||0);
+    });
+    const phaseAvgs=Object.values(byPhase).map(arr=>arr.reduce((a,b)=>a+b,0)/arr.length);
+    if(phaseAvgs.length===0) return 0;
+    return Math.round(phaseAvgs.reduce((a,b)=>a+b,0)/phaseAvgs.length);
+  };
+
+  // ─── DASHBOARD AGGREGATES ─────────────────────────────────────────
+  const PROJECT_TYPE_LABELS={
+    single_family:{label:'Single Family',icon:'🏠'},
+    high_end:{label:'High End',icon:'💎'},
+    mobile_home:{label:'Mobile Home',icon:'🚐'},
+    rehab:{label:'Rehab',icon:'🔧'},
+    manufactured_home:{label:'Manufactured Home',icon:'🏭'},
+    land:{label:'Land',icon:'🌳'},
+  };
+  // Count projects by type (including 'untyped')
+  const typeCount={};
+  projects.forEach(p=>{
+    const k=p.project_type||'untyped';
+    typeCount[k]=(typeCount[k]||0)+1;
+  });
+  // Total invested = sum of (purchase + invoices PAID) per project
+  let totalInvested=0;
+  let totalReturned=0; // sale prices for SOLD projects
+  let totalProfit=0;   // realized profit
+  projects.forEach(p=>{
+    const purchase=purchaseFor(p.id);
+    const projInvs=invByProj[p.id]||[];
+    const paidInv=projInvs.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+    totalInvested+=purchase+paidInv;
+    const pr=propertyByProj[p.id]||{};
+    if(pr.sale_date && +pr.final_sale_price>0){
+      const sale=+pr.final_sale_price||0;
+      totalReturned+=sale;
+      totalProfit+=(sale-(purchase+paidInv));
+    }
+  });
+
+  // Build type breakdown HTML
+  const typeChips=Object.entries(typeCount).map(([k,c])=>{
+    const meta=PROJECT_TYPE_LABELS[k]||{label:'Não classificado',icon:'❓'};
+    return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border:1px solid #E8DDC9;border-radius:18px;font-size:12px;color:#3D271A;font-weight:600">
+      <span style="font-size:14px">${meta.icon}</span>
+      <span>${meta.label}: <strong>${c}</strong></span>
+    </div>`;
+  }).join('');
+
+  const dashboardHTML=`
+    <div style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden;color:#fff">
+      <div style="padding:22px 24px 12px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.5px;opacity:.7;text-transform:uppercase;margin-bottom:6px">📊 Visão Geral</div>
+        <div style="font-size:22px;font-weight:800">Seu portfólio</div>
+      </div>
+      <div style="padding:0 24px 22px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
+          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+            <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">🏘️ Total de imóveis</div>
+            <div style="font-size:28px;font-weight:800;margin-top:4px">${projects.length}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+            <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">💰 Total investido</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#FFD699">${_fmtMoney(totalInvested)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+            <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">✅ Retorno realizado</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#B5E3B5">${_fmtMoney(totalReturned)}</div>
+            <div style="font-size:10px;opacity:.7;margin-top:2px">de projetos vendidos</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+            <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">📈 Lucro realizado</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
+          </div>
+        </div>
+        ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
+          <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px">Por tipo de imóvel</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">${typeChips}</div>
+        </div>`:''}
+      </div>
+    </div>`;
+
+  // ─── PROJECTS LIST WITH TIMELINE ──────────────────────────────────
   const projectsHTML=projects.map(p=>{
     const projInvoices=invByProj[p.id]||[];
     const totalAccum=projInvoices.reduce((s,i)=>s+(+i.amount||0),0);
     const totalPaid=projInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
     const totalOpen=projInvoices.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+    const purchase=purchaseFor(p.id);
+    const progress=gradeFor(p.id);
+    const pr=propertyByProj[p.id]||{};
 
+    // ─── Project type badge ───
+    const tMeta=p.project_type?PROJECT_TYPE_LABELS[p.project_type]:null;
+    const typeBadge=tMeta
+      ? `<span style="display:inline-block;padding:3px 9px;background:rgba(255,255,255,0.2);border-radius:10px;font-size:11px;font-weight:700;margin-left:6px">${tMeta.icon} ${tMeta.label}</span>`
+      : '';
+
+    // ─── TIMELINE EVENTS ──────────────────────────────────────────────
+    // Build a chronologically sorted list of milestones:
+    //   - Purchase date (acquisition)
+    //   - Each paid invoice (operational payment)
+    //   - Progress checkpoints (25%, 50%, 75%, 100% — only if dated)
+    //   - Sale date
+    const events=[];
+    if(pr.purchase_date && purchase>0){
+      events.push({
+        date:pr.purchase_date,
+        icon:'💰',
+        title:'Compra do imóvel',
+        amount:purchase,
+        kind:'invest',
+      });
+    }
+    projInvoices.filter(i=>i.status==='paid' && (i.paid_date||i.date)).forEach(i=>{
+      events.push({
+        date:i.paid_date||i.date,
+        icon:'🔨',
+        title:'Pagamento — Invoice #'+i.invoice_number,
+        amount:+i.amount||0,
+        kind:'invest',
+      });
+    });
+    if(progress>0 && progress<100){
+      events.push({
+        date:null, // current state (no specific date)
+        icon:'📐',
+        title:'Progresso da obra: '+progress+'%',
+        amount:null,
+        kind:'progress',
+      });
+    }
+    if(pr.sale_date){
+      const sp=+pr.final_sale_price||0;
+      events.push({
+        date:pr.sale_date,
+        icon:'💵',
+        title:'Imóvel vendido',
+        amount:sp,
+        kind:'return',
+      });
+    } else if(progress===100){
+      events.push({
+        date:null,
+        icon:'✅',
+        title:'Obra concluída',
+        amount:null,
+        kind:'milestone',
+      });
+    }
+    // Sort by date (events with no date stay at end)
+    events.sort((a,b)=>{
+      if(!a.date && !b.date) return 0;
+      if(!a.date) return 1;
+      if(!b.date) return -1;
+      return new Date(a.date)-new Date(b.date);
+    });
+
+    // ─── PROJECT FINANCIAL SUMMARY ────────────────────────────────────
+    const projectInvested=purchase+totalPaid;
+    const projectSale=+pr.final_sale_price||0;
+    const projectProfit=projectSale>0?(projectSale-projectInvested):null;
+    const projectROI=(projectProfit!==null && projectInvested>0)?((projectProfit/projectInvested)*100):null;
+
+    const timelineHTML=events.length===0
+      ? `<div style="padding:18px;text-align:center;color:#999;font-style:italic;font-size:12px">Nenhum marco registrado ainda.</div>`
+      : `<div style="position:relative;padding:0 6px">
+          <div style="position:absolute;left:20px;top:12px;bottom:12px;width:2px;background:#E8DDC9"></div>
+          ${events.map(ev=>{
+            const dateStr=ev.date?_fmtDate(ev.date):'Atual';
+            const amtColor=ev.kind==='return'?'#2D6A2D':ev.kind==='invest'?'#A86A2C':'#655A4E';
+            const amtStr=ev.amount!=null?`<div style="font-weight:800;color:${amtColor};font-size:14px;text-align:right;min-width:90px">${ev.kind==='return'?'+':''}${_fmtMoney(ev.amount)}</div>`:'';
+            const dotBg=ev.kind==='return'?'#5C7A3F':ev.kind==='invest'?'#C68A4A':ev.kind==='progress'?'#3D271A':'#999';
+            return `<div style="display:flex;align-items:flex-start;gap:14px;padding:10px 0;position:relative">
+              <div style="position:relative;z-index:2;width:32px;height:32px;background:${dotBg};color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;box-shadow:0 0 0 3px #fff">${ev.icon}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;color:#999;font-weight:600">${dateStr}</div>
+                <div style="font-size:13px;color:#3D271A;font-weight:600;margin-top:2px">${ev.title.replace(/</g,'&lt;')}</div>
+              </div>
+              ${amtStr}
+            </div>`;
+          }).join('')}
+        </div>`;
+
+    // ─── INVOICES LIST ────────────────────────────────────────────────
     const invoicesHTML=projInvoices.length===0
       ? `<div style="padding:24px;text-align:center;color:#999;font-style:italic;font-size:13px">Nenhuma invoice disponível ainda neste projeto.</div>`
       : projInvoices.map(inv=>{
@@ -2358,30 +2573,64 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice){
             </div>`;
         }).join('');
 
+    // Per-project summary card (purchase / invoices / sale / profit)
+    const projSummaryHTML=`
+      <div style="padding:16px 20px;background:#FAF7F3;border-bottom:1px solid #F0EAE2;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">💰 Compra</div>
+          <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(purchase)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">✅ Invoices pagas</div>
+          <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">${_fmtMoney(totalPaid)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendentes</div>
+          <div style="font-size:16px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px">📊 Total investido</div>
+          <div style="font-size:16px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(projectInvested)}</div>
+        </div>
+        ${projectSale>0?`<div>
+          <div style="font-size:10px;font-weight:700;color:#5C7A3F;text-transform:uppercase;letter-spacing:.4px">💵 Vendido por</div>
+          <div style="font-size:16px;font-weight:800;color:#5C7A3F;margin-top:2px">${_fmtMoney(projectSale)}</div>
+        </div>`:''}
+        ${projectProfit!=null?`<div>
+          <div style="font-size:10px;font-weight:700;color:${projectProfit>=0?'#5C7A3F':'#A02021'};text-transform:uppercase;letter-spacing:.4px">📈 Lucro ${projectROI!=null?'('+projectROI.toFixed(1)+'%)':''}</div>
+          <div style="font-size:16px;font-weight:800;color:${projectProfit>=0?'#5C7A3F':'#A02021'};margin-top:2px">${projectProfit>=0?'+':''}${_fmtMoney(projectProfit)}</div>
+        </div>`:''}
+      </div>`;
+
+    // Progress bar (Gantt %)
+    const progressBarHTML=progress>0?`
+      <div style="padding:12px 20px;background:#fff;border-bottom:1px solid #F0EAE2">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">📐 Progresso da obra</span>
+          <span style="font-size:13px;font-weight:800;color:${progress===100?'#5C7A3F':'#C68A4A'}">${progress}%</span>
+        </div>
+        <div style="background:#F0EAE2;height:8px;border-radius:4px;overflow:hidden">
+          <div style="background:${progress===100?'#5C7A3F':'#C68A4A'};height:100%;width:${progress}%;transition:width .4s"></div>
+        </div>
+      </div>`:'';
+
     return `
       <div style="background:#fff;border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden">
         <div style="padding:20px 24px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.8;text-transform:uppercase">🏠 Projeto</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.8;text-transform:uppercase">🏠 Projeto ${typeBadge}</div>
           <div style="font-size:20px;font-weight:700;margin-top:4px">${(p.name||'').replace(/</g,'&lt;')}</div>
           ${p.address && p.address!==p.name?`<div style="font-size:13px;opacity:.85;margin-top:2px">${p.address.replace(/</g,'&lt;')}</div>`:''}
         </div>
 
-        <div style="padding:16px 20px;background:#FAF7F3;border-bottom:1px solid #F0EAE2;display:flex;gap:14px;flex-wrap:wrap">
-          <div style="flex:1;min-width:120px">
-            <div style="font-size:10px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">Total acumulado</div>
-            <div style="font-size:18px;font-weight:800;color:#3D271A;margin-top:2px">${_fmtMoney(totalAccum)}</div>
-          </div>
-          <div style="flex:1;min-width:120px">
-            <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">✅ Pago</div>
-            <div style="font-size:18px;font-weight:800;color:#2D6A2D;margin-top:2px">${_fmtMoney(totalPaid)}</div>
-          </div>
-          <div style="flex:1;min-width:120px">
-            <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendente</div>
-            <div style="font-size:18px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
-          </div>
-        </div>
+        ${projSummaryHTML}
+        ${progressBarHTML}
 
         <div style="padding:18px 20px 12px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff">
+          📍 Timeline do projeto
+        </div>
+        <div style="padding:0 20px 16px">${timelineHTML}</div>
+
+        <div style="padding:18px 20px 12px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff;border-top:1px solid #F0EAE2">
           💰 Invoices
         </div>
         <div>${invoicesHTML}</div>
@@ -2402,8 +2651,9 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice){
       <div style="text-align:center;margin-bottom:32px">
         <div style="font-size:13px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">DEC Group USA</div>
         <h1 style="font-size:28px;color:#3D271A;font-weight:800;margin:0">👋 Olá, ${(client.name||'Investidor').replace(/</g,'&lt;')}</h1>
-        <p style="color:#655A4E;font-size:14px;margin-top:6px">Acompanhe seus projetos abaixo</p>
+        <p style="color:#655A4E;font-size:14px;margin-top:6px">Acompanhe seu portfólio e seus projetos abaixo</p>
       </div>
+      ${projects.length>0?dashboardHTML:''}
       ${projectsHTML}
       ${noProjectsHTML}
       <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
