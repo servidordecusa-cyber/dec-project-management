@@ -2824,10 +2824,19 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
   portalEl.innerHTML=`
     <div style="max-width:960px;margin:0 auto;padding:32px 20px">
-      <div style="text-align:center;margin-bottom:32px">
-        <div style="font-size:13px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">DEC Group USA</div>
-        <h1 style="font-size:28px;color:#3D271A;font-weight:800;margin:0">👋 Olá, ${(client.name||'Investidor').replace(/</g,'&lt;')}</h1>
-        <p style="color:#655A4E;font-size:14px;margin-top:6px">Acompanhe seu portfólio e seus projetos abaixo</p>
+      <!-- Top banner: Logo + Welcome text -->
+      <div style="background:#fff;border-radius:14px;padding:22px 28px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <!-- DEC Logo (left) -->
+        <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 20px;background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:12px;min-width:120px">
+          <div style="font-size:24px;font-weight:800;color:#fff;letter-spacing:1px;line-height:1">DEC<span style="color:#C68A4A">GROUP</span></div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:2px;margin-top:2px">USA</div>
+        </div>
+        <!-- Welcome (right) -->
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:11px;font-weight:700;color:#C68A4A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Bem-vindo ao Portal do Investidor</div>
+          <h1 style="font-size:26px;color:#3D271A;font-weight:800;margin:0">👋 Olá, ${(client.name||'Investidor').replace(/</g,'&lt;')}</h1>
+          <p style="color:#655A4E;font-size:13px;margin-top:6px">Acompanhe seu portfólio e seus projetos abaixo</p>
+        </div>
       </div>
       ${projects.length>0?dashboardHTML:''}
       ${projectsHTML}
