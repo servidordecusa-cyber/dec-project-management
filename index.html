@@ -346,6 +346,17 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <select id="port-client-filter" onchange="setPortClientFilter(this.value)" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:180px">
       <option value="">Todos os clientes</option>
     </select>
+    <label for="port-type-filter" style="font-size:12px;color:var(--gray3);font-weight:600">🏠 Tipo:</label>
+    <select id="port-type-filter" onchange="setPortTypeFilter(this.value)" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:160px">
+      <option value="">Todos os tipos</option>
+      <option value="single_family">🏠 Single Family</option>
+      <option value="high_end">💎 High End</option>
+      <option value="mobile_home">🚐 Mobile Home</option>
+      <option value="rehab">🔧 Rehab</option>
+      <option value="manufactured_home">🏭 Manufactured Home</option>
+      <option value="land">🌳 Land (Terreno)</option>
+      <option value="__none__">— Sem tipo definido —</option>
+    </select>
   </div>
   <div id="proj-sections"></div>
 </div>
@@ -2538,6 +2549,7 @@ function goPortfolio(){goView('portfolio');}
 // Current active filter for portfolio
 let _portFilter='all';
 let _portClientFilter=''; // empty string = all clients; can be a client.id OR 'group:joel'
+let _portTypeFilter='';   // empty = all types; value can be type key OR '__none__' for missing type
 
 // Client groups: visually combine multiple client companies under one "owner"
 // (does NOT change anything in the database — just affects the Projects filter)
@@ -2586,6 +2598,11 @@ function setPortFilter(f){
 
 function setPortClientFilter(clientId){
   _portClientFilter=clientId||'';
+  renderPortfolio();
+}
+
+function setPortTypeFilter(typeValue){
+  _portTypeFilter=typeValue||'';
   renderPortfolio();
 }
 
@@ -2651,23 +2668,33 @@ function renderPortfolio(){
   // Apply client filter first: subset of projects to consider
   // The filter value can be a client.id OR 'group:<key>' — resolveClientFilterIds handles both
   const filterIds=_resolveClientFilterIds(_portClientFilter);
-  const filteredProjects=filterIds
+  let filteredProjects=filterIds
     ? projects.filter(p=>filterIds.has(p.customer))
     : projects;
+  // Apply type filter on top: '__none__' = projects without project_type set;
+  // any other value = exact match against p.project_type
+  if(_portTypeFilter){
+    if(_portTypeFilter==='__none__'){
+      filteredProjects=filteredProjects.filter(p=>!p.project_type);
+    } else {
+      filteredProjects=filteredProjects.filter(p=>p.project_type===_portTypeFilter);
+    }
+  }
   // Group filtered projects by status
   const groups={in_progress:[],completed:[],rehab_completed:[],for_sale:[],sold:[],cancelled:[]};
   filteredProjects.forEach(p=>{
     const st=projectStatus(p.id);
     if(groups[st]) groups[st].push(p);
   });
-  // Update KPIs — show counts of the FILTERED set when client filter is active,
+  // Update KPIs — show counts of the FILTERED set when any filter is active,
   // otherwise show totals across all projects
   const totalShown=filteredProjects.length;
   const totalAll=projects.length;
   const cancelledCount=groups.cancelled.length;
   const activeCount=totalShown-cancelledCount;
+  const anyFilter=_portClientFilter||_portTypeFilter;
   document.getElementById('proj-count-lbl').textContent=
-    _portClientFilter
+    anyFilter
       ? `${totalShown} of ${totalAll} project${totalAll!==1?'s':''}`
       : (cancelledCount>0
           ? `${activeCount} of ${totalShown} active`
