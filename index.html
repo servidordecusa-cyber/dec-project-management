@@ -3091,7 +3091,7 @@ function rowHTML(type,gid,item,islug){
         oninput="onBU('${type}','${gid}','${islug}',this)" placeholder="0"></div></td>
     <td><div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--gray3)">$</span>
       <input class="ni" type="number" min="0" step="100" id="bi-${type}-${gid}-${islug}"
-        oninput="onBI('${type}','${gid}','${islug}',this)" placeholder="0"></div></td>
+        oninput="onBI('${type}','${gid}','${islug}',this)" onblur="onBIBlur('${type}','${gid}','${islug}')" placeholder="0"></div></td>
     <td><input class="ci" type="text" id="bc-${type}-${gid}-${islug}"
       oninput="onBC('${type}','${gid}','${islug}',this)" placeholder="Notes..."></td>
     ${wcCell}
@@ -3630,6 +3630,21 @@ async function approveVendorNote() {
   if (isNaN(total) || total <= 0) { toast('Total inválido', false); return; }
   if (!vendorId && _vnCurrent.extracted.vendor_is_new) {
     if (!confirm('Você não selecionou nem criou vendor. Continuar mesmo assim?')) return;
+  }
+
+  // ─── DUPLICATE DETECTION ───────────────────────────────────────────
+  // Use vendorId if available, else fall back to vendorName (legacy strings)
+  const supplierForCheck = vendorId || vendorName;
+  if (supplierForCheck) {
+    const dups = findActualDuplicates(CID, total, supplierForCheck, null);
+    if (dups.length > 0) {
+      if (!confirm(formatDuplicateMessage('actual', dups))) {
+        // User wants to cancel — re-enable button
+        const btn0 = document.getElementById('vn-approve-btn');
+        if (btn0) { btn0.disabled = false; btn0.textContent = '✅ Aprovar e Lançar'; }
+        return;
+      }
+    }
   }
 
   const btn = document.getElementById('vn-approve-btn');
@@ -8495,6 +8510,123 @@ async function loadVendors(){
 
 function _vendorById(id){return vendors.find(v=>v.id===id);}
 
+// ═══ DUPLICATE DETECTION ══════════════════════════════════════════════
+// Centralized helpers to detect potentially duplicated cost entries.
+// Returns array of matching items (empty = no duplicates).
+// All comparisons are SAME PROJECT only (cross-project duplicates are ignored).
+
+/**
+ * Compare two supplier values, normalizing UUID vs name and case.
+ * Returns true if they refer to the same vendor.
+ */
+function _supplierMatches(a, b){
+  if(!a || !b) return false;
+  const norm=s=>String(s||'').trim().toLowerCase();
+  if(norm(a)===norm(b)) return true;
+  // One might be UUID and the other a name — resolve both to names
+  const aIsUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a);
+  const bIsUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b);
+  const aName=aIsUuid?(vendorName(a)||'').toLowerCase():norm(a);
+  const bName=bIsUuid?(vendorName(b)||'').toLowerCase():norm(b);
+  return aName && bName && aName===bName;
+}
+
+/**
+ * Find duplicates in Actual Costs for the current project.
+ * @param {string} projectId - project to search in
+ * @param {number} amount - amount to match
+ * @param {string} supplier - supplier UUID or name to match
+ * @param {object} excludeKeys - {gid, islug} to exclude from search (when editing existing row)
+ * @returns {Array} matching items: [{gid, item_name, amount, supplier_name}]
+ */
+function findActualDuplicates(projectId, amount, supplier, excludeKeys){
+  if(!projectId || !amount || amount<=0 || !supplier) return [];
+  const matches=[];
+  const bm=budgetMap[projectId]||{};
+  GROUPS.forEach(g=>{
+    const roomData=bm[g.id]||{};
+    Object.entries(roomData).forEach(([islug,d])=>{
+      // Skip the row being edited
+      if(excludeKeys && excludeKeys.gid===g.id && excludeKeys.islug===islug) return;
+      const rowAmount=+d.actual||0;
+      if(rowAmount<=0) return;
+      // Match value with tolerance for floating point
+      if(Math.abs(rowAmount-amount)>0.01) return;
+      // Match supplier
+      if(!_supplierMatches(d.actual_supplier, supplier)) return;
+      // Get item name from itemsMap
+      const items=(itemsMap[projectId]||{})[g.id]||[];
+      const item=items.find(i=>i.slug===islug);
+      matches.push({
+        gid:g.id,
+        groupName:g.name,
+        item_name:item?item.name:islug,
+        amount:rowAmount,
+        supplier_name:vendorName(d.actual_supplier)||d.actual_supplier,
+      });
+    });
+  });
+  return matches;
+}
+
+/**
+ * Find duplicates in Recurring Costs for current project.
+ * @param {string} projectId
+ * @param {number} amount - amount being entered in a month cell
+ * @param {string} company - company name to match (recurring doesn't use vendor UUIDs)
+ * @param {object} excludeKey - {itemName, monthKey} to skip
+ * @returns {Array}
+ */
+function findRecurringDuplicates(projectId, amount, company, excludeKey){
+  if(!projectId || !amount || amount<=0 || !company) return [];
+  const matches=[];
+  const data=recurringMap[projectId]||{};
+  const normCompany=String(company||'').trim().toLowerCase();
+  RC_ITEMS.forEach(itemName=>{
+    const row=data[itemName];
+    if(!row) return;
+    const rowCompany=String(row.company||'').trim().toLowerCase();
+    if(rowCompany !== normCompany) return;
+    const months=row.months||{};
+    Object.entries(months).forEach(([key, val])=>{
+      if(excludeKey && excludeKey.itemName===itemName && excludeKey.monthKey===key) return;
+      const v=+val||0;
+      if(v<=0) return;
+      if(Math.abs(v-amount)>0.01) return;
+      // Decode month key (format: y0_m6 etc)
+      const m=key.match(/y(\d+)_m(\d+)/);
+      const monthLabel=m?`mês ${+m[2]} / ano ${(+m[1])+1}`:key;
+      matches.push({
+        itemName,
+        company:row.company,
+        amount:v,
+        monthLabel,
+      });
+    });
+  });
+  return matches;
+}
+
+/**
+ * Format a list of duplicates into a confirmation message.
+ * Returns the confirm-ready string.
+ */
+function formatDuplicateMessage(source, dups){
+  const fmt=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  let msg='⚠️ POSSÍVEL DUPLICATA detectada!\n\n';
+  msg+=`Já existe ${dups.length===1?'um lançamento parecido':dups.length+' lançamentos parecidos'} nesse projeto:\n\n`;
+  dups.slice(0,5).forEach(d=>{
+    if(source==='actual'){
+      msg+=`• ${d.groupName} — ${d.item_name}\n  ${fmt(d.amount)} · ${d.supplier_name}\n`;
+    } else if(source==='recurring'){
+      msg+=`• ${d.itemName} (${d.monthLabel})\n  ${fmt(d.amount)} · ${d.company}\n`;
+    }
+  });
+  if(dups.length>5) msg+=`\n... e mais ${dups.length-5} item(ns)\n`;
+  msg+='\nLançar mesmo assim?';
+  return msg;
+}
+
 function populateVendorDropdowns(){
   // Used in Actual Costs supplier dropdowns
   // We don't have a single dropdown — multiple per row, so just expose a helper that renders <options>
@@ -9243,6 +9375,7 @@ function renderRecurringDetail(){
       monthCells.push(`<td style="padding:4px 2px;border-bottom:1px solid #F0EAE2;position:relative" title="${wcTitle}">
         <input type="number" min="0" step="0.01" value="${displayVal}" placeholder="0"
           oninput="updateRCDMonth('${itemName.replace(/'/g,"\\'")}',${yOff},${m},this.value)"
+          onblur="onRCDCellBlur('${itemName.replace(/'/g,"\\'")}',${yOff},${m},this)"
           onclick="onRCDCellClick(event,'${itemName.replace(/'/g,"\\'")}',${yOff},${m})"
           style="padding:5px 6px;font-size:12px;border:1px solid ${isWC?'#2D7D5F':'var(--gray2)'};border-radius:5px;outline:none;width:100%;text-align:right;${wcStyle}">
         ${isWC?'<span style="position:absolute;top:1px;right:4px;font-size:8px;color:#2D7D5F;font-weight:800;pointer-events:none">💰</span>':''}
@@ -9351,6 +9484,52 @@ function updateRCDMonth(itemName,yearOffset,month,value){
   const debKey=itemName+'_'+yearOffset+'_'+month;
   clearTimeout(_debRCMonth[debKey]);
   _debRCMonth[debKey]=setTimeout(()=>saveRCDMonth(itemName,yearOffset,month),600);
+}
+
+// Track which RCD cells already had the duplicate-confirm shown
+const _dupCheckedRCD=new Set();
+
+// Triggered when user leaves a RCD month cell — check for duplicates
+function onRCDCellBlur(itemName, yearOffset, month, el){
+  if(!CID||!isCEO()) return;
+  const row=(recurringMap[CID]||{})[itemName];
+  if(!row) return;
+  const key=_rcKey(yearOffset,month);
+  const amount=+row.months?.[key]||0;
+  const company=(row.company||'').trim();
+  if(amount<=0 || !company) return;
+  const sig=`${itemName}/${key}/${amount}/${company}`;
+  if(_dupCheckedRCD.has(sig)) return;
+  const dups=findRecurringDuplicates(CID, amount, company, {itemName, monthKey:key});
+  if(dups.length===0){
+    _dupCheckedRCD.add(sig);
+    return;
+  }
+  if(!confirm(formatDuplicateMessage('recurring', dups))){
+    // Clear the cell
+    if(el){
+      el.value='';
+      el.focus();
+    }
+    delete row.months[key];
+    // Trigger a save to remove the value from DB
+    saveRCDMonth(itemName, yearOffset, month);
+    // Update subtotals
+    let yearSubtotal=0;
+    for(let m=1;m<=12;m++){ yearSubtotal+=+(row.months?.[_rcKey(_rcdActiveYear,m)])||0; }
+    let allYearsTotal=0;
+    for(let y=0;y<RC_YEARS_COUNT;y++){
+      for(let m=1;m<=12;m++){ allYearsTotal+=+(row.months?.[_rcKey(y,m)])||0; }
+    }
+    const yearSubEl=document.getElementById('rcd-yearsub-'+_slugRC(itemName));
+    const grandSubEl=document.getElementById('rcd-grandsub-'+_slugRC(itemName));
+    if(yearSubEl) yearSubEl.textContent='$'+yearSubtotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    if(grandSubEl) grandSubEl.textContent='$'+allYearsTotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+    recalcRCDTotals();
+    recalcProfit();
+    return;
+  }
+  _dupCheckedRCD.add(sig);
 }
 
 async function saveRCDMonth(itemName,yearOffset,month){
@@ -9709,6 +9888,46 @@ async function onBI(type,roomId,islug,el){
   _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),500);
 }
 
+// Track which rows already had their duplicate-confirm shown (to avoid showing
+// repeatedly on each blur of the same row when nothing changed).
+const _dupCheckedRows=new Set();
+
+// Triggered when user leaves the amount field (on blur). Only checks duplicates
+// for ACTUAL costs (not Estimate). Requires both amount and supplier filled.
+async function onBIBlur(type,roomId,islug){
+  if(type!=='act') return; // only check Actual Costs
+  if(!CID) return;
+  const d=(budgetMap[CID]||{})[roomId]?.[islug];
+  if(!d) return;
+  const amount=+d.actual||0;
+  const supplier=(d.actual_supplier||'').trim();
+  if(amount<=0 || !supplier) return;
+  // Build a signature; only confirm once per unique (row + amount + supplier) combo
+  const sig=`${roomId}/${islug}/${amount}/${supplier}`;
+  if(_dupCheckedRows.has(sig)) return;
+  const dups=findActualDuplicates(CID, amount, supplier, {gid:roomId, islug});
+  if(dups.length===0){
+    _dupCheckedRows.add(sig); // mark as checked even if no dups, so we don't re-check
+    return;
+  }
+  if(!confirm(formatDuplicateMessage('actual', dups))){
+    // User cancelled — clear the amount field
+    const inp=document.getElementById('bi-'+type+'-'+roomId+'-'+islug);
+    if(inp){
+      inp.value='';
+      inp.focus();
+    }
+    d.actual=0;
+    // Save the cleared value
+    _saveBI(roomId,islug);
+    const el2=document.getElementById('brt-'+type+'-'+roomId);
+    if(el2) el2.textContent=fmt(calcRoomItemTotal(CID,roomId,'actual'));
+    return;
+  }
+  // User confirmed — remember so we don't ask again for this combination
+  _dupCheckedRows.add(sig);
+}
+
 async function onBC(type,roomId,islug,el){
   _ensureBI(roomId,islug);
   budgetMap[CID][roomId][islug][type==='est'?'est_note':'actual_note']=el.value;
@@ -9723,6 +9942,8 @@ async function onBSup(type,roomId,islug,el){
   const k='sup_'+type+roomId+islug;
   clearTimeout(_debBI[k]);
   _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),600);
+  // Also trigger duplicate check (in case user filled amount first, then supplier)
+  if(type==='act') onBIBlur(type,roomId,islug);
 }
 async function onBQ(type,roomId,islug,el){
   const val=parseFloat(el.value)||0;
