@@ -400,6 +400,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <div class="sb-lnk"        id="snav-ph4"     onclick="sp('ph4',this,'s4')">🟣 Phase 4 — Finishing <span class="sb-ntag t4" id="snt-4">0%</span></div>
         <div class="sb-sec">Project</div>
         <div class="sb-lnk"        id="snav-info"    onclick="sp('info',this,'')">⚙️ Project Info</div>
+        <div class="sb-lnk"        id="snav-daily"   onclick="sp('daily',this,'')">📔 Daily Log</div>
         <div class="sb-sec ceo-only" style="display:none">CEO Only</div>
         <div class="sb-lnk ceo-only" id="snav-property" onclick="sp('property',this,'')" style="display:none">💎 Property &amp; Finance</div>
         <div class="sb-lnk ceo-only" id="snav-listing" onclick="sp('listing',this,'')" style="display:none">📋 Listing Checklist</div>
@@ -549,6 +550,50 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           </div>
         </div>
       </div>
+
+      <!-- DAILY LOG PAGE -->
+      <div class="page" id="page-daily">
+        <div class="page-title">📔 Diário de Obra <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">Diário do Supervisor</span></div>
+        <div class="page-sub">Registro diário do que foi executado na obra · 1 entrada por dia/autor · fotos até 5 por entrada · após 24h da criação fica travado para edição</div>
+
+        <!-- New entry form -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-title">✏️ Nova entrada</div>
+          <div class="fgrid">
+            <div class="fg" style="max-width:200px">
+              <label>Data</label>
+              <input id="dl-date" type="date">
+            </div>
+          </div>
+          <div class="fg" style="margin-top:10px">
+            <label>O que foi feito hoje?</label>
+            <textarea id="dl-content" placeholder="Descreva as atividades realizadas, observações importantes, problemas encontrados, decisões tomadas..." style="width:100%;min-height:100px;padding:10px 12px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;font-family:inherit;resize:vertical"></textarea>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button onclick="dlPickTasksFromGantt()" style="padding:7px 14px;background:#fff;color:#3D271A;border:1.5px solid #C68A4A;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📅 Puxar tarefas do Gantt</button>
+            <label style="padding:7px 14px;background:#fff;color:#3D271A;border:1.5px solid #5C7A3F;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">
+              📷 Anexar fotos (máx 5)
+              <input id="dl-photos" type="file" accept="image/*" multiple style="display:none" onchange="dlOnPhotosChange(this)">
+            </label>
+            <span id="dl-photos-count" style="font-size:11px;color:var(--gray3);font-style:italic"></span>
+          </div>
+          <div id="dl-tasks-selected" style="margin-top:10px"></div>
+          <div id="dl-photos-preview" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
+          <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end">
+            <button onclick="dlReset()" style="padding:8px 16px;background:transparent;color:#655A4E;border:1.5px solid var(--gray2);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">Limpar</button>
+            <button onclick="dlSaveEntry()" style="padding:8px 22px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">💾 Salvar entrada</button>
+          </div>
+        </div>
+
+        <!-- Existing entries list -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📚 Histórico do projeto
+            <span id="dl-count" style="float:right;font-size:12px;color:var(--gray3);font-weight:500"></span>
+          </div>
+          <div id="dl-list" style="margin-top:10px"></div>
+        </div>
+      </div>
+      <!-- /DAILY LOG PAGE -->
 
       <!-- Property & Finance (CEO ONLY) -->
       <div class="page" id="page-property">
@@ -11264,6 +11309,7 @@ function sp(id,el,cls){
   if(id==='recurring' && isCEO()) loadRecurringDetail();
   if(id==='supply' && isCEO()) _scLoadProjectsDropdown();
   if(id==='act' && isCEO()) _populateActVendorFilter();
+  if(id==='daily') dlOpen();
   // (clients/vendors/invoices moved to global views — see goView)
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -12151,6 +12197,321 @@ function downloadBudgetExcel(){
   a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
   toast('Excel baixado!',true);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DAILY LOG MODULE — Diário de Obra do Supervisor
+// ═══════════════════════════════════════════════════════════════════════
+// Available to CEO + Supervisor (ope@decgroupusa.com)
+// - 1 entry per day/project/author (DB unique constraint)
+// - Author edits own entries within 24h; CEO always
+// - Up to 5 photos per entry, stored in 'daily-log-photos' bucket
+// ═══════════════════════════════════════════════════════════════════════
+
+let _dlEntries=[];          // current project's entries
+let _dlPhotosByLog={};      // {log_id: [{path, url}]}
+let _dlSelectedTasks=[];    // tasks pulled from Gantt for new entry
+let _dlNewPhotos=[];        // File objects to upload on save
+let _dlEditingId=null;      // if editing existing entry
+
+function _dlSupervisorEmail(){ return 'ope@decgroupusa.com'; }
+function _dlCanEdit(entry){
+  if(!entry) return false;
+  if(isCEO()) return true;
+  // Supervisor only edits OWN entries within 24h
+  const me=(CURRENT_USER&&CURRENT_USER.email||'').toLowerCase();
+  if(entry.author_email!==me) return false;
+  const created=new Date(entry.created_at).getTime();
+  const hoursPassed=(Date.now()-created)/3600000;
+  return hoursPassed<24;
+}
+
+async function dlOpen(){
+  if(!CID) return;
+  // Default new entry's date to today
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('dl-date').value=today;
+  document.getElementById('dl-content').value='';
+  _dlSelectedTasks=[];
+  _dlNewPhotos=[];
+  _dlEditingId=null;
+  document.getElementById('dl-tasks-selected').innerHTML='';
+  document.getElementById('dl-photos-preview').innerHTML='';
+  document.getElementById('dl-photos-count').textContent='';
+  await dlLoadEntries();
+}
+
+async function dlLoadEntries(){
+  if(!CID) return;
+  const {data,error}=await sb.from('daily_logs')
+    .select('*').eq('project_id',CID).order('log_date',{ascending:false}).order('created_at',{ascending:false});
+  if(error){console.error('daily_logs load',error);toast('Erro ao carregar diário',false);return;}
+  _dlEntries=data||[];
+  // Load photos for these entries
+  _dlPhotosByLog={};
+  if(_dlEntries.length>0){
+    const ids=_dlEntries.map(e=>e.id);
+    const {data:phs,error:phErr}=await sb.from('daily_log_photos').select('*').in('log_id',ids).order('position');
+    if(!phErr){
+      (phs||[]).forEach(p=>{
+        if(!_dlPhotosByLog[p.log_id]) _dlPhotosByLog[p.log_id]=[];
+        _dlPhotosByLog[p.log_id].push(p);
+      });
+    }
+  }
+  dlRenderList();
+}
+
+function dlRenderList(){
+  const list=document.getElementById('dl-list');
+  const cntEl=document.getElementById('dl-count');
+  if(!list) return;
+  cntEl.textContent=`${_dlEntries.length} entrada${_dlEntries.length!==1?'s':''}`;
+  if(_dlEntries.length===0){
+    list.innerHTML=`<div style="padding:30px;text-align:center;color:#999;font-style:italic">Nenhuma entrada ainda. Comece pelo formulário acima.</div>`;
+    return;
+  }
+  const fmtDate=d=>{if(!d)return'—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});};
+  list.innerHTML=_dlEntries.map(e=>{
+    const canEdit=_dlCanEdit(e);
+    const photos=_dlPhotosByLog[e.id]||[];
+    const tasks=Array.isArray(e.tasks_done)?e.tasks_done:[];
+    const tasksHTML=tasks.length>0
+      ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">${tasks.map(t=>`<span style="display:inline-block;padding:3px 9px;background:#F5EBDA;color:#A86A2C;border-radius:10px;font-size:11px;font-weight:600">${(t.phase_id?'['+t.phase_id.toUpperCase()+'] ':'')+(t.name||'').replace(/</g,'&lt;')}</span>`).join('')}</div>`
+      : '';
+    const photosHTML=photos.length>0
+      ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${photos.map(p=>`<a href="javascript:dlOpenPhoto('${p.storage_path}')" style="display:inline-block;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1.5px solid #F0EAE2;background:#FAF7F3 url('${dlPhotoUrl(p.storage_path)}') center/cover no-repeat;text-decoration:none" title="Ver foto"></a>`).join('')}</div>`
+      : '';
+    const lockBadge=canEdit
+      ? ''
+      : `<span title="Travado: passou de 24h da criação" style="display:inline-block;padding:2px 8px;background:#F0EAE2;color:#655A4E;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px">🔒 travado</span>`;
+    return `<div style="background:#fff;border:1.5px solid #F0EAE2;border-radius:10px;padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:13px;font-weight:800;color:#3D271A">📅 ${fmtDate(e.log_date)} ${lockBadge}</div>
+          <div style="font-size:11px;color:#999;margin-top:2px">por <strong>${(e.author_email||'').replace(/</g,'&lt;')}</strong> · criado ${new Date(e.created_at).toLocaleString('pt-BR')}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${canEdit?`<button onclick="dlEditEntry('${e.id}')" style="padding:5px 12px;background:#fff;color:#3D271A;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">✏️ Editar</button>`:''}
+          ${isCEO()?`<button onclick="dlDeleteEntry('${e.id}')" style="padding:5px 12px;background:transparent;color:#A02021;border:1.5px solid #FFB5B5;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">🗑</button>`:''}
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:13px;color:#3D271A;white-space:pre-wrap;line-height:1.5">${(e.content||'').replace(/</g,'&lt;')||'<em style="color:#999">(sem texto)</em>'}</div>
+      ${tasksHTML}
+      ${photosHTML}
+    </div>`;
+  }).join('');
+}
+
+function dlPhotoUrl(storagePath){
+  const {data}=sb.storage.from('daily-log-photos').getPublicUrl(storagePath);
+  return data.publicUrl;
+}
+
+async function dlOpenPhoto(storagePath){
+  // Open in new tab via signed URL (handles private bucket)
+  const {data,error}=await sb.storage.from('daily-log-photos').createSignedUrl(storagePath,3600);
+  if(error){toast('Erro ao abrir foto',false);return;}
+  window.open(data.signedUrl,'_blank');
+}
+
+function dlPickTasksFromGantt(){
+  if(!CID) return;
+  // Build a modal with checkboxes of all tasks in this project's Gantt
+  const tasksMap_=tasksMap[CID]||{};
+  let allTasks=[];
+  PHASES.forEach(ph=>{
+    const tArr=tasksMap_[ph.id]||[];
+    tArr.forEach(t=>allTasks.push({task_key:t.tid, name:t.name, phase_id:ph.id, phase_name:ph.name}));
+  });
+  if(allTasks.length===0){toast('Nenhuma tarefa no Gantt deste projeto',false);return;}
+  const m=document.createElement('div');
+  m.id='dl-modal-tasks';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px';
+  // Pre-select tasks already in the form
+  const selectedKeys=new Set(_dlSelectedTasks.map(t=>t.task_key));
+  const rows=allTasks.map((t,i)=>{
+    const checked=selectedKeys.has(t.task_key)?'checked':'';
+    return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #F0EAE2;cursor:pointer;font-size:13px">
+      <input type="checkbox" ${checked} value="${i}" style="cursor:pointer">
+      <span><strong style="color:#A86A2C">[${t.phase_id.toUpperCase()}]</strong> ${t.name.replace(/</g,'&lt;')}</span>
+    </label>`;
+  }).join('');
+  m.innerHTML=`<div style="background:#fff;border-radius:12px;max-width:600px;width:100%;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:80vh;display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#3D271A,#655A4E);padding:14px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:800">📅 Selecionar tarefas do Gantt</div>
+      <button onclick="document.getElementById('dl-modal-tasks').remove()" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;width:28px;height:28px;border-radius:5px;cursor:pointer">×</button>
+    </div>
+    <div id="dl-modal-tasks-list" style="overflow-y:auto;flex:1;padding:8px 14px">${rows}</div>
+    <div style="padding:12px 18px;border-top:1px solid #F0EAE2;display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="document.getElementById('dl-modal-tasks').remove()" style="padding:7px 14px;background:transparent;color:#655A4E;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">Cancelar</button>
+      <button onclick="dlConfirmTasksPick(${JSON.stringify(allTasks).replace(/"/g,'&quot;')})" style="padding:7px 18px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">✓ Adicionar selecionadas</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+function dlConfirmTasksPick(allTasks){
+  const list=document.getElementById('dl-modal-tasks-list');
+  if(!list) return;
+  const checks=list.querySelectorAll('input[type="checkbox"]:checked');
+  _dlSelectedTasks=[];
+  checks.forEach(c=>{
+    const i=+c.value;
+    const t=allTasks[i];
+    if(t) _dlSelectedTasks.push({task_key:t.task_key, name:t.name, phase_id:t.phase_id});
+  });
+  document.getElementById('dl-modal-tasks').remove();
+  dlRenderSelectedTasks();
+}
+
+function dlRenderSelectedTasks(){
+  const el=document.getElementById('dl-tasks-selected');
+  if(_dlSelectedTasks.length===0){el.innerHTML='';return;}
+  el.innerHTML=`<div style="padding:10px 12px;background:#F5EBDA;border-left:3px solid #C68A4A;border-radius:5px">
+    <div style="font-size:11px;font-weight:700;color:#A86A2C;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">Tarefas selecionadas</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${_dlSelectedTasks.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 4px 3px 9px;background:#fff;color:#3D271A;border-radius:10px;font-size:11px;font-weight:600">[${t.phase_id.toUpperCase()}] ${t.name.replace(/</g,'&lt;')} <button onclick="dlRemoveSelectedTask(${i})" style="background:transparent;border:0;cursor:pointer;color:#A02021;font-size:13px;padding:0 4px;line-height:1">×</button></span>`).join('')}
+    </div>
+  </div>`;
+}
+
+function dlRemoveSelectedTask(i){
+  _dlSelectedTasks.splice(i,1);
+  dlRenderSelectedTasks();
+}
+
+function dlOnPhotosChange(input){
+  const files=Array.from(input.files||[]);
+  if(files.length===0) return;
+  const maxAllowed=5-_dlNewPhotos.length;
+  if(files.length>maxAllowed){
+    toast(`Máximo 5 fotos por entrada (faltam ${maxAllowed})`,false);
+    input.value='';
+    return;
+  }
+  files.forEach(f=>{
+    if(f.size>10*1024*1024){toast('Foto > 10MB ignorada: '+f.name,false);return;}
+    _dlNewPhotos.push(f);
+  });
+  input.value='';
+  dlRenderPhotosPreview();
+}
+
+function dlRenderPhotosPreview(){
+  const wrap=document.getElementById('dl-photos-preview');
+  const cnt=document.getElementById('dl-photos-count');
+  cnt.textContent=_dlNewPhotos.length>0?`${_dlNewPhotos.length}/5 selecionada(s)`:'';
+  wrap.innerHTML=_dlNewPhotos.map((f,i)=>{
+    const url=URL.createObjectURL(f);
+    return `<div style="position:relative;width:70px;height:70px">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1.5px solid #F0EAE2">
+      <button onclick="dlRemoveNewPhoto(${i})" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#A02021;color:#fff;border:0;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+    </div>`;
+  }).join('');
+}
+
+function dlRemoveNewPhoto(i){
+  _dlNewPhotos.splice(i,1);
+  dlRenderPhotosPreview();
+}
+
+function dlReset(){
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('dl-date').value=today;
+  document.getElementById('dl-content').value='';
+  _dlSelectedTasks=[];
+  _dlNewPhotos=[];
+  _dlEditingId=null;
+  dlRenderSelectedTasks();
+  dlRenderPhotosPreview();
+}
+
+function dlEditEntry(id){
+  const e=_dlEntries.find(x=>x.id===id);
+  if(!e){toast('Entrada não encontrada',false);return;}
+  if(!_dlCanEdit(e)){toast('Entrada travada (passou 24h)',false);return;}
+  document.getElementById('dl-date').value=e.log_date;
+  document.getElementById('dl-content').value=e.content||'';
+  _dlSelectedTasks=Array.isArray(e.tasks_done)?[...e.tasks_done]:[];
+  _dlNewPhotos=[]; // photos are added separately; existing photos remain
+  _dlEditingId=id;
+  dlRenderSelectedTasks();
+  dlRenderPhotosPreview();
+  // Scroll to form
+  document.getElementById('dl-content').focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('Editando entrada de '+new Date(e.log_date+'T00:00:00').toLocaleDateString('pt-BR'),true);
+}
+
+async function dlDeleteEntry(id){
+  if(!isCEO()){toast('Apenas CEO pode deletar',false);return;}
+  const e=_dlEntries.find(x=>x.id===id);
+  if(!e) return;
+  if(!confirm(`Deletar entrada de ${new Date(e.log_date+'T00:00:00').toLocaleDateString('pt-BR')}? Inclui as fotos. Não pode desfazer.`)) return;
+  // Delete photos from storage first (best effort)
+  const photos=_dlPhotosByLog[id]||[];
+  if(photos.length>0){
+    try{await sb.storage.from('daily-log-photos').remove(photos.map(p=>p.storage_path));}catch(err){console.warn('photo delete',err);}
+  }
+  const {error}=await sb.from('daily_logs').delete().eq('id',id);
+  if(error){console.error('delete daily_log',error);toast('Erro ao deletar: '+error.message,false);return;}
+  toast('Entrada deletada',true);
+  dlLoadEntries();
+}
+
+async function dlSaveEntry(){
+  if(!CID) return;
+  if(!CURRENT_USER||!CURRENT_USER.email){toast('Usuário não autenticado',false);return;}
+  const date=document.getElementById('dl-date').value;
+  const content=(document.getElementById('dl-content').value||'').trim();
+  if(!date){toast('Selecione uma data',false);return;}
+  if(!content && _dlSelectedTasks.length===0 && _dlNewPhotos.length===0 && !_dlEditingId){
+    toast('Adicione ao menos texto, tarefas ou uma foto',false);
+    return;
+  }
+  const payload={
+    project_id:CID,
+    log_date:date,
+    author_email:CURRENT_USER.email.toLowerCase(),
+    content,
+    tasks_done:_dlSelectedTasks,
+  };
+  let logId=_dlEditingId;
+  if(_dlEditingId){
+    // UPDATE — author_email and project_id should not change
+    const {error}=await sb.from('daily_logs').update({content,tasks_done:_dlSelectedTasks,log_date:date}).eq('id',_dlEditingId);
+    if(error){console.error('update daily_log',error);toast('Erro ao atualizar: '+error.message,false);return;}
+  } else {
+    const {data,error}=await sb.from('daily_logs').insert(payload).select().single();
+    if(error){
+      // Likely the unique constraint
+      if((error.code||'')==='23505'){
+        toast('Já existe entrada sua para esta data. Edite a existente.',false);
+      } else {
+        console.error('insert daily_log',error);
+        toast('Erro ao salvar: '+error.message,false);
+      }
+      return;
+    }
+    logId=data.id;
+  }
+  // Upload new photos (if any)
+  if(_dlNewPhotos.length>0 && logId){
+    const startPos=(_dlPhotosByLog[logId]||[]).length;
+    for(let i=0;i<_dlNewPhotos.length;i++){
+      const f=_dlNewPhotos[i];
+      const safe=f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const path=`${CID}/${logId}/${Date.now()}_${i}_${safe}`;
+      const {error:upErr}=await sb.storage.from('daily-log-photos').upload(path,f,{contentType:f.type,upsert:false});
+      if(upErr){console.warn('photo upload failed',upErr);toast('Erro foto: '+upErr.message,false);continue;}
+      const {error:rowErr}=await sb.from('daily_log_photos').insert({log_id:logId,storage_path:path,position:startPos+i});
+      if(rowErr){console.warn('photo row insert',rowErr);}
+    }
+  }
+  toast(_dlEditingId?'Entrada atualizada!':'Entrada salva!',true);
+  dlReset();
+  dlLoadEntries();
 }
 
 // INIT
