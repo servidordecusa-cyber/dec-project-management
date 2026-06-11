@@ -14,6 +14,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
+/* Remove ugly spinners from all number inputs (cleaner UI) */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
 :root{
   /* DEC Group Brand Palette */
   --navy:#15120E;--blue:#3D271A;--light:#FAF7F3;
@@ -11654,15 +11659,17 @@ let _debBdg=null;      // debounce timer for auto-save (when editing)
 
 // Default cost lines (matches Melbourne.xlsx layout)
 const BUDGET_DEFAULT_LINES=[
-  {name:'Imóvel (down payment cash)',           kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'down_cash'},
-  {name:'Hard Money (juros)',                   kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest'},
-  {name:'Down payment Hard Money',              kind:'closing', base:0,    months_cash:0, months_hm:1, is_extra:false, formula:'hm_down'},
-  {name:'Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false},
-  {name:'Comissão venda + closing costs',      kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
-  {name:'Rehab',                                kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'rehab'},
-  {name:'Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false},
-  {name:'Contribuição no closing',              kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false},
-  {name:'Imposto pró rata',                     kind:'closing', base:1000, months_cash:1, months_hm:1, is_extra:false},
+  {name:'🏠 Valor da casa (compra)',              kind:'info',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'house_value'},
+  {name:'💵 Cash (entrada do cliente)',           kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'down_cash'},
+  {name:'💰 Hard Money (financiado)',             kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'hm_principal'},
+  {name:'📈 Juros do Hard Money',                  kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest'},
+  {name:'📋 Down payment Hard Money',              kind:'closing', base:0,    months_cash:0, months_hm:1, is_extra:false, formula:'hm_down'},
+  {name:'💡 Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false},
+  {name:'🔨 Rehab',                                kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'rehab'},
+  {name:'🌿 Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false},
+  {name:'🏷️ Comissão venda + closing costs',     kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
+  {name:'📝 Contribuição no closing',              kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false},
+  {name:'🧾 Imposto pró rata',                     kind:'closing', base:1000, months_cash:1, months_hm:1, is_extra:false},
 ];
 
 async function loadBudgets(){
@@ -11772,28 +11779,38 @@ function calcBudgetSummary(b){
     const mCash=+line.months_cash||1;
     const mHm=+line.months_hm||1;
     // Override rule: if a formula line has base > 0, that overrides the formula
-    // (user manually adjusted the value). 0 = use formula.
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){
-      // Imóvel: in CASH scenario the company pays the FULL purchase price.
-      //         in HM scenario the company pays (purchase - HM loan) out of cash.
+    if(line.formula==='house_value'){
+      // 🏠 Valor da casa: INFORMATIVO apenas (kind='info' não soma nos totais)
+      valCash = purchase;
+      valHm   = purchase;
+    } else if(line.formula==='down_cash'){
+      // 💵 Cash do cliente:
+      //   Cash scenario: cliente paga o preço total
+      //   HM scenario:   cliente paga (purchase - HM loan) = a entrada
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+      valHm   = hasOverride ? base : (purchase-hmLoan);
+    } else if(line.formula==='hm_principal'){
+      // 💰 Hard Money (principal financiado):
+      //   Cash scenario: zero (não usa HM)
+      //   HM scenario:   o valor do HM Loan
+      valCash = 0;
+      valHm   = hasOverride ? base : hmLoan;
     } else if(line.formula==='hm_interest'){
-      // HM interest: only exists in HM scenario
+      // 📈 Juros do HM: só no cenário HM
       valCash = 0;
       valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
     } else if(line.formula==='hm_down'){
-      // HM down payment fee: only in HM scenario
+      // 📋 Down payment fee do HM: só no cenário HM
       valCash = 0;
       valHm   = hasOverride ? base : (hmLoan*hmDownPct);
     } else if(line.formula==='commission_6'){
-      // Commission: % agent + % closing of ARV (now configurable per budget)
+      // 🏷️ Comissão: % agent + % closing of ARV
       valCash = hasOverride ? base : (arv*commissionPct);
       valHm   = valCash;
     } else if(line.formula==='rehab'){
-      // Rehab — same in both scenarios (out of pocket)
+      // 🔨 Rehab: igual nos dois
       valCash = hasOverride ? base : rehab;
       valHm   = valCash;
     } else {
@@ -11801,6 +11818,12 @@ function calcBudgetSummary(b){
       valCash = base*mCash;
       valHm   = base*mHm;
     }
+    // INFO lines don't sum into totals (just informative)
+    if(line.kind==='info') return;
+    // hm_principal is shown as a "cost" line in the table for visibility but
+    // it's NOT cash out of the client's pocket (bank pays it).
+    // It IS repaid at closing (added to hmDescontos below outside the loop).
+    if(line.formula==='hm_principal') return;
     if(line.kind==='closing'){
       cashDescontos+=valCash;
       hmDescontos+=valHm;
@@ -12109,9 +12132,15 @@ function renderBudgetEditorModal(){
     const mHm=+line.months_hm||1;
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){
+    if(line.formula==='house_value'){
+      valCash = purchase;
+      valHm   = purchase;
+    } else if(line.formula==='down_cash'){
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+      valHm   = hasOverride ? base : (purchase-hmLoan);
+    } else if(line.formula==='hm_principal'){
+      valCash = 0;
+      valHm   = hasOverride ? base : hmLoan;
     } else if(line.formula==='hm_interest'){
       valCash = 0;
       valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
@@ -12128,15 +12157,19 @@ function renderBudgetEditorModal(){
       valCash = base*mCash;
       valHm   = base*mHm;
     }
-    const kindBadge=line.kind==='closing'
+    const kindBadge=line.kind==='info'
+      ?`<span style="display:inline-block;padding:2px 6px;background:#E8DDC9;color:#655A4E;border-radius:4px;font-size:9px;font-weight:700">INFO</span>`
+      :line.kind==='closing'
       ?`<span style="display:inline-block;padding:2px 6px;background:#FFF4E0;color:#A86A2C;border-radius:4px;font-size:9px;font-weight:700">CLOSING</span>`
       :`<span style="display:inline-block;padding:2px 6px;background:#F2F4EC;color:#5C7A3F;border-radius:4px;font-size:9px;font-weight:700">CUSTO</span>`;
     // Auto-value tooltip for formula lines (so user knows what it would be on 0)
     let autoHint='';
     if(isFormula && !hasOverride){
-      autoHint=`<div style="font-size:9px;color:#5C7A3F;margin-top:2px;font-style:italic">auto</div>`;
+      autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#5C7A3F;margin-top:2px;font-style:italic">auto</div>`;
     } else if(isFormula && hasOverride){
-      autoHint=`<div style="font-size:9px;color:#C68A4A;margin-top:2px;font-style:italic">manual</div>`;
+      autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#C68A4A;margin-top:2px;font-style:italic">manual</div>`;
+    } else {
+      autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#999;margin-top:2px;font-style:italic"></div>`;
     }
     return `<tr style="border-bottom:1px solid #F0EAE2">
       <td style="padding:6px 8px;font-size:12px">
@@ -12146,7 +12179,7 @@ function renderBudgetEditorModal(){
         ${kindBadge}
       </td>
       <td style="padding:6px 4px;text-align:right">
-        <input type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#C68A4A':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
+        <input id="bm-line-base-${idx}" type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#C68A4A':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
         ${autoHint}
       </td>
       <td style="padding:6px 4px;text-align:center">
@@ -12154,11 +12187,11 @@ function renderBudgetEditorModal(){
           ?`<input type="number" min="0" max="48" step="1" value="${line.months_cash||1}" oninput="updateBudgetLine(${idx},'months_cash',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">`
           :'—'}
       </td>
-      <td style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valCash)}</td>
+      <td id="bm-line-cash-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valCash)}</td>
       <td style="padding:6px 4px;text-align:center">
         <input type="number" min="0" max="48" step="1" value="${line.months_hm||1}" oninput="updateBudgetLine(${idx},'months_hm',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">
       </td>
-      <td style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valHm)}</td>
+      <td id="bm-line-hm-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valHm)}</td>
       <td style="padding:6px 4px;text-align:center">
         ${isExtra
           ? `<button onclick="deleteBudgetLine(${idx})" title="Remover" style="background:transparent;border:1.5px solid #F0EAE2;color:#C00000;width:24px;height:24px;border-radius:5px;cursor:pointer;font-size:13px">×</button>`
@@ -12173,22 +12206,22 @@ function renderBudgetEditorModal(){
       <div style="background:#F2F4EC;border-left:4px solid #5C7A3F;border-radius:8px;padding:18px">
         <div style="font-size:13px;font-weight:800;color:#5C7A3F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">💵 Cenário Cash · ${b.cash_months} meses</div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
-          <span style="color:#655A4E">Cash investido</span><span style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.invested)}</span>
-          <span style="color:#655A4E">Descontos no closing</span><span style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.descontos_closing)}</span>
-          <span style="color:#655A4E">Venda (ARV)</span><span style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.sale)}</span>
-          <span style="color:#5C7A3F;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span style="text-align:right;font-weight:800;color:${calc.cash.profit>=0?'#5C7A3F':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.cash.profit)}</span>
-          <span style="color:#5C7A3F;font-weight:700">% LUCRO</span><span style="text-align:right;font-weight:800;color:${calc.cash.profit_pct>=0?'#5C7A3F':'#A02021'};font-size:16px">${calc.cash.profit_pct.toFixed(1)}%</span>
+          <span style="color:#655A4E">Cash investido</span><span id="bm-cash-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.invested)}</span>
+          <span style="color:#655A4E">Descontos no closing</span><span id="bm-cash-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.descontos_closing)}</span>
+          <span style="color:#655A4E">Venda (ARV)</span><span id="bm-cash-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.sale)}</span>
+          <span style="color:#5C7A3F;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span id="bm-cash-profit" style="text-align:right;font-weight:800;color:${calc.cash.profit>=0?'#5C7A3F':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.cash.profit)}</span>
+          <span style="color:#5C7A3F;font-weight:700">% LUCRO</span><span id="bm-cash-profit-pct" style="text-align:right;font-weight:800;color:${calc.cash.profit_pct>=0?'#5C7A3F':'#A02021'};font-size:16px">${calc.cash.profit_pct.toFixed(1)}%</span>
         </div>
       </div>
       <!-- Hard Money scenario -->
       <div style="background:#FAF3E0;border-left:4px solid #B8860B;border-radius:8px;padding:18px">
         <div style="font-size:13px;font-weight:800;color:#B8860B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🏦 Cenário Hard Money · ${b.hm_months} meses</div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
-          <span style="color:#655A4E">Cash investido</span><span style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.invested)}</span>
-          <span style="color:#655A4E">Descontos no closing</span><span style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.descontos_closing)}</span>
-          <span style="color:#655A4E">Venda (ARV)</span><span style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.sale)}</span>
-          <span style="color:#B8860B;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span style="text-align:right;font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.hm.profit)}</span>
-          <span style="color:#B8860B;font-weight:700">% LUCRO</span><span style="text-align:right;font-weight:800;color:${calc.hm.profit_pct>=0?'#B8860B':'#A02021'};font-size:16px">${calc.hm.profit_pct.toFixed(1)}%</span>
+          <span style="color:#655A4E">Cash investido</span><span id="bm-hm-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.invested)}</span>
+          <span style="color:#655A4E">Descontos no closing</span><span id="bm-hm-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.descontos_closing)}</span>
+          <span style="color:#655A4E">Venda (ARV)</span><span id="bm-hm-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.sale)}</span>
+          <span style="color:#B8860B;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span id="bm-hm-profit" style="text-align:right;font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.hm.profit)}</span>
+          <span style="color:#B8860B;font-weight:700">% LUCRO</span><span id="bm-hm-profit-pct" style="text-align:right;font-weight:800;color:${calc.hm.profit_pct>=0?'#B8860B':'#A02021'};font-size:16px">${calc.hm.profit_pct.toFixed(1)}%</span>
         </div>
       </div>
     </div>`;
@@ -12256,7 +12289,7 @@ function renderBudgetEditorModal(){
           <div>
             <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">% HM Loan (ex 0.70 = 70%)</label>
             <input type="number" min="0" max="1" step="0.01" value="${b.hm_pct||''}" oninput="updateBudgetField('hm_pct',this.value)" placeholder="0.70" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
-            <div style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
+            <div id="bm-hm-hint" style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Down HM (ex 0.02)</label>
@@ -12334,10 +12367,9 @@ function updateBudgetField(field, value){
   } else {
     _bdgCurrent[field]=value;
   }
-  // Re-render the modal (preserves edited inputs because we read directly from _bdgCurrent)
-  // But to avoid focus loss, debounce slightly
-  clearTimeout(_debBdg);
-  _debBdg=setTimeout(()=>renderBudgetEditorModal(),350);
+  // DON'T re-render entire modal — only refresh the live numbers (totals + per-line values)
+  // This keeps cursor focus and avoids typing lag
+  refreshBudgetLiveCalcs();
 }
 
 function updateBudgetLine(idx, field, value){
@@ -12347,8 +12379,119 @@ function updateBudgetLine(idx, field, value){
   } else {
     _bdgCurrent.cost_lines[idx][field]=value;
   }
-  clearTimeout(_debBdg);
-  _debBdg=setTimeout(()=>renderBudgetEditorModal(),350);
+  refreshBudgetLiveCalcs();
+}
+
+// ─── Live recalc without re-render (keeps cursor focus) ─────────────
+// Updates only the displayed computed numbers: per-line Cash/HM values and
+// the scenario summary totals. Does NOT touch any input fields.
+function refreshBudgetLiveCalcs(){
+  if(!_bdgCurrent) return;
+  const b=_bdgCurrent;
+  const purchase=+b.purchase_price||0;
+  const arv=+b.arv||0;
+  const rehab=+b.rehab_estimate||0;
+  const hmDownPct=+b.hm_down_pct||0;
+  const hmInterestPct=+b.hm_interest_pct||0;
+  const hmPct=+b.hm_pct||0;
+  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
+  const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
+  const commPct = commAgentPct + commClosingPct;
+  const $$=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const $$2=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  // 1. Update HM hint text "= $125,300 financiado"
+  const hmHintEl=document.getElementById('bm-hm-hint');
+  if(hmHintEl){
+    hmHintEl.textContent = hmPct>0
+      ? `= ${$$(purchase*hmPct)} financiado`
+      : 'use 0 para 100% cash';
+  }
+  // 2. Update per-line displayed values
+  (b.cost_lines||[]).forEach((line,idx)=>{
+    const base=+line.base||0;
+    const mCash=+line.months_cash||1;
+    const mHm=+line.months_hm||1;
+    const hasOverride = base > 0;
+    let valCash=0, valHm=0;
+    if(line.formula==='house_value'){
+      valCash = purchase;
+      valHm   = purchase;
+    } else if(line.formula==='down_cash'){
+      valCash = hasOverride ? base : purchase;
+      valHm   = hasOverride ? base : (purchase-hmLoan);
+    } else if(line.formula==='hm_principal'){
+      valCash = 0;
+      valHm   = hasOverride ? base : hmLoan;
+    } else if(line.formula==='hm_interest'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
+    } else if(line.formula==='hm_down'){
+      valCash = 0;
+      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
+    } else if(line.formula==='commission_6'){
+      valCash = hasOverride ? base : (arv*commPct);
+      valHm   = valCash;
+    } else if(line.formula==='rehab'){
+      valCash = hasOverride ? base : rehab;
+      valHm   = valCash;
+    } else {
+      valCash = base*mCash;
+      valHm   = base*mHm;
+    }
+    const cashEl=document.getElementById('bm-line-cash-'+idx);
+    const hmEl  =document.getElementById('bm-line-hm-'+idx);
+    if(cashEl) cashEl.textContent=$$2(valCash);
+    if(hmEl)   hmEl.textContent  =$$2(valHm);
+  });
+  // 3. Update scenario summary totals (Cash + HM cards)
+  const calc=calcBudgetSummary(b);
+  const set=(id,val)=>{const e=document.getElementById(id);if(e) e.textContent=val;};
+  set('bm-cash-invested',  $$(calc.cash.invested));
+  set('bm-cash-descontos', $$(calc.cash.descontos_closing));
+  set('bm-cash-sale',      $$(calc.cash.sale));
+  set('bm-cash-profit',    $$(calc.cash.profit));
+  set('bm-cash-profit-pct',`${calc.cash.profit_pct.toFixed(1)}%`);
+  set('bm-hm-invested',    $$(calc.hm.invested));
+  set('bm-hm-descontos',   $$(calc.hm.descontos_closing));
+  set('bm-hm-sale',        $$(calc.hm.sale));
+  set('bm-hm-profit',      $$(calc.hm.profit));
+  set('bm-hm-profit-pct',  `${calc.hm.profit_pct.toFixed(1)}%`);
+  // 4. Update profit color based on sign
+  ['bm-cash-profit','bm-hm-profit'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(!e) return;
+    const isCash=id.includes('cash');
+    const profit=isCash?calc.cash.profit:calc.hm.profit;
+    e.style.color=profit>=0 ? (isCash?'#5C7A3F':'#B8860B') : '#A02021';
+  });
+  // 5. Update "auto"/"manual" hints on formula lines (without re-render)
+  (b.cost_lines||[]).forEach((line,idx)=>{
+    if(!line.formula) return;
+    const base=+line.base||0;
+    const hintEl=document.getElementById('bm-line-hint-'+idx);
+    const inputEl=document.getElementById('bm-line-base-'+idx);
+    if(hintEl){
+      if(base>0){
+        hintEl.textContent='manual';
+        hintEl.style.color='#C68A4A';
+      } else {
+        hintEl.textContent='auto';
+        hintEl.style.color='#5C7A3F';
+      }
+    }
+    if(inputEl){
+      if(base>0){
+        inputEl.style.borderColor='#C68A4A';
+        inputEl.style.background='#FFF8E7';
+        inputEl.style.fontWeight='700';
+      } else {
+        inputEl.style.borderColor='var(--gray2)';
+        inputEl.style.background='#fff';
+        inputEl.style.fontWeight='400';
+      }
+    }
+  });
 }
 
 function addBudgetLine(){
