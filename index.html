@@ -11786,11 +11786,11 @@ function calcBudgetSummary(b){
       valCash = purchase;
       valHm   = purchase;
     } else if(line.formula==='down_cash'){
-      // 💵 Cash do cliente:
-      //   Cash scenario: cliente paga o preço total
-      //   HM scenario:   cliente paga (purchase - HM loan) = a entrada
+      // 💵 Cash do cliente (MANUAL — digite o valor real que o cliente colocou)
+      //   Default: se nada digitado, sugere (purchase - HM loan) só como guideline
+      //   Mas o esperado é o usuário digitar o valor real
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? base : (purchase-hmLoan);
+      valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
     } else if(line.formula==='hm_principal'){
       // 💰 Hard Money (principal financiado):
       //   Cash scenario: zero (não usa HM)
@@ -12141,7 +12141,7 @@ function renderBudgetEditorModal(){
       valHm   = purchase;
     } else if(line.formula==='down_cash'){
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? base : (purchase-hmLoan);
+      valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
     } else if(line.formula==='hm_principal'){
       valCash = 0;
       valHm   = hasOverride ? base : hmLoan;
@@ -12452,7 +12452,7 @@ function useFormulaValue(idx){
   const mHm=+line.months_hm||1;
   let value=0;
   if(line.formula==='house_value')      value=purchase;
-  else if(line.formula==='down_cash')   value=hmLoan>0 ? (purchase-hmLoan) : purchase;
+  else if(line.formula==='down_cash')   value=hmLoan>0 ? Math.max(0, purchase-hmLoan) : purchase;
   else if(line.formula==='hm_principal')value=hmLoan;
   else if(line.formula==='hm_interest') value=(hmLoan*hmInterestPct/12)*mHm;
   else if(line.formula==='hm_down')     value=hmLoan*hmDownPct;
@@ -12503,7 +12503,7 @@ function refreshBudgetLiveCalcs(){
       valHm   = purchase;
     } else if(line.formula==='down_cash'){
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? base : (purchase-hmLoan);
+      valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
     } else if(line.formula==='hm_principal'){
       valCash = 0;
       valHm   = hasOverride ? base : hmLoan;
@@ -12687,7 +12687,7 @@ function generateBudgetPDF(){
     let valCash=0, valHm=0;
     if(line.formula==='down_cash'){
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+      valHm   = hasOverride ? Math.max(0, base-hmLoan) : Math.max(0, purchase-hmLoan);
     } else if(line.formula==='hm_interest'){
       valCash = 0;
       valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
@@ -12879,7 +12879,7 @@ function downloadBudgetExcel(){
     let valCash=0, valHm=0;
     if(line.formula==='down_cash'){
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? (base-hmLoan) : (purchase-hmLoan);
+      valHm   = hasOverride ? Math.max(0, base-hmLoan) : Math.max(0, purchase-hmLoan);
     } else if(line.formula==='hm_interest'){
       valCash = 0;
       valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
