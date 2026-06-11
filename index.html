@@ -11425,8 +11425,10 @@ async function renderBudgets(){
   el.innerHTML=budgets.map(b=>{
     const calc=calcBudgetSummary(b);
     const sb=statusBadges[b.status]||statusBadges.draft;
-    return `<div onclick="openBudgetEditor('${b.id}')" style="background:#fff;border-radius:10px;padding:18px 22px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);cursor:pointer;border:1.5px solid #F0EAE2;transition:all .2s" onmouseover="this.style.borderColor='#C68A4A';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)'" onmouseout="this.style.borderColor='#F0EAE2';this.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+    const mode = b.client_view_mode || 'hm';
+    const modeLabel = {cash:'💵 Cash', hm:'💰 HM', both:'🔀 Ambos'}[mode] || '💰 HM';
+    return `<div style="background:#fff;border-radius:10px;padding:18px 22px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1.5px solid #F0EAE2;transition:all .2s" onmouseover="this.style.borderColor='#C68A4A';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)'" onmouseout="this.style.borderColor='#F0EAE2';this.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'">
+      <div onclick="openBudgetEditor('${b.id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
         <div style="flex:1;min-width:200px">
           <div style="font-size:16px;font-weight:800;color:#3D271A;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             ${(b.name||'(sem nome)').replace(/</g,'&lt;')}
@@ -11453,6 +11455,13 @@ async function renderBudgets(){
             <div style="font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:15px">${$$(calc.hm.profit)} <span style="font-size:11px;font-weight:600">(${calc.hm.profit_pct.toFixed(1)}%)</span></div>
           </div>
         </div>
+      </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #F5EBDA;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div style="font-size:11px;color:#655A4E">
+          <span style="color:#999;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Visão do cliente:</span>
+          <strong style="margin-left:6px">${modeLabel}</strong>
+        </div>
+        <button onclick="event.stopPropagation();openBudgetClientView('${b.id}')" style="padding:7px 16px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:6px">👁 Ver como cliente</button>
       </div>
     </div>`;
   }).join('');
@@ -11547,6 +11556,207 @@ function calcBudgetSummary(b){
     hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan},
     lines,
   };
+}
+
+// ─── Client View Calculator ───────────────────────────────────────────
+// Returns simplified breakdown for client visualization
+// scenario = 'cash' | 'hm'
+// Logic example:
+//   Compra $100k, HM $85k (se HM), Reforma $35k
+//   Cliente investiu = (Compra - HM) + Reforma = entrada + reforma
+//   Venda $180k - Custos venda ($12.6k) = Líquido $167.4k
+//   Sobra = Líquido - HM - Cliente
+//   ROI cliente = Sobra / Cliente * 100
+function calcBudgetClientView(b, scenario){
+  const purchase = +b.purchase_price || 0;
+  const arv      = +b.arv || 0;
+  const rehab    = +b.rehab_estimate || 0;
+  const hmPct    = +b.hm_pct || 0;
+  const hmClosingFee = +b.hm_closing_costs || 0;
+  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  // Commission + closing
+  const commAgentPct   = b.commission_agent_pct   !=null ? +b.commission_agent_pct   : 0.05;
+  const commClosingPct = b.commission_closing_pct !=null ? +b.commission_closing_pct : 0.01;
+  const commissionPct  = commAgentPct + commClosingPct;
+  const saleCosts = arv * commissionPct;
+  // In HM scenario, principal HM must also be repaid at sale closing
+  const isHM = scenario==='hm';
+  const hardMoney = isHM ? hmLoan : 0;
+  const downPayment = isHM ? (purchase - hmLoan) : purchase;  // entrada do cliente
+  const closingHM = isHM && hmLoan>0 ? hmClosingFee : 0;       // closing fee do HM
+  // Total client investment (entrada + reforma + closing HM se houver)
+  const clientInvested = downPayment + rehab + closingHM;
+  // Líquido da venda (depois de comissão/closing genéricos)
+  const netSale = arv - saleCosts;
+  // Sobra: líquido - HM (devolvido) - investimento cliente
+  const leftover = netSale - hardMoney - clientInvested;
+  const roi = clientInvested>0 ? (leftover/clientInvested*100) : 0;
+  return {
+    scenario,
+    isHM,
+    purchase,
+    hardMoney,
+    downPayment,
+    rehab,
+    closingHM,
+    clientInvested,
+    sale: arv,
+    saleCosts,
+    netSale,
+    leftover,
+    roi,
+  };
+}
+
+// ─── Render Client View HTML ──────────────────────────────────────────
+// Modes: 'cash' | 'hm' | 'both'
+// Returns full HTML string for client visualization (used in preview + public link)
+function renderBudgetClientView(b, mode){
+  if(!mode) mode = b.client_view_mode || 'hm';
+  const clientName = (b.client_name || b.name || 'Cliente').replace(/</g,'&lt;');
+  const address    = (b.address || '').replace(/</g,'&lt;');
+  const today      = new Date().toLocaleDateString('pt-BR');
+  const $$ = v => '$ ' + (+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const $$0= v => '$ ' + (+v||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  // Helper: render one scenario card
+  function scenarioCard(view, label, isPrimary){
+    const accentColor = view.isHM ? '#C68A4A' : '#5C7A3F';
+    const accentGradient = view.isHM
+      ? 'linear-gradient(135deg,#B8860B,#C68A4A)'
+      : 'linear-gradient(135deg,#5C7A3F,#7A9659)';
+    const icon = view.isHM ? '💰' : '💵';
+    return `
+    <div style="background:#fff;border:2px solid ${accentColor};border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06)">
+      <div style="background:${accentGradient};padding:16px 22px;color:#fff">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.85">${icon} Cenário</div>
+        <div style="font-size:22px;font-weight:800;margin-top:2px">${label}</div>
+      </div>
+      <div style="padding:20px 22px">
+        <!-- INVESTIMENTO BLOCK -->
+        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px">💼 Investimento</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;color:#3D271A">
+          <tr><td style="padding:6px 0;color:#655A4E">🏠 Valor da compra</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.purchase)}</td></tr>
+          ${view.isHM ? `<tr><td style="padding:6px 0;color:#655A4E">💰 Hard Money (financiamento)</td><td style="padding:6px 0;text-align:right;font-weight:700;color:${accentColor}">${$$0(view.hardMoney)}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:#655A4E">💵 Entrada do cliente</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.downPayment)}</td></tr>
+          <tr><td style="padding:6px 0;color:#655A4E">🔨 Reforma</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.rehab)}</td></tr>
+          ${view.closingHM>0 ? `<tr><td style="padding:6px 0;color:#655A4E">📋 Closing HM</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.closingHM)}</td></tr>` : ''}
+        </table>
+        <div style="background:#FAF7F3;border-radius:8px;padding:12px 16px;margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:800;color:#3D271A">TOTAL INVESTIDO PELO CLIENTE</span>
+          <span style="font-size:20px;font-weight:800;color:${accentColor}">${$$0(view.clientInvested)}</span>
+        </div>
+        <!-- VENDA BLOCK -->
+        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1.2px;text-transform:uppercase;margin:24px 0 10px">🏷️ Venda</div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;color:#3D271A">
+          <tr><td style="padding:6px 0;color:#655A4E">Venda esperada</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.sale)}</td></tr>
+          <tr><td style="padding:6px 0;color:#655A4E">(-) Custos da venda</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#A02021">- ${$$0(view.saleCosts)}</td></tr>
+          <tr style="border-top:1px solid #F0EAE2"><td style="padding:8px 0 6px;color:#3D271A;font-weight:700">Líquido da venda</td><td style="padding:8px 0 6px;text-align:right;font-weight:800">${$$0(view.netSale)}</td></tr>
+          ${view.isHM ? `<tr><td style="padding:6px 0;color:#655A4E">(-) Hard Money devolvido</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#A02021">- ${$$0(view.hardMoney)}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:#655A4E">(-) Investimento cliente</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#A02021">- ${$$0(view.clientInvested)}</td></tr>
+        </table>
+        <!-- SOBRA BLOCK -->
+        <div style="background:${accentGradient};border-radius:10px;padding:16px 18px;margin-top:18px;color:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;opacity:0.85">✨ Sobra para o cliente</div>
+              <div style="font-size:30px;font-weight:800;margin-top:2px">${$$0(view.leftover)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;opacity:0.85">ROI</div>
+              <div style="font-size:24px;font-weight:800">${view.roi.toFixed(1)}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+  let bodyHTML='';
+  if(mode==='both'){
+    const cashView = calcBudgetClientView(b, 'cash');
+    const hmView   = calcBudgetClientView(b, 'hm');
+    bodyHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:18px">
+      ${scenarioCard(cashView, 'Cash (100%)', false)}
+      ${scenarioCard(hmView, 'Hard Money', true)}
+    </div>`;
+  } else {
+    const view = calcBudgetClientView(b, mode);
+    const label = view.isHM ? 'Hard Money' : 'Cash (100%)';
+    bodyHTML = scenarioCard(view, label, true);
+  }
+  return `
+  <div style="max-width:960px;margin:0 auto;padding:32px 20px;font-family:'Lato',-apple-system,sans-serif">
+    <!-- Header with DEC logo + welcome -->
+    <div style="background:#fff;border-radius:14px;padding:22px 28px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <div style="flex:0 0 auto">
+        <img src="${typeof DEC_LOGO_B64!=='undefined'?DEC_LOGO_B64:''}" alt="DEC Group" style="height:64px;width:auto;display:block">
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:11px;font-weight:700;color:#C68A4A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Proposta de Investimento</div>
+        <h1 style="font-size:24px;color:#3D271A;font-weight:800;margin:0">${clientName}</h1>
+        ${address ? `<p style="color:#655A4E;font-size:13px;margin-top:6px">📍 ${address}</p>` : ''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;text-transform:uppercase">Data</div>
+        <div style="font-size:13px;color:#3D271A;font-weight:700">${today}</div>
+      </div>
+    </div>
+    ${bodyHTML}
+    <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
+      DEC Group USA · Proposta de Investimento · Valores estimados
+    </div>
+  </div>`;
+}
+
+// ─── Open Client View Modal (preview no sistema) ──────────────────────
+function openBudgetClientView(budgetId){
+  if(!isCEO()){toast('CEO only',false);return;}
+  const b = budgets.find(x=>x.id===budgetId);
+  if(!b){toast('Orçamento não encontrado',false);return;}
+  const mode = b.client_view_mode || 'hm';
+  const m = document.createElement('div');
+  m.id = 'modal-client-view';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;overflow-y:auto;padding:20px';
+  m.innerHTML = `<div style="background:#FAF7F3;border-radius:14px;max-width:1100px;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden">
+    <div style="background:#fff;padding:14px 20px;border-bottom:1px solid #F0EAE2;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:5">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase">Pré-visualização do cliente</div>
+        <div style="font-size:14px;color:#3D271A;font-weight:700;margin-top:2px">${(b.name||'Orçamento').replace(/</g,'&lt;')}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:11px;color:#655A4E;font-weight:600">Modo:</span>
+        <select id="bcv-mode" onchange="bcvChangeMode('${budgetId}',this.value)" style="padding:6px 10px;font-size:12px;border:1.5px solid var(--gray2);border-radius:5px;background:#fff;font-family:inherit;font-weight:600">
+          <option value="cash" ${mode==='cash'?'selected':''}>💵 Cash</option>
+          <option value="hm" ${mode==='hm'?'selected':''}>💰 Hard Money</option>
+          <option value="both" ${mode==='both'?'selected':''}>🔀 Ambos (análise)</option>
+        </select>
+        <button onclick="bcvSaveMode('${budgetId}')" style="padding:7px 14px;background:#5C7A3F;color:#fff;border:0;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">💾 Salvar modo</button>
+        <button onclick="document.getElementById('modal-client-view').remove()" style="padding:7px 14px;background:transparent;color:#655A4E;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">Fechar</button>
+      </div>
+    </div>
+    <div id="bcv-body" style="padding:0">${renderBudgetClientView(b, mode)}</div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+function bcvChangeMode(budgetId, mode){
+  const b = budgets.find(x=>x.id===budgetId);
+  if(!b) return;
+  // Render in a temp clone (don't mutate the budget yet — only on Save)
+  const tempB = {...b, client_view_mode: mode};
+  document.getElementById('bcv-body').innerHTML = renderBudgetClientView(tempB, mode);
+}
+
+async function bcvSaveMode(budgetId){
+  const sel = document.getElementById('bcv-mode');
+  if(!sel) return;
+  const mode = sel.value;
+  const {error} = await sb.from('budgets').update({client_view_mode:mode}).eq('id',budgetId);
+  if(error){toast('Erro ao salvar modo: '+error.message,false);return;}
+  // Update in-memory
+  const b = budgets.find(x=>x.id===budgetId);
+  if(b) b.client_view_mode = mode;
+  toast('Modo salvo: '+mode,true);
+  renderBudgets();  // refresh list to show the new badge
 }
 
 // ─── Open editor modal (new or existing) ──────────────────────────────
