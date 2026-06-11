@@ -12179,7 +12179,12 @@ function renderBudgetEditorModal(){
         ${kindBadge}
       </td>
       <td style="padding:6px 4px;text-align:right">
-        <input id="bm-line-base-${idx}" type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#C68A4A':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
+        <div style="display:inline-flex;align-items:center;gap:4px;justify-content:flex-end">
+          ${isFormula && !hasOverride
+            ? `<button onclick="useFormulaValue(${idx})" title="Pegar o valor auto-calculado e colocar como manual (assim você pode editar)" style="background:#C68A4A;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:9px;font-weight:700;padding:3px 6px;font-family:inherit;white-space:nowrap">📐 Usar</button>`
+            : ''}
+          <input id="bm-line-base-${idx}" type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático. Digite um valor pra sobrescrever.':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#C68A4A':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
+        </div>
         ${autoHint}
       </td>
       <td style="padding:6px 4px;text-align:center">
@@ -12261,57 +12266,86 @@ function renderBudgetEditorModal(){
       <!-- Inputs principais -->
       <div style="background:#FAF7F3;padding:16px;border-radius:8px;margin-bottom:18px">
         <div style="font-size:12px;font-weight:800;color:#3D271A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">💰 Dados do Imóvel</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Preço de Compra ($)</label>
-            <input type="number" min="0" step="0.01" value="${b.purchase_price||''}" oninput="updateBudgetField('purchase_price',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+
+        <!-- GRUPO 1: IMÓVEL (essencial) -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:#655A4E;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3D271A"></span>
+            🏠 Imóvel
           </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">ARV ($)</label>
-            <input type="number" min="0" step="0.01" value="${b.arv||''}" oninput="updateBudgetField('arv',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Rehab ($)</label>
-            <input type="number" min="0" step="0.01" value="${b.rehab_estimate||''}" oninput="updateBudgetField('rehab_estimate',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Closing Costs ($)</label>
-            <input type="number" min="0" step="0.01" value="${b.closing_costs||''}" oninput="updateBudgetField('closing_costs',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Comissão Agente (ex 0.05)</label>
-            <input type="number" min="0" max="1" step="0.001" value="${b.commission_agent_pct!=null?b.commission_agent_pct:0.05}" oninput="updateBudgetField('commission_agent_pct',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Closing Venda (ex 0.01)</label>
-            <input type="number" min="0" max="1" step="0.001" value="${b.commission_closing_pct!=null?b.commission_closing_pct:0.01}" oninput="updateBudgetField('commission_closing_pct',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">% HM Loan (ex 0.70 = 70%)</label>
-            <input type="number" min="0" max="1" step="0.01" value="${b.hm_pct||''}" oninput="updateBudgetField('hm_pct',this.value)" placeholder="0.70" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
-            <div id="bm-hm-hint" style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Down HM (ex 0.02)</label>
-            <input type="number" min="0" max="1" step="0.001" value="${b.hm_down_pct||''}" oninput="updateBudgetField('hm_down_pct',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Juros HM/ano (ex 0.099)</label>
-            <input type="number" min="0" max="1" step="0.001" value="${b.hm_interest_pct||''}" oninput="updateBudgetField('hm_interest_pct',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">HM Closing Costs ($)</label>
-            <input type="number" min="0" step="0.01" value="${b.hm_closing_costs||''}" oninput="updateBudgetField('hm_closing_costs',this.value)" placeholder="fee fixo do HM" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#5C7A3F;display:block;margin-bottom:3px">Meses Cash</label>
-            <input type="number" min="1" max="48" step="1" value="${b.cash_months||4}" oninput="updateBudgetField('cash_months',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #B5D3A2;border-radius:5px;outline:none;font-family:inherit;background:#F2F4EC">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">Meses HM</label>
-            <input type="number" min="1" max="48" step="1" value="${b.hm_months||6}" oninput="updateBudgetField('hm_months',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Preço de Compra ($)</label>
+              <input type="number" min="0" step="0.01" value="${b.purchase_price||''}" oninput="updateBudgetField('purchase_price',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">ARV ($)</label>
+              <input type="number" min="0" step="0.01" value="${b.arv||''}" oninput="updateBudgetField('arv',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Rehab ($)</label>
+              <input type="number" min="0" step="0.01" value="${b.rehab_estimate||''}" oninput="updateBudgetField('rehab_estimate',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Closing Costs ($)</label>
+              <input type="number" min="0" step="0.01" value="${b.closing_costs||''}" oninput="updateBudgetField('closing_costs',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
           </div>
         </div>
+
+        <!-- GRUPO 2: HARD MONEY (essencial) -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:#B8860B;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#B8860B"></span>
+            💰 Hard Money
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">% HM Loan</label>
+              <input type="number" min="0" max="1" step="0.01" value="${b.hm_pct||''}" oninput="updateBudgetField('hm_pct',this.value)" placeholder="ex 0.70 = 70%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
+              <div id="bm-hm-hint" style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">Meses HM</label>
+              <input type="number" min="1" max="48" step="1" value="${b.hm_months||6}" oninput="updateBudgetField('hm_months',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#5C7A3F;display:block;margin-bottom:3px">Meses Cash</label>
+              <input type="number" min="1" max="48" step="1" value="${b.cash_months||4}" oninput="updateBudgetField('cash_months',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #B5D3A2;border-radius:5px;outline:none;font-family:inherit;background:#F2F4EC">
+            </div>
+          </div>
+        </div>
+
+        <!-- GRUPO 3: AVANÇADO (collapse) -->
+        <details style="margin-top:8px;border-top:1px dashed #D5C9BC;padding-top:12px">
+          <summary style="cursor:pointer;font-size:10px;font-weight:700;color:#655A4E;letter-spacing:.6px;text-transform:uppercase;user-select:none;list-style:none;display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#999"></span>
+            📐 Configurações avançadas (%)
+            <span style="font-size:9px;color:#999;font-weight:500;text-transform:none;margin-left:6px">— clique para expandir/recolher</span>
+          </summary>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px">
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Comissão Agente</label>
+              <input type="number" min="0" max="1" step="0.001" value="${b.commission_agent_pct!=null?b.commission_agent_pct:0.05}" oninput="updateBudgetField('commission_agent_pct',this.value)" placeholder="ex 0.05 = 5%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Closing Venda</label>
+              <input type="number" min="0" max="1" step="0.001" value="${b.commission_closing_pct!=null?b.commission_closing_pct:0.01}" oninput="updateBudgetField('commission_closing_pct',this.value)" placeholder="ex 0.01 = 1%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Down HM</label>
+              <input type="number" min="0" max="1" step="0.001" value="${b.hm_down_pct||''}" oninput="updateBudgetField('hm_down_pct',this.value)" placeholder="ex 0.02 = 2%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">% Juros HM/ano</label>
+              <input type="number" min="0" max="1" step="0.001" value="${b.hm_interest_pct||''}" oninput="updateBudgetField('hm_interest_pct',this.value)" placeholder="ex 0.099 = 9.9%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">HM Closing Costs ($)</label>
+              <input type="number" min="0" step="0.01" value="${b.hm_closing_costs||''}" oninput="updateBudgetField('hm_closing_costs',this.value)" placeholder="fee fixo do HM" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+            </div>
+          </div>
+        </details>
       </div>
       <!-- Cost lines table -->
       <div style="margin-bottom:18px">
@@ -12380,6 +12414,41 @@ function updateBudgetLine(idx, field, value){
     _bdgCurrent.cost_lines[idx][field]=value;
   }
   refreshBudgetLiveCalcs();
+}
+
+// ─── "Use formula value" button — copies auto-calc to base input ──────
+// Permite ao usuário pegar o valor calculado automaticamente e colocar
+// como manual, pra editar com facilidade depois.
+function useFormulaValue(idx){
+  if(!_bdgCurrent || !_bdgCurrent.cost_lines[idx]) return;
+  const line=_bdgCurrent.cost_lines[idx];
+  if(!line.formula) return;
+  const b=_bdgCurrent;
+  const purchase=+b.purchase_price||0;
+  const arv=+b.arv||0;
+  const rehab=+b.rehab_estimate||0;
+  const hmDownPct=+b.hm_down_pct||0;
+  const hmInterestPct=+b.hm_interest_pct||0;
+  const hmPct=+b.hm_pct||0;
+  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
+  const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
+  const commPct = commAgentPct + commClosingPct;
+  const mHm=+line.months_hm||1;
+  let value=0;
+  if(line.formula==='house_value')      value=purchase;
+  else if(line.formula==='down_cash')   value=hmLoan>0 ? (purchase-hmLoan) : purchase;
+  else if(line.formula==='hm_principal')value=hmLoan;
+  else if(line.formula==='hm_interest') value=(hmLoan*hmInterestPct/12)*mHm;
+  else if(line.formula==='hm_down')     value=hmLoan*hmDownPct;
+  else if(line.formula==='commission_6')value=arv*commPct;
+  else if(line.formula==='rehab')       value=rehab;
+  if(value<=0){toast('Preencha os dados do imóvel primeiro',false);return;}
+  // Round to 2 decimal places
+  value=Math.round(value*100)/100;
+  line.base=value;
+  // Trigger re-render of the modal so the button disappears and field becomes manual
+  renderBudgetEditorModal();
 }
 
 // ─── Live recalc without re-render (keeps cursor focus) ─────────────
