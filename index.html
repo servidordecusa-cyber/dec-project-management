@@ -318,7 +318,6 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico">💰</span>Financial</button>
   <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico">📊</span>DRE</button>
   <button class="gtab" data-view="working-capital" onclick="goView('working-capital')"><span class="ico">💰</span>Working Capital</button>
-  <button class="gtab" data-view="budgets" onclick="goView('budgets')"><span class="ico">🧮</span>Orçamentos</button>
 </div>
 
 <!-- PORTFOLIO -->
@@ -1428,6 +1427,20 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       </table>
     </div>
   </div>
+</div>
+
+<!-- CLIENTE DETALHES (drill-down) -->
+<div id="view-client-detail" style="display:none;padding:26px">
+  <div style="margin-bottom:18px">
+    <button onclick="goView('clients')" style="background:transparent;border:0;color:#655A4E;cursor:pointer;font-size:13px;padding:4px 0;font-family:inherit">← Voltar para Clientes</button>
+  </div>
+  <div id="cd-header" style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;padding:24px 28px;color:#fff;margin-bottom:20px"></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:2px solid #F0EAE2">
+    <button class="cd-tab active" data-tab="projects" onclick="cdSwitchTab('projects')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid #C68A4A;color:#3D271A;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">📁 Projetos</button>
+    <button class="cd-tab" data-tab="budgets" onclick="cdSwitchTab('budgets')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid transparent;color:#655A4E;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">🧮 Orçamentos</button>
+  </div>
+  <div id="cd-tab-projects" class="cd-tab-content"></div>
+  <div id="cd-tab-budgets" class="cd-tab-content" style="display:none"></div>
 </div>
 
 <!-- FORNECEDORES (global) -->
@@ -2982,19 +2995,19 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','vendors','invoices','fixed','financial','working-capital','dre','budgets'];
+const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','financial','working-capital','dre','budgets'];
 
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','vendors','invoices','fixed','financial','working-capital','dre','budgets'];
+  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','working-capital','dre','budgets'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-vendors','view-invoices','view-fixed','view-financial','view-working-capital','view-dre','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-working-capital','view-dre','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -3005,9 +3018,10 @@ function goView(view){
   document.getElementById('back-btn').style.display='none';
   document.getElementById('tn-pname').style.display='none';
   document.getElementById('del-btn').style.display='none';
-  // Update active tab
+  // Update active tab (client-detail keeps clients highlighted)
+  const tabView = view==='client-detail' ? 'clients' : view;
   document.querySelectorAll('.gtab').forEach(b=>{
-    b.classList.toggle('active',b.dataset.view===view);
+    b.classList.toggle('active',b.dataset.view===tabView);
   });
   // Update count label
   document.getElementById('proj-count-lbl').textContent=projects.length+' project'+(projects.length!==1?'s':'');
@@ -3353,7 +3367,7 @@ function openProject(id){
   const p=projects.find(x=>x.id===id);
   if(!p) return;
   // Hide ALL global views
-  ['view-portfolio','view-home','view-clients','view-vendors','view-invoices','view-fixed','view-financial','view-dre'].forEach(v=>{
+  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-dre','view-working-capital','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -10003,7 +10017,9 @@ function renderClients(){
       : `<button onclick="generateInvestorToken('${c.id}')" style="padding:5px 12px;font-size:11px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-weight:600">🔗 Gerar link</button>`;
     return `
     <tr style="border-bottom:1px solid #F0EAE2">
-      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${c.name||''}</td>
+      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">
+        <a onclick="openClientDetail('${c.id}')" style="color:#3D271A;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#C68A4A;text-decoration-thickness:2px">${c.name||''}</a>
+      </td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.address||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.email||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.phone||'<span style="color:var(--gray3)">—</span>'}</td>
@@ -10017,7 +10033,264 @@ function renderClients(){
   }).join('');
 }
 
-// ═══ INVESTOR PORTAL — Token management ═══════════════════════════════
+// ═══ CLIENT DETAIL (drill-down) ══════════════════════════════════════
+let _cdCurrentClientId=null;
+let _cdActiveTab='projects';
+
+function openClientDetail(clientId){
+  if(!isCEO()){toast('CEO only',false);return;}
+  _cdCurrentClientId=clientId;
+  _cdActiveTab='projects';
+  goView('client-detail');
+  cdRenderHeader();
+  cdSwitchTab('projects');
+}
+
+function cdRenderHeader(){
+  const c=clients.find(x=>x.id===_cdCurrentClientId);
+  if(!c) return;
+  const el=document.getElementById('cd-header');
+  if(!el) return;
+  // Stats
+  const myProjects=projects.filter(p=>p.customer===c.id);
+  const myBudgets=(budgets||[]).filter(b=>b.client_id===c.id);
+  const hasToken=!!c.investor_token;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:18px">
+      <div style="flex:1;min-width:240px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.65);letter-spacing:1.5px;text-transform:uppercase">👤 Cliente</div>
+        <h1 style="font-size:26px;font-weight:800;margin:4px 0 0">${(c.name||'').replace(/</g,'&lt;')}</h1>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:rgba(255,255,255,0.85)">
+          ${c.email?`<span>📧 ${c.email.replace(/</g,'&lt;')}</span>`:''}
+          ${c.phone?`<span>📞 ${c.phone.replace(/</g,'&lt;')}</span>`:''}
+          ${c.address?`<span>📍 ${c.address.replace(/</g,'&lt;')}</span>`:''}
+          ${c.tax_id?`<span>🏛 ${c.tax_id.replace(/</g,'&lt;')}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="background:rgba(255,255,255,0.1);padding:10px 16px;border-radius:8px">
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.4px">📁 Projetos</div>
+          <div style="font-size:22px;font-weight:800">${myProjects.length}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.1);padding:10px 16px;border-radius:8px">
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.4px">🧮 Orçamentos</div>
+          <div style="font-size:22px;font-weight:800">${myBudgets.length}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button onclick="openClientModal('${c.id}')" style="padding:8px 16px;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">✏️ Editar</button>
+        ${hasToken
+          ? `<button onclick="copyInvestorLink('${c.id}')" style="padding:8px 16px;background:#C68A4A;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📋 Copiar link investidor</button>`
+          : `<button onclick="generateInvestorToken('${c.id}').then(()=>cdRenderHeader())" style="padding:8px 16px;background:#5C7A3F;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">🔗 Gerar link investidor</button>`
+        }
+      </div>
+    </div>`;
+}
+
+function cdSwitchTab(tab){
+  _cdActiveTab=tab;
+  document.querySelectorAll('.cd-tab').forEach(b=>{
+    const isActive=b.dataset.tab===tab;
+    b.style.borderBottomColor=isActive?'#C68A4A':'transparent';
+    b.style.color=isActive?'#3D271A':'#655A4E';
+    b.style.fontWeight=isActive?'700':'600';
+  });
+  document.querySelectorAll('.cd-tab-content').forEach(el=>el.style.display='none');
+  const cont=document.getElementById('cd-tab-'+tab);
+  if(cont) cont.style.display='block';
+  if(tab==='projects') cdRenderProjects();
+  if(tab==='budgets') cdRenderBudgets();
+}
+
+function cdRenderProjects(){
+  const c=clients.find(x=>x.id===_cdCurrentClientId);
+  const el=document.getElementById('cd-tab-projects');
+  if(!c||!el) return;
+  const list=projects.filter(p=>p.customer===c.id);
+  if(list.length===0){
+    el.innerHTML=`<div style="background:#fff;padding:50px 30px;border-radius:12px;text-align:center;color:#999;font-style:italic">📁 Nenhum projeto vinculado a este cliente ainda.</div>`;
+    return;
+  }
+  const $$=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
+    <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">📁 Projetos (${list.length})</div>
+    ${list.map(p=>`
+      <div onclick="openProject('${p.id}')" style="background:#FAF7F3;border-radius:8px;padding:14px 18px;margin-bottom:10px;cursor:pointer;border:1.5px solid transparent;transition:all .2s" onmouseover="this.style.borderColor='#C68A4A'" onmouseout="this.style.borderColor='transparent'">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#3D271A">${(p.name||p.address||'?').replace(/</g,'&lt;')}</div>
+            ${p.address?`<div style="font-size:11px;color:#655A4E;margin-top:2px">📍 ${p.address.replace(/</g,'&lt;')}</div>`:''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Compra</div>
+            <div style="font-weight:700;color:#3D271A">${$$(p.purchase_price)}</div>
+          </div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+async function cdRenderBudgets(){
+  const c=clients.find(x=>x.id===_cdCurrentClientId);
+  const el=document.getElementById('cd-tab-budgets');
+  if(!c||!el) return;
+  if(!_bdgLoaded) await loadBudgets();
+  const list=(budgets||[]).filter(b=>b.client_id===c.id);
+  const $$=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const dt=d=>{if(!d)return'—';const dd=new Date(d);return dd.toLocaleDateString('pt-BR');};
+  const statusBadges={
+    draft:{label:'📝 Rascunho',bg:'#FAF3E0',color:'#A86A2C'},
+    approved:{label:'✅ Aprovado',bg:'#DCEFE6',color:'#2D6A2D'},
+    rejected:{label:'❌ Rejeitado',bg:'#F5E8E8',color:'#A02021'},
+    archived:{label:'📦 Arquivado',bg:'#E8DDC9',color:'#655A4E'},
+  };
+  const newBtn=`<button onclick="cdNewBudget()" style="padding:8px 16px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">+ Novo Orçamento</button>`;
+  if(list.length===0){
+    el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase">🧮 Orçamentos</div>
+        ${newBtn}
+      </div>
+      <div style="padding:40px 20px;text-align:center;color:#999;font-style:italic">Nenhum orçamento ainda. Clique em <strong>+ Novo Orçamento</strong> pra criar.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase">🧮 Orçamentos (${list.length})</div>
+      ${newBtn}
+    </div>
+    ${list.map(b=>{
+      const calc=calcBudgetSummary(b);
+      const sbBadge=statusBadges[b.status]||statusBadges.draft;
+      const mode=b.client_view_mode||'hm';
+      const modeLabel={cash:'💵 Cash',hm:'💰 HM',both:'🔀 Ambos'}[mode]||'💰 HM';
+      const visible=b.visible_to_client===true;
+      const isApproved=b.status==='approved';
+      const hasConverted=!!b.converted_to_project_id;
+      return `<div style="background:#FAF7F3;border-radius:10px;padding:16px 20px;margin-bottom:10px;border:1.5px solid #F0EAE2">
+        <div onclick="openBudgetEditor('${b.id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:15px;font-weight:800;color:#3D271A;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              ${(b.name||'(sem nome)').replace(/</g,'&lt;')}
+              <span style="display:inline-block;padding:2px 9px;background:${sbBadge.bg};color:${sbBadge.color};border-radius:10px;font-size:9px;font-weight:700">${sbBadge.label}</span>
+              ${hasConverted?`<span style="display:inline-block;padding:2px 9px;background:#E0E8DA;color:#3F5C2A;border-radius:10px;font-size:9px;font-weight:700">🔗 vinculado a projeto</span>`:''}
+            </div>
+            ${b.address?`<div style="font-size:11px;color:#655A4E;margin-top:3px">📍 ${b.address.replace(/</g,'&lt;')}</div>`:''}
+            <div style="font-size:10px;color:#999;margin-top:3px">Criado ${dt(b.created_at)}</div>
+          </div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px">
+            <div style="text-align:right">
+              <div style="color:#655A4E;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">Compra</div>
+              <div style="font-weight:800;color:#3D271A;font-size:13px">${$$(b.purchase_price)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="color:#655A4E;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">ARV</div>
+              <div style="font-weight:800;color:#3D271A;font-size:13px">${$$(b.arv)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="color:#B8860B;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">Lucro HM</div>
+              <div style="font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:13px">${$$(calc.hm.profit)}</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #F0EAE2;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Cliente vê:</span>
+            <strong style="font-size:11px;color:#3D271A">${modeLabel}</strong>
+            <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin-left:6px;padding:3px 9px;background:${visible?'#DCEFE6':'#fff'};border:1.5px solid ${visible?'#5C7A3F':'#D8D2C7'};border-radius:14px;font-size:10px;font-weight:700;color:${visible?'#2D6A2D':'#655A4E'}">
+              <input type="checkbox" ${visible?'checked':''} onchange="cdToggleVisible('${b.id}',this.checked)" style="cursor:pointer">
+              ${visible?'👁 Visível pro cliente':'👁‍🗨 Oculto'}
+            </label>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="event.stopPropagation();openBudgetClientView('${b.id}')" style="padding:6px 12px;background:transparent;color:#3D271A;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">👁 Preview</button>
+            ${isApproved && !hasConverted
+              ? `<button onclick="event.stopPropagation();cdApproveBudget('${b.id}')" style="padding:6px 14px;background:linear-gradient(135deg,#5C7A3F,#7A9659);color:#fff;border:0;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">✅ Criar projeto</button>`
+              : ''
+            }
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function cdToggleVisible(budgetId, visible){
+  const {error}=await sb.from('budgets').update({visible_to_client:visible}).eq('id',budgetId);
+  if(error){toast('Erro: '+error.message,false);return;}
+  const b=budgets.find(x=>x.id===budgetId);
+  if(b) b.visible_to_client=visible;
+  toast(visible?'✓ Visível pro cliente':'✓ Oculto',true);
+  cdRenderBudgets();
+}
+
+function cdNewBudget(){
+  // Open editor preset with current client
+  if(!isCEO()){toast('CEO only',false);return;}
+  _bdgCurrent={
+    id:null,
+    name:'Novo Orçamento',
+    address:'',
+    purchase_price:0,
+    arv:0,
+    rehab_estimate:0,
+    closing_costs:0,
+    hm_down_pct:0.02,
+    hm_interest_pct:0.099,
+    hm_loan_amount:0,
+    hm_pct:0,
+    hm_closing_costs:0,
+    commission_agent_pct:0.05,
+    commission_closing_pct:0.01,
+    cash_months:4,
+    hm_months:6,
+    cost_lines:JSON.parse(JSON.stringify(BUDGET_DEFAULT_LINES)),
+    sale_scenarios:[],
+    status:'draft',
+    notes:'',
+    client_id:_cdCurrentClientId,
+    client_view_mode:'hm',
+    visible_to_client:false,
+  };
+  renderBudgetEditorModal();
+}
+
+async function cdApproveBudget(budgetId){
+  const b=budgets.find(x=>x.id===budgetId);
+  if(!b){toast('Orçamento não encontrado',false);return;}
+  if(b.status!=='approved'){toast('Mude o status para Aprovado primeiro',false);return;}
+  if(b.converted_to_project_id){toast('Já foi convertido em projeto',false);return;}
+  if(!b.client_id){toast('Orçamento sem cliente vinculado',false);return;}
+  const addr=(b.address||b.name||'').trim();
+  if(!addr){toast('Orçamento precisa de endereço ou nome',false);return;}
+  if(!confirm(`Criar projeto a partir do orçamento "${b.name||addr}"?\n\nO projeto vai usar:\n• Endereço: ${addr}\n• Cliente: vinculado\n• Status: Em andamento`)) return;
+  // Build project payload from budget
+  const projectPayload={
+    name:addr,
+    address:addr,
+    customer:b.client_id,
+    purchase_price:+b.purchase_price||0,
+    start:new Date().toISOString().slice(0,10),
+    pm:'',
+  };
+  const {data:newProj,error:projErr}=await sb.from('projects').insert(projectPayload).select().single();
+  if(projErr){toast('Erro criar projeto: '+projErr.message,false);return;}
+  // Link budget to new project
+  const {error:linkErr}=await sb.from('budgets').update({
+    converted_to_project_id:newProj.id,
+    approved_at:new Date().toISOString(),
+  }).eq('id',budgetId);
+  if(linkErr){console.warn('link error',linkErr);}
+  // Update in-memory
+  b.converted_to_project_id=newProj.id;
+  b.approved_at=new Date().toISOString();
+  if(!projects.find(p=>p.id===newProj.id)) projects.push(newProj);
+  toast('✅ Projeto criado! Redirecionando...',true);
+  setTimeout(()=>openProject(newProj.id),800);
+}
+
+
 function _genInvestorToken(){
   // Generate a 32-char URL-safe random token using crypto
   const arr=new Uint8Array(24);
@@ -11928,6 +12201,14 @@ function renderBudgetEditorModal(){
       <button onclick="closeBudgetEditor()" style="background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:18px">×</button>
     </div>
     <div style="padding:20px 24px;max-height:calc(100vh - 200px);overflow-y:auto">
+      <!-- Cliente vinculado -->
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;display:block;margin-bottom:4px">👤 Cliente vinculado <span style="font-weight:500;color:#999;text-transform:none;letter-spacing:0">(opcional · análise interna pode ficar sem)</span></label>
+        <select onchange="_bdgCurrent.client_id=this.value||null" style="width:100%;padding:8px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer">
+          <option value="">— Sem cliente (análise interna) —</option>
+          ${(clients||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${c.id}" ${b.client_id===c.id?'selected':''}>${(c.name||'').replace(/</g,'&lt;')}</option>`).join('')}
+        </select>
+      </div>
       <!-- Endereço + Status -->
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px">
         <div>
@@ -12114,6 +12395,9 @@ async function saveBudget(){
     sale_scenarios:_bdgCurrent.sale_scenarios||[],
     status:_bdgCurrent.status||'draft',
     notes:_bdgCurrent.notes||'',
+    client_id:_bdgCurrent.client_id||null,
+    client_view_mode:_bdgCurrent.client_view_mode||'hm',
+    visible_to_client:_bdgCurrent.visible_to_client===true,
   };
   let result;
   if(_bdgCurrent.id){
