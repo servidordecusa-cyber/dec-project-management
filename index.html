@@ -11841,6 +11841,8 @@ function calcBudgetSummary(b){
   hmDescontos+=hmLoan;
   // Sale price for both scenarios = ARV
   const sale=arv;
+  // Gross profit (referência): Venda - Compra - Rehab (sem custos operacionais/closing)
+  const grossProfit = sale - purchase - rehab;
   const cashInvested=cashEmpresa;
   const cashProfit=sale-cashInvested-cashDescontos;
   const cashProfitPct=cashInvested>0?(cashProfit/cashInvested*100):0;
@@ -11848,6 +11850,8 @@ function calcBudgetSummary(b){
   const hmProfit=sale-hmInvested-hmDescontos;
   const hmProfitPct=hmInvested>0?(hmProfit/hmInvested*100):0;
   return {
+    gross_profit:grossProfit,
+    purchase, arv, rehab, hm_loan:hmLoan,
     cash:{invested:cashInvested, profit:cashProfit, profit_pct:cashProfitPct, descontos_closing:cashDescontos, sale},
     hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan},
     lines,
@@ -12204,9 +12208,20 @@ function renderBudgetEditorModal(){
       </td>
     </tr>`;
   }).join('');
-  // Summary block (2 scenarios side by side)
+  // Summary block (gross profit + 2 scenarios side by side)
   const summaryHTML=`
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:20px">
+    <!-- Gross Profit reference (purchase - sale - rehab) -->
+    <div style="background:linear-gradient(135deg,#FAF7F3,#F0EAE2);border:1.5px solid #D5C9BC;border-radius:8px;padding:14px 18px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase">📊 Gross Profit (referência)</div>
+        <div style="font-size:11px;color:#655A4E;margin-top:2px">Venda - Compra - Rehab · sem custos operacionais ou closing</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:800;color:${calc.gross_profit>=0?'#5C7A3F':'#A02021'}" id="bm-gross-profit">${$fmt(calc.gross_profit)}</div>
+        <div style="font-size:10px;color:#999;margin-top:2px">${$fmt(calc.arv)} − ${$fmt(calc.purchase)} − ${$fmt(calc.rehab)}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:14px">
       <!-- Cash scenario -->
       <div style="background:#F2F4EC;border-left:4px solid #5C7A3F;border-radius:8px;padding:18px">
         <div style="font-size:13px;font-weight:800;color:#5C7A3F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">💵 Cenário Cash · ${b.cash_months} meses</div>
@@ -12513,9 +12528,13 @@ function refreshBudgetLiveCalcs(){
     if(cashEl) cashEl.textContent=$$2(valCash);
     if(hmEl)   hmEl.textContent  =$$2(valHm);
   });
-  // 3. Update scenario summary totals (Cash + HM cards)
+  // 3. Update scenario summary totals (Cash + HM cards + Gross Profit)
   const calc=calcBudgetSummary(b);
   const set=(id,val)=>{const e=document.getElementById(id);if(e) e.textContent=val;};
+  set('bm-gross-profit',   $$(calc.gross_profit));
+  // Color the gross profit
+  const grossEl=document.getElementById('bm-gross-profit');
+  if(grossEl) grossEl.style.color=calc.gross_profit>=0?'#5C7A3F':'#A02021';
   set('bm-cash-invested',  $$(calc.cash.invested));
   set('bm-cash-descontos', $$(calc.cash.descontos_closing));
   set('bm-cash-sale',      $$(calc.cash.sale));
@@ -12771,6 +12790,15 @@ function generateBudgetPDF(){
   </table>
 
   <h2>Análise dos Cenários</h2>
+
+  <!-- Gross Profit (referência) -->
+  <table style="margin-bottom:14px">
+    <tr style="background:#FAF7F3">
+      <td style="padding:10px;font-weight:700;color:#655A4E;width:60%">📊 Gross Profit (referência)<br><span style="font-size:9px;color:#999;font-weight:500">Venda − Compra − Rehab · sem custos operacionais ou closing</span></td>
+      <td style="padding:10px;text-align:right;font-weight:800;font-size:18px;color:${calc.gross_profit>=0?'#5C7A3F':'#A02021'}">${$$(calc.gross_profit)}</td>
+    </tr>
+  </table>
+
   <div class="totals">
     <div class="scen cash">
       <h3>💵 Cenário Cash · ${b.cash_months} meses</h3>
@@ -12778,7 +12806,7 @@ function generateBudgetPDF(){
       <div class="row"><span>Descontos no closing</span><span>${$$(calc.cash.descontos_closing)}</span></div>
       <div class="row"><span>Venda</span><span>${$$(calc.cash.sale)}</span></div>
       <div class="row lucro"><span>LUCRO</span><span>${$$(calc.cash.profit)}</span></div>
-      <div class="row lucro"><span>% LUCRO</span><span>${$pct(calc.cash.profit_pct)}</span></div>
+      <div class="row lucro"><span>ROI</span><span>${$pct(calc.cash.profit_pct)}</span></div>
     </div>
     <div class="scen hm">
       <h3>🏦 Cenário Hard Money · ${b.hm_months} meses</h3>
@@ -12786,7 +12814,7 @@ function generateBudgetPDF(){
       <div class="row"><span>Descontos no closing</span><span>${$$(calc.hm.descontos_closing)}</span></div>
       <div class="row"><span>Venda</span><span>${$$(calc.hm.sale)}</span></div>
       <div class="row lucro"><span>LUCRO</span><span>${$$(calc.hm.profit)}</span></div>
-      <div class="row lucro"><span>% LUCRO</span><span>${$pct(calc.hm.profit_pct)}</span></div>
+      <div class="row lucro"><span>ROI</span><span>${$pct(calc.hm.profit_pct)}</span></div>
     </div>
   </div>
 
@@ -12871,19 +12899,22 @@ function downloadBudgetExcel(){
     r.push([line.name, line.kind==='closing'?'Closing':'Custo', base, mCash, valCash, mHm, valHm]);
   });
   r.push([]);
+  r.push(['GROSS PROFIT (referência)','','','','','',calc.gross_profit]);
+  r.push(['  Venda - Compra - Rehab','','','','','','']);
+  r.push([]);
   r.push(['CENÁRIO CASH','','','','',`${b.cash_months} meses`]);
   r.push(['Cash investido', calc.cash.invested]);
   r.push(['Descontos no closing', calc.cash.descontos_closing]);
   r.push(['Venda', calc.cash.sale]);
   r.push(['LUCRO', calc.cash.profit]);
-  r.push(['% LUCRO', (calc.cash.profit_pct/100).toFixed(4)]);
+  r.push(['ROI', (calc.cash.profit_pct/100).toFixed(4)]);
   r.push([]);
   r.push(['CENÁRIO HARD MONEY','','','','',`${b.hm_months} meses`]);
   r.push(['Cash investido', calc.hm.invested]);
   r.push(['Descontos no closing', calc.hm.descontos_closing]);
   r.push(['Venda', calc.hm.sale]);
   r.push(['LUCRO', calc.hm.profit]);
-  r.push(['% LUCRO', (calc.hm.profit_pct/100).toFixed(4)]);
+  r.push(['ROI', (calc.hm.profit_pct/100).toFixed(4)]);
   if(b.notes){r.push([]);r.push(['NOTAS']);r.push([b.notes]);}
   // Convert to CSV with BOM (so Excel opens UTF-8 correctly)
   const csv='\uFEFF'+r.map(row=>row.map(c=>{
