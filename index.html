@@ -2347,6 +2347,18 @@ async function showInvestorPortal(token){
     const {data:projData,error:projErr}=await sb.from('projects')
       .select('*').eq('customer',clientData.id).order('created_at',{ascending:false});
     if(projErr) throw projErr;
+    // Fetch visible budgets for this client (a realizar)
+    let budgetsData=[];
+    try{
+      const {data:bData,error:bErr}=await sb.from('budgets')
+        .select('*')
+        .eq('client_id',clientData.id)
+        .eq('visible_to_client',true)
+        .is('converted_to_project_id',null)
+        .order('created_at',{ascending:false});
+      if(bErr){console.warn('budgets fetch (non-blocking):',bErr.message);}
+      else budgetsData=bData||[];
+    }catch(bErr){console.warn('budgets fetch failed:',bErr);}
     // Fetch visible invoices for these projects
     const projIds=(projData||[]).map(p=>p.id);
     let invData=[];
@@ -2389,7 +2401,7 @@ async function showInvestorPortal(token){
       }
     }
     setLoading(false);
-    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj);
+    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData);
   }catch(e){
     console.error('Investor portal error:',e);
     setLoading(false);
@@ -2419,10 +2431,11 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
-function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj){
+function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData){
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
+  budgetsData=budgetsData||[];
 
   // Group invoices by project
   const invByProj={};
@@ -2888,6 +2901,41 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     ? `<div style="background:#fff;padding:40px;border-radius:14px;text-align:center;color:#999;font-style:italic">Nenhum projeto vinculado ao seu cadastro ainda.</div>`
     : '';
 
+  // ═══ Section: A Realizar (Budgets visible to client) ═══
+  const $fmt=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const budgetsHTML=budgetsData.length>0
+    ? budgetsData.map((b,idx)=>{
+        const mode=b.client_view_mode||'hm';
+        const modeLabel={cash:'💵 Cash',hm:'💰 Hard Money',both:'🔀 Análise dos 2'}[mode]||'💰 Hard Money';
+        const accentColor=mode==='cash'?'#5C7A3F':'#C68A4A';
+        return `
+        <details style="background:#fff;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);overflow:hidden;border-left:4px solid ${accentColor}">
+          <summary style="cursor:pointer;padding:20px 24px;list-style:none;user-select:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+              <div style="flex:1;min-width:200px">
+                <div style="font-size:11px;font-weight:700;color:${accentColor};letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">📋 Orçamento ${idx+1}</div>
+                <div style="font-size:18px;font-weight:800;color:#3D271A">${(b.address||b.name||'Sem endereço').replace(/</g,'&lt;')}</div>
+                <div style="font-size:11px;color:#999;margin-top:4px">${modeLabel} · clique para ver detalhes ▾</div>
+              </div>
+              <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px">
+                <div style="text-align:right">
+                  <div style="color:#655A4E;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase">Compra</div>
+                  <div style="font-weight:800;color:#3D271A;font-size:15px">${$fmt(b.purchase_price)}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="color:#655A4E;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase">Venda esperada</div>
+                  <div style="font-weight:800;color:${accentColor};font-size:15px">${$fmt(b.arv)}</div>
+                </div>
+              </div>
+            </div>
+          </summary>
+          <div style="padding:0 24px 24px 24px;border-top:1px solid #F0EAE2">
+            ${renderBudgetClientView(b, mode)}
+          </div>
+        </details>`;
+      }).join('')
+    : `<div style="background:#fff;padding:30px;border-radius:14px;text-align:center;color:#999;font-style:italic;font-size:13px">📋 Nenhum orçamento disponível ainda.<br><span style="font-size:11px;color:#bbb">A DEC Group vai compartilhar com você assim que tiver propostas prontas para análise.</span></div>`;
+
   portalEl.innerHTML=`
     <div style="max-width:960px;margin:0 auto;padding:32px 20px">
       <!-- Top banner: Logo + Welcome text -->
@@ -2903,9 +2951,26 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <p style="color:#655A4E;font-size:13px;margin-top:6px">Acompanhe seu portfólio e seus projetos abaixo</p>
         </div>
       </div>
+
       ${projects.length>0?dashboardHTML:''}
+
+      <!-- SEÇÃO 1: REALIZADO -->
+      <div style="margin-top:30px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:11px;font-weight:800;color:#3D271A;letter-spacing:2px;text-transform:uppercase;padding:4px 0">✅ Realizado</div>
+        <div style="flex:1;height:1px;background:linear-gradient(to right,#D5C9BC,transparent)"></div>
+        <div style="font-size:11px;color:#999;font-weight:600">${projects.length} ${projects.length===1?'projeto':'projetos'}</div>
+      </div>
       ${projectsHTML}
       ${noProjectsHTML}
+
+      <!-- SEÇÃO 2: A REALIZAR -->
+      <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:11px;font-weight:800;color:#C68A4A;letter-spacing:2px;text-transform:uppercase;padding:4px 0">📋 A Realizar</div>
+        <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
+        <div style="font-size:11px;color:#999;font-weight:600">${budgetsData.length} ${budgetsData.length===1?'proposta':'propostas'}</div>
+      </div>
+      ${budgetsHTML}
+
       <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
       </div>
