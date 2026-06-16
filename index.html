@@ -2901,6 +2901,75 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     ? `<div style="background:#fff;padding:40px;border-radius:14px;text-align:center;color:#999;font-style:italic">Nenhum projeto vinculado ao seu cadastro ainda.</div>`
     : '';
 
+  // ═══ Tabela de Projetos (toggle alternativo aos cards) ═══
+  const $fmtProj=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const projectsTableHTML=sortedProjects.length>0
+    ? (()=>{
+        const rows=sortedProjects.map(p=>{
+          const projInvoicesCounted=investableInvoices(p.id);
+          const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+          const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+          const refunded=refundTotal(p.id);
+          const purchase=purchaseFor(p.id);
+          const netInvested=purchase+totalPaid-refunded;
+          const status=statusFor(p);
+          const statusBadge=STATUS_BADGES[status]||STATUS_BADGES.in_progress;
+          const typeMeta=p.project_type?PROJECT_TYPE_META[p.project_type]:null;
+          const typeLabel=typeMeta?`${typeMeta.icon} ${typeMeta.label}`:'—';
+          // ROI / Lucro só pra sold
+          let roiLabel='—';
+          let roiColor='#999';
+          if(status==='sold' && p.final_sale_price){
+            const sale=+p.final_sale_price||0;
+            const sellingCosts=(+p.selling_costs||0);
+            const lenderSale=(+p.lender_payback_sale||0);
+            const grossProfit=sale-sellingCosts-lenderSale;
+            const netProfit=grossProfit-netInvested;
+            const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
+            const pctClient=p.pct_client!=null?+p.pct_client:70;
+            const lucroClient=netProfit*pctClient/100;
+            roiLabel=`${$fmtProj(lucroClient)} <span style="font-size:10px;color:#999;font-weight:500">(${roiTotal.toFixed(0)}% ROI)</span>`;
+            roiColor=netProfit>=0?'#5C7A3F':'#A02021';
+          }
+          return `
+          <tr style="border-bottom:1px solid #F0EAE2">
+            <td style="padding:12px 14px;font-size:13px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
+              </div>
+            </td>
+            <td style="padding:12px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
+            <td style="padding:12px 10px">
+              <span style="display:inline-block;padding:3px 9px;background:${statusBadge.bg};color:${statusBadge.color};border-radius:10px;font-size:10px;font-weight:700">${statusBadge.icon} ${statusBadge.label}</span>
+            </td>
+            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$fmtProj(purchase)}</td>
+            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$fmtProj(netInvested)}</td>
+            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#A86A2C;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
+            <td style="padding:12px 14px;text-align:right;font-size:13px;font-weight:800;color:${roiColor}">${roiLabel}</td>
+          </tr>`;
+        }).join('');
+        return `
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05)">
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;min-width:720px">
+              <thead>
+                <tr style="background:#FAF7F3;border-bottom:2px solid #E8DDC9">
+                  <th style="padding:12px 14px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Endereço</th>
+                  <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Tipo</th>
+                  <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Compra</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Investido</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
+                  <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Lucro Cliente</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+      })()
+    : '';
+
   // ═══ Section: A Realizar (Budgets visible to client) ═══
   const $fmt=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
   const budgetsHTML=budgetsData.length>0
@@ -2955,13 +3024,19 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       ${projects.length>0?dashboardHTML:''}
 
       <!-- SEÇÃO 1: REALIZADO -->
-      <div style="margin-top:30px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+      <div style="margin-top:30px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#3D271A;letter-spacing:2px;text-transform:uppercase;padding:4px 0">✅ Realizado</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#D5C9BC,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${projects.length} ${projects.length===1?'projeto':'projetos'}</div>
+        ${projects.length>0?`
+        <!-- Toggle Cards / Tabela (Realizado) -->
+        <div style="display:inline-flex;background:#FAF7F3;border:1px solid #D5C9BC;border-radius:7px;padding:2px;font-size:11px">
+          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)">📋 Cards</button>
+          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit">📊 Tabela</button>
+        </div>`:''}
       </div>
-      ${projectsHTML}
-      ${noProjectsHTML}
+      <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>
+      <div id="portal-projects-table" style="display:none">${projectsTableHTML}</div>
 
       <!-- SEÇÃO 2: A REALIZAR -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -2982,6 +3057,30 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
       </div>
     </div>`;
+}
+
+// Toggle helper for portal view (projects/Realizado)
+function portalSwitchProjView(view){
+  const cardsEl=document.getElementById('portal-projects-cards');
+  const tableEl=document.getElementById('portal-projects-table');
+  const btnCards=document.getElementById('portal-proj-cards');
+  const btnTable=document.getElementById('portal-proj-table');
+  if(!cardsEl||!tableEl) return;
+  const isCards=view==='cards';
+  cardsEl.style.display=isCards?'block':'none';
+  tableEl.style.display=isCards?'none':'block';
+  if(btnCards){
+    btnCards.style.background = isCards?'#fff':'transparent';
+    btnCards.style.color      = isCards?'#3D271A':'#655A4E';
+    btnCards.style.fontWeight = isCards?'700':'600';
+    btnCards.style.boxShadow  = isCards?'0 1px 2px rgba(0,0,0,.05)':'none';
+  }
+  if(btnTable){
+    btnTable.style.background = !isCards?'#fff':'transparent';
+    btnTable.style.color      = !isCards?'#3D271A':'#655A4E';
+    btnTable.style.fontWeight = !isCards?'700':'600';
+    btnTable.style.boxShadow  = !isCards?'0 1px 2px rgba(0,0,0,.05)':'none';
+  }
 }
 
 // Toggle helper for portal view
