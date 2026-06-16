@@ -2964,17 +2964,48 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       ${noProjectsHTML}
 
       <!-- SEÇÃO 2: A REALIZAR -->
-      <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+      <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#C68A4A;letter-spacing:2px;text-transform:uppercase;padding:4px 0">📋 A Realizar</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${budgetsData.length} ${budgetsData.length===1?'proposta':'propostas'}</div>
+        ${budgetsData.length>0?`
+        <!-- Toggle Cards / Tabela -->
+        <div style="display:inline-flex;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;padding:2px;font-size:11px">
+          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)">📋 Cards</button>
+          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit">📊 Tabela</button>
+        </div>`:''}
       </div>
-      ${budgetsHTML}
+      <div id="portal-budgets-cards">${budgetsHTML}</div>
+      <div id="portal-budgets-table" style="display:none">${renderBudgetClientTable(budgetsData)}</div>
 
       <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
       </div>
     </div>`;
+}
+
+// Toggle helper for portal view
+function portalSwitchView(view){
+  const cardsEl=document.getElementById('portal-budgets-cards');
+  const tableEl=document.getElementById('portal-budgets-table');
+  const btnCards=document.getElementById('portal-view-cards');
+  const btnTable=document.getElementById('portal-view-table');
+  if(!cardsEl||!tableEl) return;
+  const isCards=view==='cards';
+  cardsEl.style.display=isCards?'block':'none';
+  tableEl.style.display=isCards?'none':'block';
+  if(btnCards){
+    btnCards.style.background = isCards?'#fff':'transparent';
+    btnCards.style.color      = isCards?'#3D271A':'#655A4E';
+    btnCards.style.fontWeight = isCards?'700':'600';
+    btnCards.style.boxShadow  = isCards?'0 1px 2px rgba(0,0,0,.05)':'none';
+  }
+  if(btnTable){
+    btnTable.style.background = !isCards?'#fff':'transparent';
+    btnTable.style.color      = !isCards?'#3D271A':'#655A4E';
+    btnTable.style.fontWeight = !isCards?'700':'600';
+    btnTable.style.boxShadow  = !isCards?'0 1px 2px rgba(0,0,0,.05)':'none';
+  }
 }
 
 // ═══ END INVESTOR PORTAL ══════════════════════════════════════════════
@@ -10228,8 +10259,16 @@ async function cdRenderBudgets(){
   el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase">🧮 Orçamentos (${list.length})</div>
-      ${newBtn}
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Toggle Cards / Tabela (CEO) -->
+        <div style="display:inline-flex;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;padding:2px;font-size:11px">
+          <button id="cd-bdg-cards" onclick="cdBdgSwitchView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)">📋 Cards</button>
+          <button id="cd-bdg-table" onclick="cdBdgSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit">📊 Tabela</button>
+        </div>
+        ${newBtn}
+      </div>
     </div>
+    <div id="cd-bdg-view-cards">
     ${list.map(b=>{
       const calc=calcBudgetSummary(b);
       const sbBadge=statusBadges[b.status]||statusBadges.draft;
@@ -10255,7 +10294,7 @@ async function cdRenderBudgets(){
               <div style="font-weight:800;color:#3D271A;font-size:13px">${$$(b.purchase_price)}</div>
             </div>
             <div style="text-align:right">
-              <div style="color:#655A4E;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">ARV</div>
+              <div style="color:#655A4E;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">Preço de Venda</div>
               <div style="font-weight:800;color:#3D271A;font-size:13px">${$$(b.arv)}</div>
             </div>
             <div style="text-align:right">
@@ -10283,7 +10322,33 @@ async function cdRenderBudgets(){
         </div>
       </div>`;
     }).join('')}
+    </div>
+    <div id="cd-bdg-view-table" style="display:none">${renderBudgetClientTable(list)}</div>
   </div>`;
+}
+
+// Toggle helper for CEO budget tab view
+function cdBdgSwitchView(view){
+  const cardsEl=document.getElementById('cd-bdg-view-cards');
+  const tableEl=document.getElementById('cd-bdg-view-table');
+  const btnCards=document.getElementById('cd-bdg-cards');
+  const btnTable=document.getElementById('cd-bdg-table');
+  if(!cardsEl||!tableEl) return;
+  const isCards=view==='cards';
+  cardsEl.style.display=isCards?'block':'none';
+  tableEl.style.display=isCards?'none':'block';
+  if(btnCards){
+    btnCards.style.background = isCards?'#fff':'transparent';
+    btnCards.style.color      = isCards?'#3D271A':'#655A4E';
+    btnCards.style.fontWeight = isCards?'700':'600';
+    btnCards.style.boxShadow  = isCards?'0 1px 2px rgba(0,0,0,.05)':'none';
+  }
+  if(btnTable){
+    btnTable.style.background = !isCards?'#fff':'transparent';
+    btnTable.style.color      = !isCards?'#3D271A':'#655A4E';
+    btnTable.style.fontWeight = !isCards?'700':'600';
+    btnTable.style.boxShadow  = !isCards?'0 1px 2px rgba(0,0,0,.05)':'none';
+  }
 }
 
 async function cdToggleVisible(budgetId, visible){
@@ -11788,7 +11853,7 @@ async function renderBudgets(){
             <div style="font-weight:800;color:#3D271A;font-size:15px">${$$(b.purchase_price)}</div>
           </div>
           <div style="text-align:right">
-            <div style="color:#655A4E;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase">ARV</div>
+            <div style="color:#655A4E;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase">Preço de Venda</div>
             <div style="font-weight:800;color:#3D271A;font-size:15px">${$$(b.arv)}</div>
           </div>
           <div style="text-align:right">
@@ -12073,6 +12138,60 @@ function renderBudgetClientView(b, mode){
 }
 
 // ─── Open Client View Modal (preview no sistema) ──────────────────────
+// ─── Tabela compacta para listagem (cliente + preview CEO) ─────────────
+// budgetsArr: array de orçamentos (1+)
+// Colunas: Endereço, Compra, Venda, Cliente investe, Sobra, ROI
+function renderBudgetClientTable(budgetsArr){
+  if(!budgetsArr || budgetsArr.length===0){
+    return `<div style="background:#fff;padding:30px;border-radius:14px;text-align:center;color:#999;font-style:italic;font-size:13px">📊 Nenhum orçamento para listar</div>`;
+  }
+  const $$0=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const rows=budgetsArr.map((b,idx)=>{
+    const mode=b.client_view_mode||'hm';
+    // For 'both', show HM scenario as default in the table (more common in real estate flips)
+    const scenarioToUse = mode==='cash' ? 'cash' : 'hm';
+    const view=calcBudgetClientView(b, scenarioToUse);
+    const address=(b.address||b.name||'Sem endereço').replace(/</g,'&lt;');
+    const modeLabel={cash:'💵 Cash',hm:'💰 HM',both:'🔀 HM*'}[mode]||'💰 HM';
+    const accentColor=view.isHM?'#C68A4A':'#5C7A3F';
+    const roiColor=view.roi>=15?'#5C7A3F':(view.roi>=0?'#B8860B':'#A02021');
+    return `
+    <tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:12px 14px;font-size:13px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${accentColor}"></span>
+          <strong style="color:#3D271A">${address}</strong>
+          <span style="display:inline-block;padding:1px 7px;background:#F5EBDA;color:#A86A2C;border-radius:8px;font-size:9px;font-weight:700;letter-spacing:.3px">${modeLabel}</span>
+        </div>
+      </td>
+      <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$$0(view.purchase)}</td>
+      <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:${accentColor}">${$$0(view.sale)}</td>
+      <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$$0(view.clientInvested)}</td>
+      <td style="padding:12px 10px;text-align:right;font-size:14px;font-weight:800;color:${roiColor}">${$$0(view.leftover)}</td>
+      <td style="padding:12px 14px;text-align:right;font-size:14px;font-weight:800;color:${roiColor}">${view.roi.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05)">
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:680px">
+        <thead>
+          <tr style="background:#FAF7F3;border-bottom:2px solid #E8DDC9">
+            <th style="padding:12px 14px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Endereço</th>
+            <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Compra</th>
+            <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
+            <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cliente investe</th>
+            <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Sobra</th>
+            <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${budgetsArr.some(b=>b.client_view_mode==='both')?`<div style="padding:8px 14px;background:#FAF7F3;border-top:1px solid #F0EAE2;font-size:10px;color:#999;font-style:italic">* mostra cenário Hard Money (modo "Ambos" foi configurado)</div>`:''}
+  </div>`;
+}
+
 function openBudgetClientView(budgetId){
   if(!isCEO()){toast('CEO only',false);return;}
   const b = budgets.find(x=>x.id===budgetId);
@@ -12293,7 +12412,7 @@ function renderBudgetEditorModal(){
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
           <span style="color:#655A4E">Cash investido</span><span id="bm-cash-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.invested)}</span>
           <span style="color:#655A4E">Descontos no closing</span><span id="bm-cash-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.descontos_closing)}</span>
-          <span style="color:#655A4E">Venda (ARV)</span><span id="bm-cash-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.sale)}</span>
+          <span style="color:#655A4E">Preço de Venda</span><span id="bm-cash-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.sale)}</span>
           <span style="color:#5C7A3F;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span id="bm-cash-profit" style="text-align:right;font-weight:800;color:${calc.cash.profit>=0?'#5C7A3F':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.cash.profit)}</span>
           <span style="color:#5C7A3F;font-weight:700">% LUCRO</span><span id="bm-cash-profit-pct" style="text-align:right;font-weight:800;color:${calc.cash.profit_pct>=0?'#5C7A3F':'#A02021'};font-size:16px">${calc.cash.profit_pct.toFixed(1)}%</span>
         </div>
@@ -12304,7 +12423,7 @@ function renderBudgetEditorModal(){
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
           <span style="color:#655A4E">Cash investido</span><span id="bm-hm-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.invested)}</span>
           <span style="color:#655A4E">Descontos no closing</span><span id="bm-hm-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.descontos_closing)}</span>
-          <span style="color:#655A4E">Venda (ARV)</span><span id="bm-hm-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.sale)}</span>
+          <span style="color:#655A4E">Preço de Venda</span><span id="bm-hm-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.sale)}</span>
           <span style="color:#B8860B;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span id="bm-hm-profit" style="text-align:right;font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.hm.profit)}</span>
           <span style="color:#B8860B;font-weight:700">% LUCRO</span><span id="bm-hm-profit-pct" style="text-align:right;font-weight:800;color:${calc.hm.profit_pct>=0?'#B8860B':'#A02021'};font-size:16px">${calc.hm.profit_pct.toFixed(1)}%</span>
         </div>
@@ -12359,7 +12478,7 @@ function renderBudgetEditorModal(){
               <input type="number" min="0" step="0.01" value="${b.purchase_price||''}" oninput="updateBudgetField('purchase_price',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
             </div>
             <div>
-              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">ARV ($)</label>
+              <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">Preço de Venda ($)</label>
               <input type="number" min="0" step="0.01" value="${b.arv||''}" oninput="updateBudgetField('arv',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
             </div>
             <div>
@@ -12825,7 +12944,7 @@ function generateBudgetPDF(){
     <tr>
       <td style="padding:6px 10px;font-weight:600">Preço de Compra</td>
       <td style="padding:6px 10px;text-align:right">${$$(purchase)}</td>
-      <td style="padding:6px 10px;font-weight:600">ARV (Valor Pós-Reforma)</td>
+      <td style="padding:6px 10px;font-weight:600">Preço de Venda</td>
       <td style="padding:6px 10px;text-align:right">${$$(arv)}</td>
     </tr>
     <tr>
@@ -12920,7 +13039,7 @@ function downloadBudgetExcel(){
   r.push([]);
   r.push(['DADOS DO IMÓVEL']);
   r.push(['Preço de Compra', purchase]);
-  r.push(['ARV', arv]);
+  r.push(['Preço de Venda', arv]);
   r.push(['Rehab Estimado', rehab]);
   r.push(['Closing Costs', +b.closing_costs||0]);
   r.push(['HM Loan', hmLoan]);
