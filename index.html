@@ -2718,7 +2718,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       totalReturned+=sale;
       totalProfit+=(sale-netInvested);
     } else if(!pr.sale_date && +pr.arv>0){
-      // Estimated profit for projects still in progress (using ARV)
       const arv=+pr.arv||0;
       const sellingCosts=+pr.selling_costs||0;
       const lenderSale=+pr.lender_costs_sale||0;
@@ -2762,12 +2761,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
           </div>
         </div>
-        ${totalEstimatedProfit>0?`<div style="margin-top:16px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:0 24px">
+        ${totalEstimatedProfit>0?`<div style="margin-top:14px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:0 0">
           <div>
             <div style="font-size:10px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro previsto</div>
             <div style="font-size:11px;color:#F8C570;margin-top:2px;opacity:.8">Projeção dos projetos em andamento</div>
           </div>
-          <div style="font-size:24px;font-weight:800;color:#F8C570">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
+          <div style="font-size:24px;font-weight:800;color:#F8C570;text-align:right">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
         </div>`:''}
         </div>
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
