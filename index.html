@@ -2702,7 +2702,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   let totalInvested=0;
   let totalReturned=0; // sale prices for SOLD projects
   let totalProfit=0;   // realized profit
-  let totalEstimatedProfit=0; // estimated profit for non-sold projects
   let totalRefunded=0; // for transparency (shown separately if > 0)
   projects.forEach(p=>{
     const purchase=purchaseFor(p.id);
@@ -2717,11 +2716,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       const sale=+pr.final_sale_price||0;
       totalReturned+=sale;
       totalProfit+=(sale-netInvested);
-    } else if(!pr.sale_date && +pr.arv>0){
-      const arv=+pr.arv||0;
-      const sellingCosts=+pr.selling_costs||0;
-      const lenderSale=+pr.lender_costs_sale||0;
-      totalEstimatedProfit+=(arv-netInvested-sellingCosts-lenderSale);
     }
   });
 
@@ -2760,11 +2754,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
           </div>
         </div>
-        ${totalEstimatedProfit>0?`<div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-size:10px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro previsto</div>
-          <div style="font-size:11px;color:#F8C570;margin-top:2px;opacity:.8">Projeção dos projetos em andamento</div></div>
-          <div style="font-size:24px;font-weight:800;color:#F8C570">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
-        </div>`:''}
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
           <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px">Por tipo de imóvel</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">${typeChips}</div>
@@ -12197,11 +12186,11 @@ const BUDGET_DEFAULT_LINES=[
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Valor da casa (compra)',              kind:'info',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'house_value'},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.5 0-4.5-1-5.6-3l-3.4-6c-.7-1-.4-2.3.7-3v0c.9-.6 2.1-.3 3 .5l1.3 2"/></svg>Cash (entrada do cliente)',           kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'down_cash'},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money (financiado)',             kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'hm_principal'},
-  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Juros do Hard Money',                  kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest', lock_to_hm_months:true},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Juros do Hard Money',                  kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest'},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Down payment Hard Money',              kind:'closing', base:0,    months_cash:0, months_hm:1, is_extra:false, formula:'hm_down'},
-  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false, lock_to_hm_months:true},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Rehab',                                kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'rehab'},
-  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19.2 2.96a1 1 0 0 1 1.8.5c0 8.72-6.05 13.21-10 13.54"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false, lock_to_hm_months:true},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19.2 2.96a1 1 0 0 1 1.8.5c0 8.72-6.05 13.21-10 13.54"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Comissão venda + closing costs',     kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l.99-3.95z"/></svg>Contribuição no closing',              kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false},
   {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>Imposto pró rata',                     kind:'closing', base:1000, months_cash:1, months_hm:1, is_extra:false},
@@ -12297,7 +12286,7 @@ function calcBudgetSummary(b){
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
-  const hmClosingFee= 2250; // Custo fixo de $2.250 do HM
+  const hmClosingFee=+b.hm_closing_costs||0;
   // Commission: % agent + % closing (defaults preserve old 6% = 5%+1%)
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
@@ -12312,7 +12301,7 @@ function calcBudgetSummary(b){
   lines.forEach(line=>{
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
-    const mHm = line.lock_to_hm_months ? (+b.hm_months||6) : (+line.months_hm||1);
+    const mHm=+line.months_hm||1;
     // Override rule: if a formula line has base > 0, that overrides the formula
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
@@ -12403,43 +12392,44 @@ function calcBudgetSummary(b){
 //   Sobra = Líquido - HM - Cliente
 //   ROI cliente = Sobra / Cliente * 100
 function calcBudgetClientView(b, scenario){
+  const isHM = scenario==='hm';
+  // Use calcBudgetSummary for consistent calculations
+  const calc = calcBudgetSummary(b);
+  const scenarioData = isHM ? calc.hm : calc.cash;
+  
   const purchase = +b.purchase_price || 0;
   const arv      = +b.arv || 0;
   const rehab    = +b.rehab_estimate || 0;
   const hmPct    = +b.hm_pct || 0;
-  const hmClosingFee = 2250; // Custo fixo de $2.250 do HM
   const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
-  // Commission + closing
   const commAgentPct   = b.commission_agent_pct   !=null ? +b.commission_agent_pct   : 0.05;
   const commClosingPct = b.commission_closing_pct !=null ? +b.commission_closing_pct : 0.01;
   const commissionPct  = commAgentPct + commClosingPct;
   const saleCosts = arv * commissionPct;
-  // In HM scenario, principal HM must also be repaid at sale closing
-  const isHM = scenario==='hm';
-  const hardMoney = isHM ? hmLoan : 0;
-  const downPayment = isHM ? (purchase - hmLoan) : purchase;  // entrada do cliente
-  const closingHM = isHM && hmLoan>0 ? hmClosingFee : 0;       // closing fee do HM
-  // Total client investment (entrada + reforma + closing HM se houver)
-  const clientInvested = downPayment + rehab + closingHM;
-  // Líquido da venda (depois de comissão/closing genéricos)
-  const netSale = arv - saleCosts;
-  // Sobra: líquido - HM (devolvido) - investimento cliente
-  const leftover = netSale - hardMoney - clientInvested;
-  const roi = clientInvested>0 ? (leftover/clientInvested*100) : 0;
+  
+  // From calcBudgetSummary (consistent with budget report)
+  const invested = scenarioData.invested;
+  const profit = scenarioData.profit;
+  const profitPct = scenarioData.profit_pct;
+  const descontos = scenarioData.descontos_closing;
+  
   return {
     scenario,
     isHM,
     purchase,
-    hardMoney,
-    downPayment,
+    hardMoney: isHM ? hmLoan : 0,
+    downPayment: isHM ? (purchase - hmLoan) : purchase,
     rehab,
-    closingHM,
-    clientInvested,
+    closingHM: isHM && hmLoan>0 ? 2250 : 0,
+    clientInvested: invested,
     sale: arv,
     saleCosts,
-    netSale,
-    leftover,
-    roi,
+    netSale: arv - saleCosts,
+    leftover: profit,
+    roi: profitPct,
+    invested,
+    profit,
+    profit_pct: profitPct,
   };
 }
 
@@ -12722,7 +12712,7 @@ function renderBudgetEditorModal(){
     const commPct = commAgentPct + commClosingPct;
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
-    const mHm = line.lock_to_hm_months ? (+b.hm_months||6) : (+line.months_hm||1);
+    const mHm=+line.months_hm||1;
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='house_value'){
@@ -12787,9 +12777,7 @@ function renderBudgetEditorModal(){
       </td>
       <td id="bm-line-cash-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valCash)}</td>
       <td style="padding:6px 4px;text-align:center">
-        ${line.lock_to_hm_months
-          ? `<input type="number" min="0" max="48" step="1" value="${+b.hm_months||6}" disabled style="width:50px;padding:5px;font-size:12px;border:1.5px solid #D4A574;border-radius:4px;text-align:center;background:#FAF3E0;font-weight:600;color:#7A5A28" title="Sincronizado com Meses HM (lá em cima)">`
-          : `<input type="number" min="0" max="48" step="1" value="${line.months_hm||1}" oninput="updateBudgetLine(${idx},'months_hm',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">`}
+        <input type="number" min="0" max="48" step="1" value="${line.months_hm||1}" oninput="updateBudgetLine(${idx},'months_hm',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">
       </td>
       <td id="bm-line-hm-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valHm)}</td>
       <td style="padding:6px 4px;text-align:center">
@@ -12948,7 +12936,7 @@ function renderBudgetEditorModal(){
             </div>
             <div>
               <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">HM Closing Costs ($)</label>
-              <div style="padding:7px 10px;font-size:13px;background:#FAF3E0;border:1.5px solid #E6D599;border-radius:5px;font-family:inherit;color:#655A4E;font-weight:600">$2,250.00 (custo fixo)</div>
+              <input type="number" min="0" step="0.01" value="${b.hm_closing_costs||''}" oninput="updateBudgetField('hm_closing_costs',this.value)" placeholder="fee fixo do HM" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
             </div>
           </div>
         </details>
@@ -13002,7 +12990,7 @@ function renderBudgetEditorModal(){
 
 function updateBudgetField(field, value){
   if(!_bdgCurrent) return;
-  if(['purchase_price','arv','rehab_estimate','closing_costs','hm_loan_amount','hm_down_pct','hm_interest_pct','hm_pct','commission_agent_pct','commission_closing_pct','cash_months','hm_months'].includes(field)){
+  if(['purchase_price','arv','rehab_estimate','closing_costs','hm_loan_amount','hm_down_pct','hm_interest_pct','hm_pct','hm_closing_costs','commission_agent_pct','commission_closing_pct','cash_months','hm_months'].includes(field)){
     _bdgCurrent[field]=+value||0;
   } else {
     _bdgCurrent[field]=value;
@@ -13040,7 +13028,7 @@ function useFormulaValue(idx){
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commPct = commAgentPct + commClosingPct;
-  const mHm = line.lock_to_hm_months ? (+b.hm_months||6) : (+line.months_hm||1);
+  const mHm=+line.months_hm||1;
   let value=0;
   if(line.formula==='house_value')      value=purchase;
   else if(line.formula==='down_cash')   value=hmLoan>0 ? Math.max(0, purchase-hmLoan) : purchase;
@@ -13086,7 +13074,7 @@ function refreshBudgetLiveCalcs(){
   (b.cost_lines||[]).forEach((line,idx)=>{
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
-    const mHm = line.lock_to_hm_months ? (+b.hm_months||6) : (+line.months_hm||1);
+    const mHm=+line.months_hm||1;
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='house_value'){
@@ -13366,9 +13354,9 @@ function generateBudgetPDF(){
       <td style="padding:6px 10px;font-weight:600">Juros HM</td>
       <td style="padding:6px 10px;text-align:right">${$pct(hmInterestPct*100)} a.a.</td>
     </tr>
-    ${2250>0?`<tr>
+    ${(+b.hm_closing_costs||0)>0?`<tr>
       <td style="padding:6px 10px;font-weight:600">HM Closing Costs</td>
-      <td style="padding:6px 10px;text-align:right">${$$2250}</td>
+      <td style="padding:6px 10px;text-align:right">${$$(+b.hm_closing_costs||0)}</td>
       <td style="padding:6px 10px;font-weight:600">% Down HM</td>
       <td style="padding:6px 10px;text-align:right">${$pct((+b.hm_down_pct||0)*100)}</td>
     </tr>`:''}
@@ -13451,7 +13439,7 @@ function downloadBudgetExcel(){
   r.push(['Closing Costs', +b.closing_costs||0]);
   r.push(['HM Loan', hmLoan]);
   r.push(['% HM Loan', hmPct]);
-  r.push(['HM Closing Costs', 2250]);
+  r.push(['HM Closing Costs', +b.hm_closing_costs||0]);
   r.push(['% Down HM', hmDownPct]);
   r.push(['% Juros HM/ano', hmInterestPct]);
   r.push(['% Comissão Agente', commAgentPctX]);
