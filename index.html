@@ -12297,7 +12297,7 @@ function calcBudgetSummary(b){
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
-  const hmClosingFee=+b.hm_closing_costs||0;
+  const hmClosingFee= 2250 * (+b.hm_months||6); // $2.250 por mês de HM
   // Commission: % agent + % closing (defaults preserve old 6% = 5%+1%)
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
@@ -12407,7 +12407,7 @@ function calcBudgetClientView(b, scenario){
   const arv      = +b.arv || 0;
   const rehab    = +b.rehab_estimate || 0;
   const hmPct    = +b.hm_pct || 0;
-  const hmClosingFee = +b.hm_closing_costs || 0;
+  const hmClosingFee = 2250 * (+b.hm_months||6); // $2.250 por mês de HM
   const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
   // Commission + closing
   const commAgentPct   = b.commission_agent_pct   !=null ? +b.commission_agent_pct   : 0.05;
@@ -12946,7 +12946,7 @@ function renderBudgetEditorModal(){
             </div>
             <div>
               <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">HM Closing Costs ($)</label>
-              <input type="number" min="0" step="0.01" value="${b.hm_closing_costs||''}" oninput="updateBudgetField('hm_closing_costs',this.value)" placeholder="fee fixo do HM" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+              <div style="padding:7px 10px;font-size:13px;background:#FAF3E0;border:1.5px solid #E6D599;border-radius:5px;font-family:inherit;color:#655A4E;font-weight:600">$${(2250 * (+b.hm_months||6)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} (2.250 × ${+b.hm_months||6} meses)</div>
             </div>
           </div>
         </details>
@@ -13000,7 +13000,7 @@ function renderBudgetEditorModal(){
 
 function updateBudgetField(field, value){
   if(!_bdgCurrent) return;
-  if(['purchase_price','arv','rehab_estimate','closing_costs','hm_loan_amount','hm_down_pct','hm_interest_pct','hm_pct','hm_closing_costs','commission_agent_pct','commission_closing_pct','cash_months','hm_months'].includes(field)){
+  if(['purchase_price','arv','rehab_estimate','closing_costs','hm_loan_amount','hm_down_pct','hm_interest_pct','hm_pct','commission_agent_pct','commission_closing_pct','cash_months','hm_months'].includes(field)){
     _bdgCurrent[field]=+value||0;
   } else {
     _bdgCurrent[field]=value;
@@ -13364,9 +13364,9 @@ function generateBudgetPDF(){
       <td style="padding:6px 10px;font-weight:600">Juros HM</td>
       <td style="padding:6px 10px;text-align:right">${$pct(hmInterestPct*100)} a.a.</td>
     </tr>
-    ${(+b.hm_closing_costs||0)>0?`<tr>
+    ${(2250 * (+b.hm_months||6))>0?`<tr>
       <td style="padding:6px 10px;font-weight:600">HM Closing Costs</td>
-      <td style="padding:6px 10px;text-align:right">${$$(+b.hm_closing_costs||0)}</td>
+      <td style="padding:6px 10px;text-align:right">${$$(2250 * (+b.hm_months||6))}</td>
       <td style="padding:6px 10px;font-weight:600">% Down HM</td>
       <td style="padding:6px 10px;text-align:right">${$pct((+b.hm_down_pct||0)*100)}</td>
     </tr>`:''}
@@ -13449,7 +13449,7 @@ function downloadBudgetExcel(){
   r.push(['Closing Costs', +b.closing_costs||0]);
   r.push(['HM Loan', hmLoan]);
   r.push(['% HM Loan', hmPct]);
-  r.push(['HM Closing Costs', +b.hm_closing_costs||0]);
+  r.push(['HM Closing Costs', 2250 * (+b.hm_months||6)]);
   r.push(['% Down HM', hmDownPct]);
   r.push(['% Juros HM/ano', hmInterestPct]);
   r.push(['% Comissão Agente', commAgentPctX]);
