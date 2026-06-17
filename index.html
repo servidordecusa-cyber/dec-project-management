@@ -6655,9 +6655,9 @@ function recalcProfit(){
   // Estimated profit:
   //   - Quando NÃO tem sale_date → usa ARV (projeção pre-venda)
   //   - Quando JÁ tem sale_date  → usa Final Sale Price (refletindo a venda real)
-  // Fórmula: SalePrice - Wholesaler - Sales total (extra costs) - Estimated (budget) - Selling - Lender(sale)
+  // Fórmula: SalePrice - Total Invested - Selling - Lender(sale)
   const salePrice = p.sale_date ? sale : arv;
-  const estProfit = salePrice ? (salePrice - wholesaler - salesTotal - totEst - selling - lenderSale) : 0;
+  const estProfit = salePrice ? (salePrice - totalInvested - selling - lenderSale) : 0;
   const estEl = document.getElementById('pft-est');
   estEl.textContent = salePrice ? (estProfit>=0?'':'-')+fmt(Math.abs(estProfit)) : '—';
   estEl.style.color = salePrice ? (estProfit>=0?'var(--p3)':'var(--p1)') : 'var(--gray3)';
