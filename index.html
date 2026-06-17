@@ -410,6 +410,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <option value="rehab">Rehab</option>
       <option value="manufactured_home">Manufactured Home</option>
       <option value="land">Land (Terreno)</option>
+      <option value="developer">Developer (Loteamento/desenvolvimento)</option>
       <option value="__none__">— Sem tipo definido —</option>
     </select>
   </div>
@@ -567,6 +568,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
                 <option value="rehab">Rehab (no purchase/sale)</option>
                 <option value="manufactured_home">Manufactured Home</option>
                 <option value="land">Land (Terreno)</option>
+                <option value="developer">Developer (Loteamento/desenvolvimento)</option>
               </select>
             </div>
             <div class="fg"></div>
@@ -2659,6 +2661,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     rehab:{label:'Rehab',icon:'🔧'},
     manufactured_home:{label:'Manufactured Home',icon:'🏭'},
     land:{label:'Land',icon:'🌳'},
+    developer:{label:'Developer',icon:'🏗️'},
   };
   // Count projects by type (including 'untyped')
   const typeCount={};
@@ -3700,6 +3703,7 @@ const PROJECT_TYPE_META={
   rehab:             {label:'Rehab',             icon:'🔧'},
   manufactured_home: {label:'Manufactured Home', icon:'🏭'},
   land:              {label:'Land',              icon:'🌳'},
+  developer:         {label:'Developer',         icon:'🏗️'},
 };
 function calcRoomTotal(pid,type){
   const bm=budgetMap[pid]||{};
