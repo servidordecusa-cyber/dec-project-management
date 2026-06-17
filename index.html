@@ -2721,8 +2721,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       const arv=+pr.arv||0;
       const sellingCosts=+pr.selling_costs||0;
       const lenderSale=+pr.lender_costs_sale||0;
-      const estProfit=arv-netInvested-sellingCosts-lenderSale;
-      totalEstimatedProfit+=estProfit;
+      totalEstimatedProfit+=(arv-netInvested-sellingCosts-lenderSale);
     }
   });
 
@@ -2761,14 +2760,11 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
           </div>
         </div>
-        ${totalEstimatedProfit>0?`<div style="margin-top:14px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:0 0">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro previsto</div>
-            <div style="font-size:11px;color:#F8C570;margin-top:2px;opacity:.8">Projeção dos projetos em andamento</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:#F8C570;text-align:right">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
+        ${totalEstimatedProfit>0?`<div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:10px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro previsto</div>
+          <div style="font-size:11px;color:#F8C570;margin-top:2px;opacity:.8">Projeção dos projetos em andamento</div></div>
+          <div style="font-size:24px;font-weight:800;color:#F8C570">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
         </div>`:''}
-        </div>
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
           <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px">Por tipo de imóvel</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">${typeChips}</div>
