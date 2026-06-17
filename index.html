@@ -765,7 +765,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Summary</div>
             <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px">
-              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV − Wholesaler − Sales total − Estimated</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Wholesaler − Sales total − Estimated</div></div>
               <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Gross Profit</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total Invested − Selling − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total Invested × 100</div></div>
@@ -3106,21 +3106,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // Lê dados de Property & Finance uma vez só
           const pr=propertyByProj[p.id]||{};
 
-          // ─── COLUNA COMPRA ────────────────────────────────────────
-          // Mostra: valor total + tag pequena com % Cash e % HM (se houver HM)
+          // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
+          // CASH = o que o cliente desembolsou (EMD + Cash + Other + Commission)
+          //         já é exatamente o `purchase` (purchaseFor não inclui HM)
+          // HARD MONEY = financiamento separado (não soma no investido do cliente)
           const hardMoney = +pr.hard_money || 0;
-          let compraHTML;
-          if(purchase > 0){
-            const cashAmount = purchase - hardMoney; // cash = total - hard money
-            const cashPct = purchase > 0 ? Math.round((cashAmount/purchase)*100) : 100;
-            const hmPct = 100 - cashPct;
-            const splitTag = hardMoney > 0
-              ? `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">${cashPct}% CASH · ${hmPct}% HM</div>`
-              : `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">100% CASH</div>`;
-            compraHTML = `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>${splitTag}`;
-          } else {
-            compraHTML = `<span style="color:#999">—</span>`;
-          }
+          const cashHTML = purchase > 0
+            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>`
+            : `<span style="color:#999">—</span>`;
+          const hmHTML = hardMoney > 0
+            ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
+            : `<span style="color:#999">—</span>`;
 
           // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
           // Em andamento → ARV em dourado + tag (PROJEÇÃO)
@@ -3167,7 +3163,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <td style="padding:14px 10px">
               <span style="display:inline-block;padding:3px 9px;background:${statusBadge.bg};color:${statusBadge.color};border-radius:10px;font-size:10px;font-weight:700">${statusBadge.icon} ${statusBadge.label}</span>
             </td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${compraHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
             <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
@@ -3176,13 +3173,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         return `
         <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05)">
           <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;min-width:780px">
+            <table style="width:100%;border-collapse:collapse;min-width:840px">
               <thead>
                 <tr style="background:#FAF7F3;border-bottom:2px solid #E8DDC9">
                   <th style="padding:12px 14px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Endereço</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Tipo</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Compra</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
@@ -6635,11 +6633,15 @@ function recalcProfit(){
   const totalInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
   const tiEl=document.getElementById('pi-total-invested');
   if(tiEl) tiEl.textContent=fmt(totalInvested);
-  // Estimated profit (legacy formula, just shows expectation)
-  const estProfit=arv?(arv-wholesaler-salesTotal-totEst-selling):0;
-  const estEl=document.getElementById('pft-est');
-  estEl.textContent=arv?(estProfit>=0?'':'-')+fmt(Math.abs(estProfit)):'—';
-  estEl.style.color=arv?(estProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
+  // Estimated profit:
+  //   - Quando NÃO tem sale_date → usa ARV (projeção pre-venda)
+  //   - Quando JÁ tem sale_date  → usa Final Sale Price (refletindo a venda real)
+  // Fórmula: SalePrice - Wholesaler - Sales total (extra costs) - Estimated (budget) - Selling
+  const salePrice = p.sale_date ? sale : arv;
+  const estProfit = salePrice ? (salePrice - wholesaler - salesTotal - totEst - selling) : 0;
+  const estEl = document.getElementById('pft-est');
+  estEl.textContent = salePrice ? (estProfit>=0?'':'-')+fmt(Math.abs(estProfit)) : '—';
+  estEl.style.color = salePrice ? (estProfit>=0?'var(--p3)':'var(--p1)') : 'var(--gray3)';
   // Gross profit = Final Sale - Selling - Lender(sale)
   const grossProfit=sale?(sale-selling-lenderSale):0;
   const grossEl=document.getElementById('pft-gross');
