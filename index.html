@@ -351,7 +351,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <h1>DEC Group USA</h1>
     <span id="proj-count-lbl">Loading...</span>
   </div>
-  <div class="back-btn" id="back-btn" onclick="goView('portfolio')">← All Projects</div>
+  <div class="back-btn" id="back-btn" onclick="goView('portfolio')"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>All Projects</div>
   <div class="tn-center" id="tn-pname"></div>
   <div class="tn-right">
     <div class="user-chip"><div class="online-dot"></div><span id="user-email-lbl">—</span></div>
@@ -1487,12 +1487,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- CLIENTE DETALHES (drill-down) -->
 <div id="view-client-detail" style="display:none;padding:26px">
   <div style="margin-bottom:18px">
-    <button onclick="goView('clients')" style="background:transparent;border:0;color:#655A4E;cursor:pointer;font-size:13px;padding:4px 0;font-family:inherit">← Voltar para Clientes</button>
+    <button onclick="goView('clients')" style="background:transparent;border:0;color:#655A4E;cursor:pointer;font-size:13px;padding:4px 0;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar para Clientes</button>
   </div>
   <div id="cd-header" style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;padding:24px 28px;color:#fff;margin-bottom:20px"></div>
   <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:2px solid #F0EAE2">
-    <button class="cd-tab active" data-tab="projects" onclick="cdSwitchTab('projects')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid #9B7535;color:#3D271A;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">📁 Projetos</button>
-    <button class="cd-tab" data-tab="budgets" onclick="cdSwitchTab('budgets')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid transparent;color:#655A4E;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">🧮 Orçamentos</button>
+    <button class="cd-tab active" data-tab="projects" onclick="cdSwitchTab('projects')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid #9B7535;color:#3D271A;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Projetos</button>
+    <button class="cd-tab" data-tab="budgets" onclick="cdSwitchTab('budgets')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid transparent;color:#655A4E;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8" y1="14" y2="14"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="12" x2="12" y1="10" y2="10"/></svg>Orçamentos</button>
   </div>
   <div id="cd-tab-projects" class="cd-tab-content"></div>
   <div id="cd-tab-budgets" class="cd-tab-content" style="display:none"></div>
@@ -3123,7 +3123,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   const budgetsHTML=budgetsData.length>0
     ? budgetsData.map((b,idx)=>{
         const mode=b.client_view_mode||'hm';
-        const modeLabel={cash:'💵 Cash',hm:'💰 Hard Money',both:'🔀 Análise dos 2'}[mode]||'💰 Hard Money';
+        const modeLabel={cash:'💵 Cash',hm:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money',both:'🔀 Análise dos 2'}[mode]||'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money';
         const accentColor=mode==='cash'?'#5C7A3F':'#9B7535';
         return `
         <details style="background:#fff;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);overflow:hidden;border-left:4px solid ${accentColor}">
@@ -3173,14 +3173,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
       <!-- SEÇÃO 1: REALIZADO -->
       <div style="margin-top:30px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="font-size:11px;font-weight:800;color:#3D271A;letter-spacing:2px;text-transform:uppercase;padding:4px 0">✅ Realizado</div>
+        <div style="font-size:11px;font-weight:800;color:#3D271A;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Realizado</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#D5C9BC,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${projects.length} ${projects.length===1?'projeto':'projetos'}</div>
         ${projects.length>0?`
         <!-- Toggle Cards / Tabela (Realizado) -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #D5C9BC;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)">📋 Cards</button>
-          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit">📊 Tabela</button>
+          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>`:''}
       </div>
       <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>
@@ -3188,14 +3188,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
       <!-- SEÇÃO 2: A REALIZAR -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0">📋 A Realizar</div>
+        <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>A Realizar</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${budgetsData.length} ${budgetsData.length===1?'proposta':'propostas'}</div>
         ${budgetsData.length>0?`
         <!-- Toggle Cards / Tabela -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)">📋 Cards</button>
-          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit">📊 Tabela</button>
+          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>`:''}
       </div>
       <div id="portal-budgets-cards">${budgetsHTML}</div>
@@ -10417,18 +10417,18 @@ function cdRenderHeader(){
       </div>
       <div style="display:flex;gap:14px;flex-wrap:wrap">
         <div style="background:rgba(255,255,255,0.1);padding:10px 16px;border-radius:8px">
-          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.4px">📁 Projetos</div>
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Projetos</div>
           <div style="font-size:22px;font-weight:800">${myProjects.length}</div>
         </div>
         <div style="background:rgba(255,255,255,0.1);padding:10px 16px;border-radius:8px">
-          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.4px">🧮 Orçamentos</div>
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8" y1="14" y2="14"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="12" x2="12" y1="10" y2="10"/></svg>Orçamentos</div>
           <div style="font-size:22px;font-weight:800">${myBudgets.length}</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button onclick="openClientModal('${c.id}')" style="padding:8px 16px;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">✏️ Editar</button>
+        <button onclick="openClientModal('${c.id}')" style="padding:8px 16px;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Editar</button>
         ${hasToken
-          ? `<button onclick="copyInvestorLink('${c.id}')" style="padding:8px 16px;background:#9B7535;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📋 Copiar link investidor</button>`
+          ? `<button onclick="copyInvestorLink('${c.id}')" style="padding:8px 16px;background:#9B7535;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copiar link investidor</button>`
           : `<button onclick="generateInvestorToken('${c.id}').then(()=>cdRenderHeader())" style="padding:8px 16px;background:#5C7A3F;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">🔗 Gerar link investidor</button>`
         }
       </div>
@@ -10461,7 +10461,7 @@ function cdRenderProjects(){
   }
   const $$=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
   el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
-    <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">📁 Projetos (${list.length})</div>
+    <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Projetos (${list.length})</div>
     ${list.map(p=>`
       <div onclick="openProject('${p.id}')" style="background:#FAF7F3;border-radius:8px;padding:14px 18px;margin-bottom:10px;cursor:pointer;border:1.5px solid transparent;transition:all .2s" onmouseover="this.style.borderColor='#9B7535'" onmouseout="this.style.borderColor='transparent'">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -10496,7 +10496,7 @@ async function cdRenderBudgets(){
   if(list.length===0){
     el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase">🧮 Orçamentos</div>
+        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8" y1="14" y2="14"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="12" x2="12" y1="10" y2="10"/></svg>Orçamentos</div>
         ${newBtn}
       </div>
       <div style="padding:40px 20px;text-align:center;color:#999;font-style:italic">Nenhum orçamento ainda. Clique em <strong><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Novo Orçamento</strong> pra criar.</div>
@@ -10505,12 +10505,12 @@ async function cdRenderBudgets(){
   }
   el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase">🧮 Orçamentos (${list.length})</div>
+      <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="8" x2="8" y1="14" y2="14"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="12" x2="12" y1="10" y2="10"/></svg>Orçamentos (${list.length})</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <!-- Toggle Cards / Tabela (CEO) -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;padding:2px;font-size:11px">
-          <button id="cd-bdg-cards" onclick="cdBdgSwitchView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)">📋 Cards</button>
-          <button id="cd-bdg-table" onclick="cdBdgSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit">📊 Tabela</button>
+          <button id="cd-bdg-cards" onclick="cdBdgSwitchView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="cd-bdg-table" onclick="cdBdgSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>
         ${newBtn}
       </div>
@@ -10733,7 +10733,7 @@ function openClientModal(id){
   if(id){
     const c=_clientById(id);
     if(!c) return;
-    title.textContent='✏️ Editar Client';
+    title.textContent='<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Editar Client';
     document.getElementById('cm-name').value=c.name||'';
     document.getElementById('cm-address').value=c.address||'';
     document.getElementById('cm-email').value=c.email||'';
@@ -12036,17 +12036,17 @@ let _debBdg=null;      // debounce timer for auto-save (when editing)
 
 // Default cost lines (matches Melbourne.xlsx layout)
 const BUDGET_DEFAULT_LINES=[
-  {name:'🏠 Valor da casa (compra)',              kind:'info',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'house_value'},
-  {name:'💵 Cash (entrada do cliente)',           kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'down_cash'},
-  {name:'💰 Hard Money (financiado)',             kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'hm_principal'},
-  {name:'📈 Juros do Hard Money',                  kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest'},
-  {name:'📋 Down payment Hard Money',              kind:'closing', base:0,    months_cash:0, months_hm:1, is_extra:false, formula:'hm_down'},
-  {name:'💡 Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false},
-  {name:'🔨 Rehab',                                kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'rehab'},
-  {name:'🌿 Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false},
-  {name:'🏷️ Comissão venda + closing costs',     kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
-  {name:'📝 Contribuição no closing',              kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false},
-  {name:'🧾 Imposto pró rata',                     kind:'closing', base:1000, months_cash:1, months_hm:1, is_extra:false},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Valor da casa (compra)',              kind:'info',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'house_value'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.5 0-4.5-1-5.6-3l-3.4-6c-.7-1-.4-2.3.7-3v0c.9-.6 2.1-.3 3 .5l1.3 2"/></svg>Cash (entrada do cliente)',           kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'down_cash'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money (financiado)',             kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'hm_principal'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Juros do Hard Money',                  kind:'cost',    base:0,    months_cash:0, months_hm:4, is_extra:false, formula:'hm_interest'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Down payment Hard Money',              kind:'closing', base:0,    months_cash:0, months_hm:1, is_extra:false, formula:'hm_down'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Água/Luz',                             kind:'cost',    base:250,  months_cash:4, months_hm:6, is_extra:false},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Rehab',                                kind:'cost',    base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'rehab'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19.2 2.96a1 1 0 0 1 1.8.5c0 8.72-6.05 13.21-10 13.54"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>Corte de grama',                       kind:'cost',    base:120,  months_cash:4, months_hm:6, is_extra:false},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Comissão venda + closing costs',     kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false, formula:'commission_6'},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l.99-3.95z"/></svg>Contribuição no closing',              kind:'closing', base:0,    months_cash:1, months_hm:1, is_extra:false},
+  {name:'<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>Imposto pró rata',                     kind:'closing', base:1000, months_cash:1, months_hm:1, is_extra:false},
 ];
 
 async function loadBudgets(){
@@ -12169,7 +12169,7 @@ function calcBudgetSummary(b){
       valCash = hasOverride ? base : purchase;
       valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
     } else if(line.formula==='hm_principal'){
-      // 💰 Hard Money (principal financiado):
+      // <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money (principal financiado):
       //   Cash scenario: zero (não usa HM)
       //   HM scenario:   o valor do HM Loan
       valCash = 0;
@@ -12310,10 +12310,10 @@ function renderBudgetClientView(b, mode){
       </div>
       <div style="padding:20px 22px">
         <!-- INVESTIMENTO BLOCK -->
-        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px">💼 Investimento</div>
+        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Investimento</div>
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#3D271A">
           <tr><td style="padding:6px 0;color:#655A4E">🏠 Valor da compra</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.purchase)}</td></tr>
-          ${view.isHM ? `<tr><td style="padding:6px 0;color:#655A4E">💰 Hard Money (financiamento)</td><td style="padding:6px 0;text-align:right;font-weight:700;color:${accentColor}">${$$0(view.hardMoney)}</td></tr>` : ''}
+          ${view.isHM ? `<tr><td style="padding:6px 0;color:#655A4E"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money (financiamento)</td><td style="padding:6px 0;text-align:right;font-weight:700;color:${accentColor}">${$$0(view.hardMoney)}</td></tr>` : ''}
           <tr><td style="padding:6px 0;color:#655A4E">💵 Entrada do cliente</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.downPayment)}</td></tr>
           <tr><td style="padding:6px 0;color:#655A4E">🔨 Reforma</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.rehab)}</td></tr>
           ${view.closingHM>0 ? `<tr><td style="padding:6px 0;color:#655A4E">📋 Closing HM</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.closingHM)}</td></tr>` : ''}
@@ -12323,7 +12323,7 @@ function renderBudgetClientView(b, mode){
           <span style="font-size:20px;font-weight:800;color:${accentColor}">${$$0(view.clientInvested)}</span>
         </div>
         <!-- VENDA BLOCK -->
-        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1.2px;text-transform:uppercase;margin:24px 0 10px">🏷️ Venda</div>
+        <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1.2px;text-transform:uppercase;margin:24px 0 10px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>Venda</div>
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#3D271A">
           <tr><td style="padding:6px 0;color:#655A4E">Venda esperada</td><td style="padding:6px 0;text-align:right;font-weight:700">${$$0(view.sale)}</td></tr>
           <tr><td style="padding:6px 0;color:#655A4E">(-) Custos da venda</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#A02021">- ${$$0(view.saleCosts)}</td></tr>
@@ -12457,7 +12457,7 @@ function openBudgetClientView(budgetId){
         <span style="font-size:11px;color:#655A4E;font-weight:600">Modo:</span>
         <select id="bcv-mode" onchange="bcvChangeMode('${budgetId}',this.value)" style="padding:6px 10px;font-size:12px;border:1.5px solid var(--gray2);border-radius:5px;background:#fff;font-family:inherit;font-weight:600">
           <option value="cash" ${mode==='cash'?'selected':''}>💵 Cash</option>
-          <option value="hm" ${mode==='hm'?'selected':''}>💰 Hard Money</option>
+          <option value="hm" ${mode==='hm'?'selected':''}><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money</option>
           <option value="both" ${mode==='both'?'selected':''}>🔀 Ambos (análise)</option>
         </select>
         <button onclick="bcvSaveMode('${budgetId}')" style="padding:7px 14px;background:#5C7A3F;color:#fff;border:0;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Salvar modo</button>
@@ -12616,7 +12616,7 @@ function renderBudgetEditorModal(){
       <td style="padding:6px 4px;text-align:right">
         <div style="display:inline-flex;align-items:center;gap:4px;justify-content:flex-end">
           ${isFormula && !hasOverride
-            ? `<button onclick="useFormulaValue(${idx})" title="Pegar o valor auto-calculado e colocar como manual (assim você pode editar)" style="background:#9B7535;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:9px;font-weight:700;padding:3px 6px;font-family:inherit;white-space:nowrap">📐 Usar</button>`
+            ? `<button onclick="useFormulaValue(${idx})" title="Pegar o valor auto-calculado e colocar como manual (assim você pode editar)" style="background:#9B7535;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:9px;font-weight:700;padding:3px 6px;font-family:inherit;white-space:nowrap"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/></svg>Usar</button>`
             : ''}
           <input id="bm-line-base-${idx}" type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático. Digite um valor pra sobrescrever.':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#9B7535':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
         </div>
@@ -12644,7 +12644,7 @@ function renderBudgetEditorModal(){
     <!-- Gross Profit reference (purchase - sale - rehab) -->
     <div style="background:linear-gradient(135deg,#FAF7F3,#F0EAE2);border:1.5px solid #D5C9BC;border-radius:8px;padding:14px 18px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div>
-        <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase">📊 Gross Profit (referência)</div>
+        <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Gross Profit (referência)</div>
         <div style="font-size:11px;color:#655A4E;margin-top:2px">Venda - Compra - Rehab · sem custos operacionais ou closing</div>
       </div>
       <div style="text-align:right">
@@ -12655,7 +12655,7 @@ function renderBudgetEditorModal(){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:14px">
       <!-- Cash scenario -->
       <div style="background:#F2F4EC;border-left:4px solid #5C7A3F;border-radius:8px;padding:18px">
-        <div style="font-size:13px;font-weight:800;color:#5C7A3F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">💵 Cenário Cash · ${b.cash_months} meses</div>
+        <div style="font-size:13px;font-weight:800;color:#5C7A3F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.5 0-4.5-1-5.6-3l-3.4-6c-.7-1-.4-2.3.7-3v0c.9-.6 2.1-.3 3 .5l1.3 2"/></svg>Cenário Cash · ${b.cash_months} meses</div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
           <span style="color:#655A4E">Cash investido</span><span id="bm-cash-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.invested)}</span>
           <span style="color:#655A4E">Descontos no closing</span><span id="bm-cash-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.cash.descontos_closing)}</span>
@@ -12666,7 +12666,7 @@ function renderBudgetEditorModal(){
       </div>
       <!-- Hard Money scenario -->
       <div style="background:#FAF3E0;border-left:4px solid #9B7535;border-radius:8px;padding:18px">
-        <div style="font-size:13px;font-weight:800;color:#9B7535;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🏦 Cenário Hard Money · ${b.hm_months} meses</div>
+        <div style="font-size:13px;font-weight:800;color:#9B7535;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Cenário Hard Money · ${b.hm_months} meses</div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
           <span style="color:#655A4E">Cash investido</span><span id="bm-hm-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.invested)}</span>
           <span style="color:#655A4E">Descontos no closing</span><span id="bm-hm-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.descontos_closing)}</span>
@@ -12711,13 +12711,13 @@ function renderBudgetEditorModal(){
       </div>
       <!-- Inputs principais -->
       <div style="background:#FAF7F3;padding:16px;border-radius:8px;margin-bottom:18px">
-        <div style="font-size:12px;font-weight:800;color:#3D271A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">💰 Dados do Imóvel</div>
+        <div style="font-size:12px;font-weight:800;color:#3D271A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dados do Imóvel</div>
 
         <!-- GRUPO 1: IMÓVEL (essencial) -->
         <div style="margin-bottom:14px">
           <div style="font-size:10px;font-weight:700;color:#655A4E;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
             <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3D271A"></span>
-            🏠 Imóvel
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Imóvel
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
             <div>
@@ -12743,7 +12743,7 @@ function renderBudgetEditorModal(){
         <div style="margin-bottom:14px">
           <div style="font-size:10px;font-weight:700;color:#9B7535;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
             <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#9B7535"></span>
-            💰 Hard Money
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
             <div>
@@ -12766,7 +12766,7 @@ function renderBudgetEditorModal(){
         <details style="margin-top:8px;border-top:1px dashed #D5C9BC;padding-top:12px">
           <summary style="cursor:pointer;font-size:10px;font-weight:700;color:#655A4E;letter-spacing:.6px;text-transform:uppercase;user-select:none;list-style:none;display:flex;align-items:center;gap:6px">
             <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#999"></span>
-            📐 Configurações avançadas (%)
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#655A4E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/></svg>Configurações avançadas (%)
             <span style="font-size:9px;color:#999;font-weight:500;text-transform:none;margin-left:6px">— clique para expandir/recolher</span>
           </summary>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px">
@@ -13225,14 +13225,14 @@ function generateBudgetPDF(){
   <!-- Gross Profit (referência) -->
   <table style="margin-bottom:14px">
     <tr style="background:#FAF7F3">
-      <td style="padding:10px;font-weight:700;color:#655A4E;width:60%">📊 Gross Profit (referência)<br><span style="font-size:9px;color:#999;font-weight:500">Venda − Compra − Rehab · sem custos operacionais ou closing</span></td>
+      <td style="padding:10px;font-weight:700;color:#655A4E;width:60%"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Gross Profit (referência)<br><span style="font-size:9px;color:#999;font-weight:500">Venda − Compra − Rehab · sem custos operacionais ou closing</span></td>
       <td style="padding:10px;text-align:right;font-weight:800;font-size:18px;color:${calc.gross_profit>=0?'#5C7A3F':'#A02021'}">${$$(calc.gross_profit)}</td>
     </tr>
   </table>
 
   <div class="totals">
     <div class="scen cash">
-      <h3>💵 Cenário Cash · ${b.cash_months} meses</h3>
+      <h3><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.5 0-4.5-1-5.6-3l-3.4-6c-.7-1-.4-2.3.7-3v0c.9-.6 2.1-.3 3 .5l1.3 2"/></svg>Cenário Cash · ${b.cash_months} meses</h3>
       <div class="row"><span>Cash investido</span><span>${$$(calc.cash.invested)}</span></div>
       <div class="row"><span>Descontos no closing</span><span>${$$(calc.cash.descontos_closing)}</span></div>
       <div class="row"><span>Venda</span><span>${$$(calc.cash.sale)}</span></div>
@@ -13240,7 +13240,7 @@ function generateBudgetPDF(){
       <div class="row lucro"><span>ROI</span><span>${$pct(calc.cash.profit_pct)}</span></div>
     </div>
     <div class="scen hm">
-      <h3>🏦 Cenário Hard Money · ${b.hm_months} meses</h3>
+      <h3><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Cenário Hard Money · ${b.hm_months} meses</h3>
       <div class="row"><span>Cash investido</span><span>${$$(calc.hm.invested)}</span></div>
       <div class="row"><span>Descontos no closing</span><span>${$$(calc.hm.descontos_closing)}</span></div>
       <div class="row"><span>Venda</span><span>${$$(calc.hm.sale)}</span></div>
@@ -13460,7 +13460,7 @@ function dlRenderList(){
           <div style="font-size:11px;color:#999;margin-top:2px">por <strong>${(e.author_email||'').replace(/</g,'&lt;')}</strong> · criado ${new Date(e.created_at).toLocaleString('pt-BR')}</div>
         </div>
         <div style="display:flex;gap:6px">
-          ${canEdit?`<button onclick="dlEditEntry('${e.id}')" style="padding:5px 12px;background:#fff;color:#3D271A;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">✏️ Editar</button>`:''}
+          ${canEdit?`<button onclick="dlEditEntry('${e.id}')" style="padding:5px 12px;background:#fff;color:#3D271A;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Editar</button>`:''}
           ${isCEO()?`<button onclick="dlDeleteEntry('${e.id}')" style="padding:5px 12px;background:transparent;color:#A02021;border:1.5px solid #FFB5B5;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">🗑</button>`:''}
         </div>
       </div>
