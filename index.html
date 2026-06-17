@@ -13117,6 +13117,13 @@ function refreshBudgetLiveCalcs(){
     const hmEl  =document.getElementById('bm-line-hm-'+idx);
     if(cashEl) cashEl.textContent=$$2(valCash);
     if(hmEl)   hmEl.textContent  =$$2(valHm);
+    // Atualizar inputs de meses bloqueados para usar b.hm_months global
+    if(line.lock_to_hm_months){
+      const inputs = document.querySelectorAll(`input[style*="FAF3E0"]`);
+      inputs.forEach(inp => {
+        if(inp.value != (+b.hm_months||6)) inp.value = +b.hm_months||6;
+      });
+    }
   });
   // 3. Update scenario summary totals (Cash + HM cards + Gross Profit)
   const calc=calcBudgetSummary(b);
