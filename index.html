@@ -2702,7 +2702,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   let totalInvested=0;
   let totalReturned=0; // sale prices for SOLD projects
   let totalProfit=0;   // realized profit
-  let totalEstimatedProfit=0; // estimated profit for non-sold projects
   let totalRefunded=0; // for transparency (shown separately if > 0)
   projects.forEach(p=>{
     const purchase=purchaseFor(p.id);
@@ -2717,13 +2716,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       const sale=+pr.final_sale_price||0;
       totalReturned+=sale;
       totalProfit+=(sale-netInvested);
-    } else if(!pr.sale_date && +pr.arv>0){
-      // Estimated profit for projects still in progress (using ARV)
-      const arv=+pr.arv||0;
-      const sellingCosts=+pr.selling_costs||0;
-      const lenderSale=+pr.lender_costs_sale||0;
-      const estProfit=arv-netInvested-sellingCosts-lenderSale;
-      totalEstimatedProfit+=estProfit;
     }
   });
 
@@ -2761,14 +2753,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">📈 Lucro realizado</div>
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
           </div>
-        </div>
-        ${totalEstimatedProfit>0?`<div style="margin-top:14px;text-align:center">
-          <div style="display:inline-block;background:rgba(248,197,112,0.15);border:1px solid rgba(248,197,112,0.3);padding:10px 16px;border-radius:8px">
-            <div style="font-size:9px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro Previsto</div>
-            <div style="font-size:18px;font-weight:800;color:#F8C570;margin-top:2px">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
-            <div style="font-size:9px;color:#F8C570;margin-top:1px;opacity:.7">Projeção (em andamento)</div>
-          </div>
-        </div>`:''}
         </div>
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
           <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px">Por tipo de imóvel</div>
@@ -2958,17 +2942,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     const lenderSale=+pr.lender_costs_sale||0;
     const pctClient=+pr.pct_client||0;
     const pctDec=+pr.pct_dec||0;
-    // Total Invested = EMD + Cash + Other Costs + Commission + Invoices Op + DEC + Recurring + Documents + High End
-    const emd=+pr.emd_cash||0;
-    const cash=+pr.cash||0;
-    const otherAcq=+pr.other_costs||0;
-    const commission=+pr.commission||0;
-    const invoicesOp=calcProjectInvoicesOperational(p.id);
-    const decTotal=((extraCostsMap[p.id]||{})['dec_invoice']||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    const recTotal=calcRCDTotal(p.id);
-    const docTotal=((extraCostsMap[p.id]||{})['documents']||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    const heTotal=((extraCostsMap[p.id]||{})['high_end']||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    const projectInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
+    // Total Invested = purchase + paid invoices (operational only; refunds excluded)
+    const projectInvested=purchase+totalPaid;
     // Gross Profit = Final Sale - Selling Costs - Lender(sale)
     const grossProfit=projectSale-sellingCosts-lenderSale;
     // Net Profit = Gross Profit - Total Invested
@@ -3123,17 +3098,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           const refunded=refundTotal(p.id);
           const purchase=purchaseFor(p.id);
-          // Total Invested = EMD + Cash + Other Costs + Commission + Invoices Op + DEC + Recurring + Documents + High End
-          const emd=+((propertyByProj[p.id]||{}).emd_cash||0);
-          const cash=+((propertyByProj[p.id]||{}).cash||0);
-          const otherAcq=+((propertyByProj[p.id]||{}).other_costs||0);
-          const commission=+((propertyByProj[p.id]||{}).commission||0);
-          const invoicesOp=calcProjectInvoicesOperational(p.id);
-          const decTotal=((extraCostsMap[p.id]||{})['dec_invoice']||[]).reduce((s,e)=>s+(+e.amount||0),0);
-          const recTotal=calcRCDTotal(p.id);
-          const docTotal=((extraCostsMap[p.id]||{})['documents']||[]).reduce((s,e)=>s+(+e.amount||0),0);
-          const heTotal=((extraCostsMap[p.id]||{})['high_end']||[]).reduce((s,e)=>s+(+e.amount||0),0);
-          const netInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
+          const netInvested=purchase+totalPaid-refunded;
           const status=statusFor(p);
           const statusBadge=STATUS_BADGES[status]||STATUS_BADGES.in_progress;
           const typeMeta=p.project_type?PROJECT_TYPE_META[p.project_type]:null;
@@ -6671,9 +6636,9 @@ function recalcProfit(){
   // Estimated profit:
   //   - Quando NÃO tem sale_date → usa ARV (projeção pre-venda)
   //   - Quando JÁ tem sale_date  → usa Final Sale Price (refletindo a venda real)
-  // Fórmula: SalePrice - Total Invested - Selling - Lender(sale)
+  // Fórmula: SalePrice - Wholesaler - Sales total (extra costs) - Estimated (budget) - Selling
   const salePrice = p.sale_date ? sale : arv;
-  const estProfit = salePrice ? (salePrice - totalInvested - selling - lenderSale) : 0;
+  const estProfit = salePrice ? (salePrice - wholesaler - salesTotal - totEst - selling) : 0;
   const estEl = document.getElementById('pft-est');
   estEl.textContent = salePrice ? (estProfit>=0?'':'-')+fmt(Math.abs(estProfit)) : '—';
   estEl.style.color = salePrice ? (estProfit>=0?'var(--p3)':'var(--p1)') : 'var(--gray3)';
