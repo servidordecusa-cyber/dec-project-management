@@ -3399,13 +3399,10 @@ let _portTypeFilter='';   // empty = all types; value can be type key OR '__none
 
 // Client groups: visually combine multiple client companies under one "owner"
 // (does NOT change anything in the database — just affects the Projects filter)
-const CLIENT_GROUPS=[
-  {
-    key:'joel',
-    label:'Joel',
-    members:['Avena Investments LLC','Carolina Treche','Urutau Investments LLC','Urutu Investments LLC'],
-  },
-];
+// IMPORTANT: Empty array = no grouping. Each company appears individually.
+// To re-enable Joel grouping, restore the original object below:
+//   {key:'joel',label:'Joel',members:['Avena Investments LLC','Carolina Treche','Urutau Investments LLC','Urutu Investments LLC']}
+const CLIENT_GROUPS=[];
 
 // Build a Set of all client NAMES that are part of any group (used to hide them
 // from the individual dropdown options, since they're represented by the group)
