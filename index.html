@@ -3064,21 +3064,23 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const statusBadge=STATUS_BADGES[status]||STATUS_BADGES.in_progress;
           const typeMeta=p.project_type?PROJECT_TYPE_META[p.project_type]:null;
           const typeLabel=typeMeta?`${typeMeta.icon} ${typeMeta.label}`:'—';
-          // ROI / Lucro Cliente:
+          // ROI / Lucro Cliente — lê campos da Property & Finance (propertyByProj),
+          //   NÃO do objeto project (esses campos não existem em projects)
           //   - Vendido (sold): lucro REAL com base no final_sale_price
           //   - Em andamento / completed / for_sale: lucro PROJETADO com base no ARV
           // Mostra "—" só quando NÃO tem nenhuma referência de venda
+          const pr=propertyByProj[p.id]||{};
           let roiLabel='—';
           let roiColor='#999';
-          const isSold = status==='sold' && p.final_sale_price;
-          const referenceSale = isSold ? (+p.final_sale_price||0) : (+p.arv||0);
+          const isSold = status==='sold' && +pr.final_sale_price>0;
+          const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
           if(referenceSale > 0){
-            const sellingCosts=(+p.selling_costs||0);
-            const lenderSale=(+p.lender_payback_sale||0);
+            const sellingCosts=(+pr.selling_costs||0);
+            const lenderSale=(+pr.lender_payback_sale||0);
             const grossProfit=referenceSale-sellingCosts-lenderSale;
             const netProfit=grossProfit-netInvested;
             const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
-            const pctClient=p.pct_client!=null?+p.pct_client:70;
+            const pctClient=pr.pct_client!=null?+pr.pct_client:70;
             const lucroClient=netProfit*pctClient/100;
             const tag = isSold ? '' : ' <span style="font-size:9px;color:#9B7535;font-weight:600;text-transform:uppercase;letter-spacing:.5px">est.</span>';
             roiLabel=`${$fmtProj(lucroClient)}${tag} <span style="font-size:10px;color:#999;font-weight:500">(${roiTotal.toFixed(0)}% ROI)</span>`;
