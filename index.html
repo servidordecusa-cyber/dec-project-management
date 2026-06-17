@@ -3103,29 +3103,44 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const statusBadge=STATUS_BADGES[status]||STATUS_BADGES.in_progress;
           const typeMeta=p.project_type?PROJECT_TYPE_META[p.project_type]:null;
           const typeLabel=typeMeta?`${typeMeta.icon} ${typeMeta.label}`:'—';
-          // Lê dados de Property & Finance uma vez só (usado por HM e Lucro)
+          // Lê dados de Property & Finance uma vez só
           const pr=propertyByProj[p.id]||{};
-          // Hard Money — mostra valor compacto + tag visual "HM" se > 0
+
+          // ─── COLUNA COMPRA ────────────────────────────────────────
+          // Mostra: valor total + tag pequena com % Cash e % HM (se houver HM)
           const hardMoney = +pr.hard_money || 0;
-          let hmLabel = '—';
-          let hmColor = '#999';
-          if(hardMoney > 0){
-            // Formato compacto: $130k em vez de $130,000
-            const hmK = hardMoney >= 1000
-              ? '$' + (hardMoney/1000).toLocaleString('en-US',{maximumFractionDigits:0}) + 'k'
-              : '$' + hardMoney.toLocaleString('en-US',{maximumFractionDigits:0});
-            hmLabel = `${hmK} <span style="font-size:9px;color:#9B7535;font-weight:700;background:#FAF3E0;padding:2px 5px;border-radius:4px;margin-left:3px">HM</span>`;
-            hmColor = '#9B7535';
+          let compraHTML;
+          if(purchase > 0){
+            const cashAmount = purchase - hardMoney; // cash = total - hard money
+            const cashPct = purchase > 0 ? Math.round((cashAmount/purchase)*100) : 100;
+            const hmPct = 100 - cashPct;
+            const splitTag = hardMoney > 0
+              ? `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">${cashPct}% CASH · ${hmPct}% HM</div>`
+              : `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">100% CASH</div>`;
+            compraHTML = `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>${splitTag}`;
+          } else {
+            compraHTML = `<span style="color:#999">—</span>`;
           }
-          // ROI / Lucro Cliente — lê campos da Property & Finance (propertyByProj),
-          //   NÃO do objeto project (esses campos não existem em projects)
-          //   - Vendido (sold): lucro REAL com base no final_sale_price
-          //   - Em andamento / completed / for_sale: lucro PROJETADO com base no ARV
-          // Mostra "—" só quando NÃO tem nenhuma referência de venda
-          let roiLabel='—';
-          let roiColor='#999';
+
+          // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
+          // Em andamento → ARV em dourado + tag (PROJEÇÃO)
+          // Vendido → final_sale_price em verde + tag (REAL)
           const isSold = status==='sold' && +pr.final_sale_price>0;
           const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
+          let vendaHTML;
+          if(referenceSale > 0){
+            if(isSold){
+              vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
+            } else {
+              vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
+            }
+          } else {
+            vendaHTML = `<span style="color:#999">—</span>`;
+          }
+
+          // ─── COLUNA ROI / LUCRO ──────────────────────────────────
+          // Calcula com base na referência (final sale OU arv)
+          let roiHTML = `<span style="color:#999">—</span>`;
           if(referenceSale > 0){
             const sellingCosts=(+pr.selling_costs||0);
             const lenderSale=(+pr.lender_payback_sale||0);
@@ -3134,42 +3149,43 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
             const pctClient=pr.pct_client!=null?+pr.pct_client:70;
             const lucroClient=netProfit*pctClient/100;
-            const tag = isSold ? '' : ' <span style="font-size:9px;color:#9B7535;font-weight:600;text-transform:uppercase;letter-spacing:.5px">est.</span>';
-            roiLabel=`${$fmtProj(lucroClient)}${tag} <span style="font-size:10px;color:#999;font-weight:500">(${roiTotal.toFixed(0)}% ROI)</span>`;
-            roiColor=netProfit>=0?'#5C7A3F':'#A02021';
+            const cor = netProfit>=0 ? (isSold?'#5C7A3F':'#9B7535') : '#A02021';
+            const tag = isSold
+              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
+              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">EST. · ROI ${roiTotal.toFixed(0)}%</div>`;
+            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
           }
+
           return `
           <tr style="border-bottom:1px solid #F0EAE2">
-            <td style="padding:12px 14px;font-size:13px">
+            <td style="padding:14px 14px;font-size:13px">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
               </div>
             </td>
-            <td style="padding:12px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
-            <td style="padding:12px 10px">
+            <td style="padding:14px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
+            <td style="padding:14px 10px">
               <span style="display:inline-block;padding:3px 9px;background:${statusBadge.bg};color:${statusBadge.color};border-radius:10px;font-size:10px;font-weight:700">${statusBadge.icon} ${statusBadge.label}</span>
             </td>
-            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:${hmColor};white-space:nowrap">${hmLabel}</td>
-            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$fmtProj(purchase)}</td>
-            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$fmtProj(netInvested)}</td>
-            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
-            <td style="padding:12px 14px;text-align:right;font-size:13px;font-weight:800;color:${roiColor}">${roiLabel}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${compraHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
+            <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
           </tr>`;
         }).join('');
         return `
         <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05)">
           <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;min-width:720px">
+            <table style="width:100%;border-collapse:collapse;min-width:780px">
               <thead>
                 <tr style="background:#FAF7F3;border-bottom:2px solid #E8DDC9">
                   <th style="padding:12px 14px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Endereço</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Tipo</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Compra</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Investido</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
-                  <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Lucro Cliente</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
+                  <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
