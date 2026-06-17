@@ -380,21 +380,21 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div class="port-hdr"><div><h2>All Projects</h2><p id="port-sub">Loading projects...</p></div></div>
   <div class="kpi-row">
     <div class="kpi"><label>📁 Total</label><div class="val" id="pk-total">—</div></div>
-    <div class="kpi ko"><label>🔄 In Progress</label><div class="val" id="pk-prog">—</div></div>
+    <div class="kpi ko"><label><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>In Progress</label><div class="val" id="pk-prog">—</div></div>
     <div class="kpi kg"><label>✅ Completed</label><div class="val" id="pk-done">—</div></div>
     <div class="kpi" style="border-left-color:#7B5E8B"><label>🔧 Rehab Completed</label><div class="val" id="pk-rehab">—</div></div>
     <div class="kpi" style="border-left-color:var(--blue)"><label>🏷️ For Sale</label><div class="val" id="pk-sale">—</div></div>
-    <div class="kpi" style="border-left-color:var(--gold)"><label>💰 Sold</label><div class="val" id="pk-sold">—</div></div>
+    <div class="kpi" style="border-left-color:var(--gold)"><label><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.9 3.2 2 4.2V18a2 2 0 0 0 4 0v-1.8c.6.1 1.3.2 2 .2 2.2 0 4.1-.5 5.5-1.4l1.5 1.5a1 1 0 0 0 1.7-.7V12c1.1-.5 2-1.5 2-3 0-2.2-1.5-4-3.7-4Z"/></svg>Sold</label><div class="val" id="pk-sold">—</div></div>
     <div class="kpi" style="border-left-color:#C62B2B"><label>⛔ Cancelled</label><div class="val" id="pk-cancelled">—</div></div>
   </div>
   <!-- Filtros de status -->
   <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center">
     <button class="port-flt active" data-flt="all" onclick="setPortFilter('all')">📁 Todos</button>
-    <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')">🔄 In Progress</button>
+    <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>In Progress</button>
     <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Completed</button>
     <button class="port-flt" data-flt="rehab_completed" onclick="setPortFilter('rehab_completed')">🔧 Rehab Completed</button>
     <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ For Sale</button>
-    <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')">💰 Sold</button>
+    <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.9 3.2 2 4.2V18a2 2 0 0 0 4 0v-1.8c.6.1 1.3.2 2 .2 2.2 0 4.1-.5 5.5-1.4l1.5 1.5a1 1 0 0 0 1.7-.7V12c1.1-.5 2-1.5 2-3 0-2.2-1.5-4-3.7-4Z"/></svg>Sold</button>
     <button class="port-flt" data-flt="cancelled" onclick="setPortFilter('cancelled')">⛔ Cancelled</button>
     <div style="width:1px;height:24px;background:var(--gray2);margin:0 4px"></div>
     <label for="port-client-filter" style="font-size:12px;color:var(--gray3);font-weight:600">👥 Cliente:</label>
@@ -404,12 +404,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <label for="port-type-filter" style="font-size:12px;color:var(--gray3);font-weight:600">🏠 Tipo:</label>
     <select id="port-type-filter" onchange="setPortTypeFilter(this.value)" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:160px">
       <option value="">Todos os tipos</option>
-      <option value="single_family">🏠 Single Family</option>
-      <option value="high_end">💎 High End</option>
-      <option value="mobile_home">🚐 Mobile Home</option>
+      <option value="single_family"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Single Family</option>
+      <option value="high_end"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>High End</option>
+      <option value="mobile_home"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>Mobile Home</option>
       <option value="rehab">🔧 Rehab</option>
-      <option value="manufactured_home">🏭 Manufactured Home</option>
-      <option value="land">🌳 Land (Terreno)</option>
+      <option value="manufactured_home"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>Manufactured Home</option>
+      <option value="land"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19.2 2.96a1 1 0 0 1 1.8.5c0 8.72-6.05 13.21-10 13.54"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>Land (Terreno)</option>
       <option value="__none__">— Sem tipo definido —</option>
     </select>
   </div>
@@ -510,7 +510,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
             <div>
-              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px">🤖 Assistente Administrativo</div>
+              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dec-marrom-esc)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>Assistente Administrativo</div>
               <div style="font-size:12px;color:#655A4E;margin-top:2px">Faça upload de uma nota fiscal (PDF ou imagem) e eu lanço pra você</div>
             </div>
             <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
@@ -561,12 +561,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Type of Project <span style="font-size:10px;color:var(--gray3)">— defines what fields show</span></label>
               <select id="pf-type" onchange="savePF()">
                 <option value="">— Select —</option>
-                <option value="single_family">🏠 Single Family</option>
-                <option value="high_end">💎 High End</option>
-                <option value="mobile_home">🚐 Mobile Home</option>
+                <option value="single_family"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Single Family</option>
+                <option value="high_end"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>High End</option>
+                <option value="mobile_home"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>Mobile Home</option>
                 <option value="rehab">🔧 Rehab (no purchase/sale)</option>
-                <option value="manufactured_home">🏭 Manufactured Home</option>
-                <option value="land">🌳 Land (Terreno)</option>
+                <option value="manufactured_home"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>Manufactured Home</option>
+                <option value="land"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19.2 2.96a1 1 0 0 1 1.8.5c0 8.72-6.05 13.21-10 13.54"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>Land (Terreno)</option>
               </select>
             </div>
             <div class="fg"></div>
@@ -591,7 +591,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           </div>
         </div>
         <div class="card" style="margin-top:16px">
-          <div class="card-title">📍 Location &amp; Utilities</div>
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Location &amp; Utilities</div>
           <div class="fgrid"><div class="fg"><label>ZIP Code</label><input id="pf-zip" placeholder="e.g. 34711" oninput="debouncePF()"></div><div class="fg"><label>County</label><input id="pf-county" placeholder="e.g. Lake County" oninput="debouncePF()"></div></div>
           <div class="fgrid"><div class="fg"><label>Permit</label><input id="pf-permit" placeholder="e.g. BR2026-1234" oninput="debouncePF()"></div><div class="fg"></div></div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
@@ -662,7 +662,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div style="margin-bottom:18px">
             <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px">🏷️ Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Commission</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Commission</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
@@ -688,7 +688,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 4: Sale & Profit -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">💵 Sale &amp; Profit</div>
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>Sale &amp; Profit</div>
           <div class="fgrid">
             <div class="fg"><label>After Repair Value ($) <span style="font-size:10px;color:var(--gray3)">— ARV</span></label><input id="pi-arv" type="number" min="0" step="0.01" placeholder="e.g. 320000.00" oninput="debouncePI()"></div>
             <div class="fg"><label>Final sale price ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
@@ -702,14 +702,14 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">💰 Total Invested <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Total Invested <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
         </div>
 
         <!-- Card 5: Costs (was DEC Invoice) -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">💰 Costs
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Costs
             <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-dec-total">$0</span></span>
           </div>
           <div id="ec-dec-list"></div>
@@ -719,7 +719,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <!-- Operational Invoices — info only, already counted in Total Invested -->
           <div id="ec-op-invoices-block" style="margin-top:14px;padding-top:14px;border-top:1.5px dashed var(--gray2);display:none">
             <div style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">
-              📋 Operational Invoices
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg>Operational Invoices
               <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3);margin-left:6px">— info only · already counted in Total Invested</span>
             </div>
             <div id="ec-op-invoices-list"></div>
@@ -732,16 +732,16 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 6: Recurring Costs (read-only summary, sourced from Recurring Costs Detail page) -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">📅 Recurring Costs
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>Recurring Costs
             <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-rec-total">$0</span></span>
           </div>
-          <div style="font-size:11px;color:var(--gray3);margin-bottom:12px">💡 Os valores são puxados da página <strong>🔄 Recurring Costs</strong> (lança mês a mês lá)</div>
+          <div style="font-size:11px;color:var(--gray3);margin-bottom:12px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>Os valores são puxados da página <strong><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:3px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Recurring Costs</strong> (lança mês a mês lá)</div>
           <div id="ec-rec-list"></div>
         </div>
 
         <!-- Card 7: Documents & County Taxes -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">📄 Documents &amp; County Taxes
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documents &amp; County Taxes
             <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-doc-total">$0</span></span>
           </div>
           <div id="ec-doc-list"></div>
@@ -749,7 +749,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 8: High End Services -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">💎 High End Services
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>High End Services
             <span style="float:right;font-size:13px;color:var(--p3);font-weight:700">Subtotal: <span id="ec-he-total">$0</span></span>
           </div>
           <div id="ec-he-list"></div>
@@ -971,7 +971,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 5: HVAC -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title">❄️ HVAC (AC)</div>
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg>HVAC (AC)</div>
           <div class="fgrid">
             <div class="fg"><label>HVAC status</label>
               <select id="lc-hvac-status" onchange="saveLC()">
@@ -1215,7 +1215,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             </div>
             <div class="fg"></div>
           </div>
-          <div style="font-size:11px;color:var(--gray3);margin-top:8px;font-style:italic">💡 Quando marcar "Sim", o projeto aparece na seção <strong>"For Sale"</strong> do Portfolio</div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:8px;font-style:italic"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>Quando marcar "Sim", o projeto aparece na seção <strong>"For Sale"</strong> do Portfolio</div>
         </div>
       </div>
 
@@ -1238,7 +1238,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
             <div>
-              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px">🤖 Assistente Administrativo</div>
+              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dec-marrom-esc)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>Assistente Administrativo</div>
               <div style="font-size:12px;color:#655A4E;margin-top:2px">Faça upload de uma conta (luz, água, HOA, etc.) e eu lanço pra você</div>
             </div>
             <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
@@ -1254,14 +1254,14 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Main tabs (Lançamentos / Histórico de Notas) -->
         <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #F0EAE2">
-          <button class="rcd-maintab" data-tab="lancamentos" onclick="setRecurringMainTab('lancamentos')" style="padding:10px 18px;font-size:13px;font-weight:700;background:transparent;border:0;border-bottom:3px solid #3D271A;cursor:pointer;color:#3D271A;transition:all .15s">📅 Lançamentos mensais</button>
-          <button class="rcd-maintab" data-tab="notas" onclick="setRecurringMainTab('notas')" style="padding:10px 18px;font-size:13px;font-weight:700;background:transparent;border:0;border-bottom:3px solid transparent;cursor:pointer;color:var(--gray3);transition:all .15s">📋 Histórico de Notas <span id="vnr-tab-count" style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:2px"></span></button>
+          <button class="rcd-maintab" data-tab="lancamentos" onclick="setRecurringMainTab('lancamentos')" style="padding:10px 18px;font-size:13px;font-weight:700;background:transparent;border:0;border-bottom:3px solid #3D271A;cursor:pointer;color:#3D271A;transition:all .15s"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>Lançamentos mensais</button>
+          <button class="rcd-maintab" data-tab="notas" onclick="setRecurringMainTab('notas')" style="padding:10px 18px;font-size:13px;font-weight:700;background:transparent;border:0;border-bottom:3px solid transparent;cursor:pointer;color:var(--gray3);transition:all .15s"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg>Histórico de Notas <span id="vnr-tab-count" style="font-size:11px;font-weight:500;color:var(--gray3);margin-left:2px"></span></button>
         </div>
 
         <div id="rcd-pane-lancamentos">
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
-            <div class="card-title" style="margin:0;border:0;padding:0">📅 Lançamentos mensais
+            <div class="card-title" style="margin:0;border:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>Lançamentos mensais
               <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">— 48 meses (4 anos)</span>
             </div>
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
@@ -1305,7 +1305,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <div id="rcd-pane-notas" style="display:none">
           <div class="card">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-              <div class="card-title" style="margin:0;border:0;padding:0">📋 Histórico de Notas Processadas</div>
+              <div class="card-title" style="margin:0;border:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg>Histórico de Notas Processadas</div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <select id="vnr-filter-item" onchange="renderRecurringNotesHistory()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
                   <option value="">Todos os itens</option>
@@ -1336,7 +1336,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
       <!-- Supply Chain Analysis (CEO ONLY) -->
       <div class="page" id="page-supply">
-        <div class="page-title">📊 Supply Chain <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Supply Chain <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Análise dos seus gastos · Insights e oportunidades de economia</div>
 
         <!-- Filters card -->
@@ -1354,7 +1354,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div>
               <div style="font-size:11px;font-weight:700;color:#655A4E;margin-bottom:4px">Escopo</div>
               <select id="sc-scope" onchange="onSupplyScopeChange()" style="width:100%;padding:8px 10px;border:1px solid var(--gray2);border-radius:6px;background:#fff;font-family:inherit;font-size:13px">
-                <option value="global">🌐 Todos os projetos</option>
+                <option value="global"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Todos os projetos</option>
                 <option value="project">📁 Um projeto específico</option>
               </select>
             </div>
@@ -1373,7 +1373,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
               </select>
             </div>
             <div>
-              <button id="sc-run-btn" onclick="runSupplyChainAnalysis()" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2);white-space:nowrap">🔍 Analisar</button>
+              <button id="sc-run-btn" onclick="runSupplyChainAnalysis()" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 22px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2);white-space:nowrap"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Analisar</button>
             </div>
           </div>
           <div id="sc-status" style="margin-top:10px;font-size:12px;color:#655A4E;min-height:18px"></div>
@@ -1658,15 +1658,15 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <p style="color:var(--gray3);margin-top:4px">Fluxo de caixa · Entradas via invoices Working Capital · Saídas marcadas em custos</p>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:7px 14px;font-size:13px">🔄 Refresh</button>
-      <button class="btn btn-ghost" onclick="generateWorkingCapitalPDF()" style="padding:7px 14px;font-size:13px">🖨 Imprimir PDF</button>
+      <button class="btn btn-ghost" onclick="renderWorkingCapitalCashFlow()" style="padding:7px 14px;font-size:13px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Refresh</button>
+      <button class="btn btn-ghost" onclick="generateWorkingCapitalPDF()" style="padding:7px 14px;font-size:13px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>Imprimir PDF</button>
     </div>
   </div>
 
   <!-- KPIs -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
     <div style="background:#fff;border:1px solid #5C7A3F;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-      <div style="font-size:11px;color:#5C7A3F;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📥 Entradas (Paid)</div>
+      <div style="font-size:11px;color:#5C7A3F;font-weight:700;text-transform:uppercase;letter-spacing:.3px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Entradas (Paid)</div>
       <div style="font-size:24px;font-weight:800;color:#2D7D5F;margin-top:6px" id="wc-in-paid">$0</div>
       <div style="font-size:11px;color:#999;margin-top:3px" id="wc-in-paid-count">0 invoice(s)</div>
     </div>
@@ -1676,7 +1676,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <div style="font-size:11px;color:#999;margin-top:3px" id="wc-in-open-count">0 invoice(s)</div>
     </div>
     <div style="background:#fff;border:1px solid #C62B2B;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-      <div style="font-size:11px;color:#C62B2B;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📤 Saídas</div>
+      <div style="font-size:11px;color:#C62B2B;font-weight:700;text-transform:uppercase;letter-spacing:.3px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Saídas</div>
       <div style="font-size:24px;font-weight:800;color:#C62B2B;margin-top:6px" id="wc-out-total">$0</div>
       <div style="font-size:11px;color:#999;margin-top:3px" id="wc-out-count">0 lançamento(s)</div>
     </div>
@@ -1843,11 +1843,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <div class="fgrid">
       <div class="fg"><label>Type *</label>
         <select id="im-kind">
-          <option value="operational">🔨 Operational (during construction)</option>
-          <option value="final_roi">💎 Final ROI (after sale)</option>
+          <option value="operational"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Operational (during construction)</option>
+          <option value="final_roi"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>Final ROI (after sale)</option>
           <option value="refund"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Refund (reimbursement of advance)</option>
           <option value="third_party_asset_manager">🏦 Third Party Asset Manager</option>
-          <option value="working_capital">💰 Working Capital</option>
+          <option value="working_capital"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Working Capital</option>
         </select>
       </div>
       <div class="fg"></div>
@@ -1888,7 +1888,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="zelle">Zelle</option>
           <option value="ach">ACH</option>
           <option value="credit_card">Credit Card</option>
-          <option value="working_capital">💰 Working Capital</option>
+          <option value="working_capital"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Working Capital</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -2012,11 +2012,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <label>Category</label>
         <select id="vn-category">
           <option value="">— select —</option>
-          <option value="material">📦 Material</option>
-          <option value="labor">🔧 Labor</option>
+          <option value="material"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>Material</option>
+          <option value="labor"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Labor</option>
           <option value="material_labor">🔨 Material + Labor</option>
-          <option value="equipment">⚙️ Equipment</option>
-          <option value="other">📌 Other</option>
+          <option value="equipment"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m7 20.66 1-1.73"/></svg>Equipment</option>
+          <option value="other"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Other</option>
         </select>
       </div>
     </div>
@@ -3034,7 +3034,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         ${progressBarHTML}
 
         <div style="padding:18px 20px 12px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff">
-          📍 Timeline do projeto
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Timeline do projeto
         </div>
         <div style="padding:0 20px 16px">${timelineHTML}</div>
 
@@ -3951,11 +3951,11 @@ function rowHTML(type,gid,item,islug){
     <td>
       <select class="ci" id="bcat-${type}-${gid}-${islug}" onchange="onBCat('${type}','${gid}','${islug}',this)" style="padding:5px 6px;font-size:12px">
         <option value="">— select —</option>
-        <option value="material">📦 Material</option>
-        <option value="labor">🔧 Labor</option>
+        <option value="material"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>Material</option>
+        <option value="labor"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Labor</option>
         <option value="material_labor">🔨 Material + Labor</option>
-        <option value="equipment">⚙️ Equipment</option>
-        <option value="other">📌 Other</option>
+        <option value="equipment"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m7 20.66 1-1.73"/></svg>Equipment</option>
+        <option value="other"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Other</option>
       </select>
     </td>
     <td><select class="ci" id="bsup-${type}-${gid}-${islug}" onchange="onBSup('${type}','${gid}','${islug}',this)" style="padding:5px 6px;font-size:11px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">${populateVendorDropdowns()}</select></td>
@@ -6960,29 +6960,29 @@ function _dreSectionHTML(d,title){
       <table style="width:100%;border-collapse:collapse;font-size:13px">
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px">FRENTE 1 — OPERATIONAL MARGIN</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🧾 Operational Invoices (paid)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--p3)">${fmt(d.opPaid)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Operational Invoices (paid)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--p3)">${fmt(d.opPaid)}</td></tr>
         ${d.opOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Pending (does not count)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.opOpen)}</td></tr>`:''}
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">🔨 (−) Actual Costs (vendors)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.actualCosts)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📋 (−) Costs (DEC Invoice items)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.decInvoiceCost)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📄 (−) Documents</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.docCost)}</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">✨ (−) High End</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.heCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>(−) Actual Costs (vendors)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.actualCosts)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg>(−) Costs (DEC Invoice items)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.decInvoiceCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>(−) Documents</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.docCost)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.287 1.288L3 12l5.8 1.9a2 2 0 0 1 1.288 1.287L12 21l1.9-5.8a2 2 0 0 1 1.287-1.288L21 12l-5.8-1.9a2 2 0 0 1-1.288-1.287Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>(−) High End</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--p1)">−${fmt(d.heCost)}</td></tr>
         <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:${d.margemOperacional>=0?'var(--p3)':'var(--p1)'};text-transform:uppercase;font-size:11px">= OPERATIONAL MARGIN</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:${d.margemOperacional>=0?'var(--p3)':'var(--p1)'};font-size:14px">${_fmtSignedNeg(d.margemOperacional)}</td></tr>
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">FRONT 2 — FINAL ROI (50% of sold projects)</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💎 Final ROI Invoices (paid)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--gold)">${fmt(d.roiPaid)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>Final ROI Invoices (paid)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right;font-weight:600;color:var(--gold)">${fmt(d.roiPaid)}</td></tr>
         ${d.roiOpen>0?`<tr><td style="padding:5px 12px 5px 24px;border-bottom:1px solid #F0EAE2;color:var(--gray3);font-size:11px;font-style:italic">↳ Pending (does not count)</td><td style="padding:5px 12px;border-bottom:1px solid #F0EAE2;text-align:right;color:var(--gray3);font-size:11px;font-style:italic">${fmt(d.roiOpen)}</td></tr>`:''}
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF3E0;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:12px;letter-spacing:.5px;border-top:8px solid #fff">DEC TOTAL REVENUE (F1 + F2)</td></tr>
         <tr style="background:#FAF3E0"><td style="padding:9px 12px;font-weight:700;color:var(--gold);text-transform:uppercase;font-size:11px">= TOTAL RECEITA</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--gold);font-size:14px">${fmt(d.receitaTotal)}</td></tr>
 
         <tr><td colspan="2" style="padding:8px 12px;background:#FAF7F3;font-weight:700;color:var(--navy);text-transform:uppercase;font-size:11px;letter-spacing:.5px;border-top:8px solid #fff">(−) EXPENSES</td></tr>
-        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">📅 Project recurring (Energy, Water, HOA, Loan, Taxes, etc.)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.recurringExpense)}</td></tr>
+        <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>Project recurring (Energy, Water, HOA, Loan, Taxes, etc.)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.recurringExpense)}</td></tr>
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💼 Company fixed costs (Office, Salaries, Marketing, etc.)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.fixedCostsTotal)}</td></tr>
         <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL EXPENSES</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.recurringExpense+d.fixedCostsTotal)}</td></tr>
 
         <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) DEC NET PROFIT</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#9B7535">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
       </table>
-      <div style="font-size:10px;color:var(--gray3);font-style:italic;margin-top:10px;padding:8px 12px;background:#FAF7F3;border-left:3px solid var(--gold);border-radius:0 6px 6px 0">💡 Refund does not count as revenue (it is only a pass-through). Only <strong>paid</strong> invoices count.</div>
+      <div style="font-size:10px;color:var(--gray3);font-style:italic;margin-top:10px;padding:8px 12px;background:#FAF7F3;border-left:3px solid var(--gold);border-radius:0 6px 6px 0"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>Refund does not count as revenue (it is only a pass-through). Only <strong>paid</strong> invoices count.</div>
     </div>`;
 }
 
@@ -7025,7 +7025,7 @@ function renderDRE(){
     html+=`</tr></thead><tbody>`;
     const rows=[
       ['🧾 Op. (paid)','opPaid','#3D271A'],
-      ['💎 ROI Final','roiPaid','var(--gold)'],
+      ['<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:3px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>ROI Final','roiPaid','var(--gold)'],
       ['📈 TOTAL REVENUE','receitaTotal','var(--p3)'],
       ['🔨 Actual Costs','actualCosts','#655A4E'],
       ['📋 Costs','decInvoiceCost','#655A4E'],
@@ -7033,7 +7033,7 @@ function renderDRE(){
       ['✨ High End','heCost','#655A4E'],
       ['📉 TOTAL COSTS','totalCostsDiretosDec','var(--p1)'],
       ['📅 Recurring','recurringExpense','#655A4E'],
-      ['💼 Fixed Costs','fixedCostsTotal','#655A4E'],
+      ['<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Fixed Costs','fixedCostsTotal','#655A4E'],
       ['💎 DEC NET PROFIT','lucroLiquido','var(--gold)'],
     ];
     rows.forEach((r,idx)=>{
@@ -7342,11 +7342,11 @@ function renderPropertyResearchButtons(containerId,showAIButton){
   }
   const q=encodeURIComponent(address);
   const links=[
-    {url:`https://www.zillow.com/homes/${q}_rb/`, label:'🏠 Zillow', color:'#006AFF', hint:'Estimate, comps, history'},
+    {url:`https://www.zillow.com/homes/${q}_rb/`, label:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Zillow', color:'#006AFF', hint:'Estimate, comps, history'},
     {url:`https://www.google.com/maps/place/${q}`, label:'🗺️ Maps', color:'#34A853', hint:'Map & area view'},
     {url:`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=&layer=c&cbll=0,0`, label:'🛰️ Street View', color:'#1A73E8', hint:'Property exterior'},
     {url:`https://www.google.com/search?q=${q}+property+appraiser`, label:'🏛️ Appraiser', color:'#3D271A', hint:'Official county records'},
-    {url:`https://www.google.com/search?q=${q}+property+records+tax`, label:'📋 Tax Records', color:'#655A4E', hint:'Public records & tax'},
+    {url:`https://www.google.com/search?q=${q}+property+records+tax`, label:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg>Tax Records', color:'#655A4E', hint:'Public records & tax'},
   ];
   container.innerHTML=`
     <div style="background:#FAF7F3;border-left:4px solid var(--gold);border-radius:8px;padding:14px 16px">
@@ -7584,7 +7584,7 @@ async function renderWorkingCapitalCashFlow(){
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #F0EAE2;gap:8px">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;color:#3D271A">#${i.invoice_number} · ${(cli?cli.name:'?').replace(/</g,'&lt;')}</div>
-          ${projAddr?`<div style="font-size:11px;color:#655A4E;margin-top:2px">📍 ${projAddr.replace(/</g,'&lt;')}</div>`:''}
+          ${projAddr?`<div style="font-size:11px;color:#655A4E;margin-top:2px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${projAddr.replace(/</g,'&lt;')}</div>`:''}
           <div style="font-size:11px;color:#999;margin-top:1px">${fmtDate(i.date)}</div>
         </div>
         <div style="text-align:right">
@@ -7773,7 +7773,7 @@ th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655
 
 <div class="kpis">
   <div class="kpi green">
-    <div class="kpi-l">📥 Entradas (Paid)</div>
+    <div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Entradas (Paid)</div>
     <div class="kpi-v">${$$(inPaidTotal)}</div>
     <div class="kpi-h">${paidIn.length} invoice(s)</div>
   </div>
@@ -7783,7 +7783,7 @@ th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655
     <div class="kpi-h">${openIn.length} invoice(s)</div>
   </div>
   <div class="kpi red">
-    <div class="kpi-l">📤 Saídas</div>
+    <div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Saídas</div>
     <div class="kpi-v">${$$(outTotal)}</div>
     <div class="kpi-h">${outflows.length} lançamento(s)</div>
   </div>
@@ -7796,7 +7796,7 @@ th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655
 
 <div class="two-col">
   <div class="section">
-    <h3>📥 Entradas <small>· Invoices tipo Working Capital</small></h3>
+    <h3><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Entradas <small>· Invoices tipo Working Capital</small></h3>
     <table>
       <thead><tr><th>Descrição</th><th style="text-align:center;width:80px">Data</th><th style="text-align:center;width:60px">Status</th><th style="text-align:right;width:90px">Valor</th></tr></thead>
       <tbody>${inflowsRows}</tbody>
@@ -7804,7 +7804,7 @@ th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655
     </table>
   </div>
   <div class="section">
-    <h3>📤 Saídas <small>· Custos pagos com WC</small></h3>
+    <h3><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Saídas <small>· Custos pagos com WC</small></h3>
     <table>
       <thead><tr><th>Descrição</th><th style="text-align:center;width:80px">Data</th><th style="text-align:center;width:60px">Tipo</th><th style="text-align:right;width:90px">Valor</th></tr></thead>
       <tbody>${outflowsRows}</tbody>
@@ -7847,7 +7847,7 @@ function renderFinancial(){
   if(kpisEl){
     kpisEl.innerHTML=`
       <div class="home-card"><div class="lbl">📁 Projects</div><div class="val">${list.length}</div></div>
-      <div class="home-card"><div class="lbl">💰 Total Invested</div><div class="val">${fmt(totInvested)}</div></div>
+      <div class="home-card"><div class="lbl"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Total Invested</div><div class="val">${fmt(totInvested)}</div></div>
       <div class="home-card gold"><div class="lbl">💵 Total Vendas</div><div class="val">${fmt(totSale)}</div></div>
       <div class="home-card green"><div class="lbl">📈 Gross Profit</div><div class="val" style="color:${totGross>=0?'var(--p3)':'var(--p1)'}">${totGross>=0?'':'-'}${fmt(Math.abs(totGross))}</div></div>
       <div class="home-card green"><div class="lbl">✅ Net Profit</div><div class="val" style="color:${totNet>=0?'var(--p3)':'var(--p1)'}">${totNet>=0?'':'-'}${fmt(Math.abs(totNet))}</div></div>
@@ -8037,7 +8037,7 @@ async function renderHomeMap(){
     const sale=+prop.final_sale_price||0;
     const popupHtml=`
       <div style="font-family:inherit;min-width:180px">
-        <div style="font-weight:700;color:#3D271A;font-size:13px;margin-bottom:4px">📍 ${address}</div>
+        <div style="font-weight:700;color:#3D271A;font-size:13px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${address}</div>
         <div style="font-size:11px;color:#655A4E;margin-bottom:6px">${meta.icon} ${meta.label}${sale>0?' · $'+sale.toLocaleString('en-US'):''}</div>
         <a href="javascript:void(0)" onclick="openProject('${p.id}');return false" style="font-size:11px;color:#3D271A;font-weight:700;text-decoration:underline">→ Abrir projeto</a>
       </div>`;
@@ -8062,9 +8062,9 @@ async function renderHomeMap(){
     if(totalPins===0 && totalNeeded===0){
       statusEl.textContent='Nenhum projeto com endereço para mostrar.';
     } else if(totalNeeded>0){
-      statusEl.textContent=`📍 ${totalPins} no mapa · 🔄 Geocodando ${totalNeeded} endereço(s)...`;
+      statusEl.textContent=`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${totalPins} no mapa · 🔄 Geocodando ${totalNeeded} endereço(s)...`;
     } else {
-      statusEl.textContent=`📍 ${totalPins} projeto(s) no mapa`;
+      statusEl.textContent=`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${totalPins} projeto(s) no mapa`;
     }
   }
 
@@ -8183,7 +8183,7 @@ function renderHomeAlerts(){
     const days=Math.floor((now-new Date(inv.date+'T00:00:00'))/86400000);
     if(days>30){
       const client=_clientById(inv.client_id);
-      alerts.push({color:'var(--p1)',html:`🧾 Invoice #${inv.invoice_number} (${client?.name||'—'}) — pending há ${days}d`});
+      alerts.push({color:'var(--p1)',html:`<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoice #${inv.invoice_number} (${client?.name||'—'}) — pending há ${days}d`});
     }
   });
   // 3) Late projects (end_date passed and not 100%)
@@ -8203,14 +8203,14 @@ function renderHomeAlerts(){
 
 // ═══ FIXED COSTS (CEO ONLY) ════════════════════════════════════════════
 const FIXED_COST_CATEGORIES=[
-  {key:'office',     label:'🏢 Office',                   color:'#3D271A'},
-  {key:'salaries',   label:'👥 Salaries',                 color:'#5C7A3F'},
+  {key:'office',     label:'<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>Office',                   color:'#3D271A'},
+  {key:'salaries',   label:'<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Salaries',                 color:'#5C7A3F'},
   {key:'professional',label:'💼 Professional services',   color:'#B85450'},
   {key:'software',   label:'📱 Software & Tools',         color:'#7B5C8C'},
   {key:'marketing',  label:'📢 Marketing',                color:'#9B7535'},
   {key:'insurance',  label:'🛡️ Insurance',                color:'#655A4E'},
   {key:'travel',     label:'✈️ Travel',                   color:'#7A5A28'},
-  {key:'other',      label:'📌 Other',                    color:'#15120E'},
+  {key:'other',      label:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Other',                    color:'#15120E'},
 ];
 
 function _fcCategoryMeta(key){
@@ -8462,7 +8462,7 @@ function _invoiceSortKey(inv){
 
 const PAYMENT_METHOD_LABELS={
   wire:'Wire', check:'Check', cash:'Cash', zelle:'Zelle',
-  ach:'ACH', credit_card:'Credit Card', working_capital:'💰 Working Capital', other:'Other',
+  ach:'ACH', credit_card:'Credit Card', working_capital:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Working Capital', other:'Other',
 };
 const INVOICE_STATUS_META={
   open: {label:'PENDING', color:'#7A5A28', bg:'#F5EBDA'},
@@ -8588,14 +8588,14 @@ function renderInvoices(){
     const rowStyle=i.status==='cancelled'?'opacity:.6;text-decoration:line-through':'';
     const isSub=!!i.parent_invoice_id;
     const kindIcon=i.kind==='final_roi'
-      ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#9B7535;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>'
+      ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#9B7535;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:3px"><polygon points="6 3 18 3 22 9 12 22 2 9"/><line x1="11" x2="13" y1="3" y2="3"/><line x1="2" x2="22" y1="9" y2="9"/></svg>ROI</span>'
       :i.kind==='refund'
         ?'<span title="Refund" style="display:inline-block;background:#FFE5D9;color:#C62B2B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💸 REF</span>'
       :i.kind==='third_party_asset_manager'
         ?'<span title="Third Party Asset Manager" style="display:inline-block;background:#E8E1F5;color:#5B3B8C;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🏦 TPAM</span>'
       :i.kind==='working_capital'
         ?'<span title="Working Capital" style="display:inline-block;background:#DCEFE6;color:#2D7D5F;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💰 WC</span>'
-        :'<span title="Operational" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🔨 OP</span>';
+        :'<span title="Operational" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:3px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>OP</span>';
     // Build description summary from items
     const items=invoiceItems[i.id]||[];
     let descSummary;
@@ -8676,7 +8676,7 @@ function renderPartialPayments(){
         <option value="zelle"${p.method==='zelle'?' selected':''}>Zelle</option>
         <option value="ach"${p.method==='ach'?' selected':''}>ACH</option>
         <option value="credit_card"${p.method==='credit_card'?' selected':''}>Credit Card</option>
-        <option value="working_capital"${p.method==='working_capital'?' selected':''}>💰 Working Capital</option>
+        <option value="working_capital"${p.method==='working_capital'?' selected':''}><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Working Capital</option>
         <option value="other"${p.method==='other'?' selected':''}>Other</option>
       </select>
       <input type="date" value="${p.date||''}"
@@ -10411,7 +10411,7 @@ function cdRenderHeader(){
         <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:rgba(255,255,255,0.85)">
           ${c.email?`<span>📧 ${c.email.replace(/</g,'&lt;')}</span>`:''}
           ${c.phone?`<span>📞 ${c.phone.replace(/</g,'&lt;')}</span>`:''}
-          ${c.address?`<span>📍 ${c.address.replace(/</g,'&lt;')}</span>`:''}
+          ${c.address?`<span><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${c.address.replace(/</g,'&lt;')}</span>`:''}
           ${c.tax_id?`<span>🏛 ${c.tax_id.replace(/</g,'&lt;')}</span>`:''}
         </div>
       </div>
@@ -10467,7 +10467,7 @@ function cdRenderProjects(){
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-size:14px;font-weight:800;color:#3D271A">${(p.name||p.address||'?').replace(/</g,'&lt;')}</div>
-            ${p.address?`<div style="font-size:11px;color:#655A4E;margin-top:2px">📍 ${p.address.replace(/</g,'&lt;')}</div>`:''}
+            ${p.address?`<div style="font-size:11px;color:#655A4E;margin-top:2px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${p.address.replace(/</g,'&lt;')}</div>`:''}
           </div>
           <div style="text-align:right">
             <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Compra</div>
@@ -10532,7 +10532,7 @@ async function cdRenderBudgets(){
               <span style="display:inline-block;padding:2px 9px;background:${sbBadge.bg};color:${sbBadge.color};border-radius:10px;font-size:9px;font-weight:700">${sbBadge.label}</span>
               ${hasConverted?`<span style="display:inline-block;padding:2px 9px;background:#E0E8DA;color:#3F5C2A;border-radius:10px;font-size:9px;font-weight:700">🔗 vinculado a projeto</span>`:''}
             </div>
-            ${b.address?`<div style="font-size:11px;color:#655A4E;margin-top:3px">📍 ${b.address.replace(/</g,'&lt;')}</div>`:''}
+            ${b.address?`<div style="font-size:11px;color:#655A4E;margin-top:3px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${b.address.replace(/</g,'&lt;')}</div>`:''}
             <div style="font-size:10px;color:#999;margin-top:3px">Criado ${dt(b.created_at)}</div>
           </div>
           <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px">
@@ -12091,7 +12091,7 @@ async function renderBudgets(){
             ${(b.name||'(sem nome)').replace(/</g,'&lt;')}
             <span style="display:inline-block;padding:3px 10px;background:${sb.bg};color:${sb.color};border-radius:12px;font-size:10px;font-weight:700">${sb.label}</span>
           </div>
-          ${b.address?`<div style="font-size:12px;color:#655A4E;margin-top:3px">📍 ${b.address.replace(/</g,'&lt;')}</div>`:''}
+          ${b.address?`<div style="font-size:12px;color:#655A4E;margin-top:3px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${b.address.replace(/</g,'&lt;')}</div>`:''}
           <div style="font-size:11px;color:#999;margin-top:4px">Criado ${dt(b.created_at)}${b.created_by?' por '+b.created_by:''}</div>
         </div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px">
@@ -12370,7 +12370,7 @@ function renderBudgetClientView(b, mode){
       <div style="flex:1;min-width:200px">
         <div style="font-size:11px;font-weight:700;color:#9B7535;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Proposta de Investimento</div>
         <h1 style="font-size:24px;color:#3D271A;font-weight:800;margin:0">${clientName}</h1>
-        ${address ? `<p style="color:#655A4E;font-size:13px;margin-top:6px">📍 ${address}</p>` : ''}
+        ${address ? `<p style="color:#655A4E;font-size:13px;margin-top:6px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>${address}</p>` : ''}
       </div>
       <div style="text-align:right">
         <div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;text-transform:uppercase">Data</div>
@@ -12696,7 +12696,7 @@ function renderBudgetEditorModal(){
       <!-- Endereço + Status -->
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px">
         <div>
-          <label style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;display:block;margin-bottom:4px">📍 Endereço</label>
+          <label style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;display:block;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Endereço</label>
           <input id="bm-address" type="text" value="${(b.address||'').replace(/"/g,'&quot;')}" placeholder="ex: 4479 Weldon Pl, Orlando, FL" style="width:100%;padding:8px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;font-family:inherit" oninput="_bdgCurrent.address=this.value">
         </div>
         <div>
