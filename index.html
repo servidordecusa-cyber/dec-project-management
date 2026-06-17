@@ -2942,8 +2942,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     const lenderSale=+pr.lender_costs_sale||0;
     const pctClient=+pr.pct_client||0;
     const pctDec=+pr.pct_dec||0;
-    // Total Invested = purchase + paid invoices (operational only; refunds excluded)
-    const projectInvested=purchase+totalPaid;
+    // Total Invested = EMD + Cash + Other Costs + Commission + Invoices Op + DEC + Recurring + Documents + High End
+    const emd=+pr.emd_cash||0;
+    const cash=+pr.cash||0;
+    const otherAcq=+pr.other_costs||0;
+    const commission=+pr.commission||0;
+    const invoicesOp=calcProjectInvoicesOperational(p.id);
+    const decTotal=((extraCostsMap[p.id]||{})['dec_invoice']||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const recTotal=calcRCDTotal(p.id);
+    const docTotal=((extraCostsMap[p.id]||{})['documents']||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const heTotal=((extraCostsMap[p.id]||{})['high_end']||[]).reduce((s,e)=>s+(+e.amount||0),0);
+    const projectInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
     // Gross Profit = Final Sale - Selling Costs - Lender(sale)
     const grossProfit=projectSale-sellingCosts-lenderSale;
     // Net Profit = Gross Profit - Total Invested
@@ -3098,7 +3107,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           const refunded=refundTotal(p.id);
           const purchase=purchaseFor(p.id);
-          const netInvested=purchase+totalPaid-refunded;
+          // Total Invested = EMD + Cash + Other Costs + Commission + Invoices Op + DEC + Recurring + Documents + High End
+          const emd=+((propertyByProj[p.id]||{}).emd_cash||0);
+          const cash=+((propertyByProj[p.id]||{}).cash||0);
+          const otherAcq=+((propertyByProj[p.id]||{}).other_costs||0);
+          const commission=+((propertyByProj[p.id]||{}).commission||0);
+          const invoicesOp=calcProjectInvoicesOperational(p.id);
+          const decTotal=((extraCostsMap[p.id]||{})['dec_invoice']||[]).reduce((s,e)=>s+(+e.amount||0),0);
+          const recTotal=calcRCDTotal(p.id);
+          const docTotal=((extraCostsMap[p.id]||{})['documents']||[]).reduce((s,e)=>s+(+e.amount||0),0);
+          const heTotal=((extraCostsMap[p.id]||{})['high_end']||[]).reduce((s,e)=>s+(+e.amount||0),0);
+          const netInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
           const status=statusFor(p);
           const statusBadge=STATUS_BADGES[status]||STATUS_BADGES.in_progress;
           const typeMeta=p.project_type?PROJECT_TYPE_META[p.project_type]:null;
@@ -6636,9 +6655,9 @@ function recalcProfit(){
   // Estimated profit:
   //   - Quando NÃO tem sale_date → usa ARV (projeção pre-venda)
   //   - Quando JÁ tem sale_date  → usa Final Sale Price (refletindo a venda real)
-  // Fórmula: SalePrice - Wholesaler - Sales total (extra costs) - Estimated (budget) - Selling
+  // Fórmula: SalePrice - Wholesaler - Sales total (extra costs) - Estimated (budget) - Selling - Lender(sale)
   const salePrice = p.sale_date ? sale : arv;
-  const estProfit = salePrice ? (salePrice - wholesaler - salesTotal - totEst - selling) : 0;
+  const estProfit = salePrice ? (salePrice - wholesaler - salesTotal - totEst - selling - lenderSale) : 0;
   const estEl = document.getElementById('pft-est');
   estEl.textContent = salePrice ? (estProfit>=0?'':'-')+fmt(Math.abs(estProfit)) : '—';
   estEl.style.color = salePrice ? (estProfit>=0?'var(--p3)':'var(--p1)') : 'var(--gray3)';
