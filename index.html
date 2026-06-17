@@ -2515,11 +2515,14 @@ async function showInvestorPortal(token){
     let itemsByInvoice={};
     let propertyByProj={};
     let scheduleByProj={};
+    let dailyLogsByProj={};
+    let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, schedRes] = await Promise.all([
+      const [invRes, propRes, schedRes, dlRes] = await Promise.all([
         sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
         sb.from('property_info').select('*').in('project_id',projIds),
         sb.from('schedule_tasks').select('*').in('project_id',projIds),
+        sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
@@ -2549,9 +2552,32 @@ async function showInvestorPortal(token){
       } else if(schedRes && schedRes.error){
         console.warn('schedule fetch failed (non-blocking):',schedRes.error.message);
       }
+      // Group daily logs by project + fetch photos for each log
+      if(dlRes && !dlRes.error){
+        (dlRes.data||[]).forEach(dl=>{
+          if(!dailyLogsByProj[dl.project_id]) dailyLogsByProj[dl.project_id]=[];
+          dailyLogsByProj[dl.project_id].push(dl);
+        });
+        // Fetch photos for all logs
+        const logIds=(dlRes.data||[]).map(d=>d.id);
+        if(logIds.length>0){
+          const {data:photos,error:phErr}=await sb.from('daily_log_photos')
+            .select('*').in('log_id',logIds).order('position');
+          if(!phErr){
+            (photos||[]).forEach(ph=>{
+              if(!dlPhotosByLog[ph.log_id]) dlPhotosByLog[ph.log_id]=[];
+              dlPhotosByLog[ph.log_id].push(ph);
+            });
+          } else {
+            console.warn('daily_log_photos fetch failed (non-blocking):',phErr.message);
+          }
+        }
+      } else if(dlRes && dlRes.error){
+        console.warn('daily_logs fetch failed (non-blocking):',dlRes.error.message);
+      }
     }
     setLoading(false);
-    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData);
+    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog);
   }catch(e){
     console.error('Investor portal error:',e);
     setLoading(false);
@@ -2581,11 +2607,13 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
-function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData){
+function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog){
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
   budgetsData=budgetsData||[];
+  dailyLogsByProj=dailyLogsByProj||{};
+  dlPhotosByLog=dlPhotosByLog||{};
 
   // Group invoices by project
   const invByProj={};
@@ -3151,6 +3179,69 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       })()
     : '';
 
+  // ═══ Section: Diário de Obra (Daily Log fotos + texto) ═══
+  // Total entries across all projects
+  const totalDailyEntries = Object.values(dailyLogsByProj).reduce((s,arr)=>s+arr.length,0);
+  // Helper to format dates in pt-BR
+  const fmtDlDate=d=>{
+    if(!d) return '—';
+    const dt=new Date(d+'T00:00:00');
+    return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  };
+  // Helper to get public photo URL from storage path
+  const dlPublicUrl = path => {
+    try {
+      const {data}=sb.storage.from('daily-log-photos').getPublicUrl(path);
+      return data.publicUrl;
+    } catch(e) { return ''; }
+  };
+  // Filter projects that have at least 1 daily log
+  const projectsWithLogs = sortedProjects.filter(p => (dailyLogsByProj[p.id]||[]).length>0);
+  const dailyLogsHTML = projectsWithLogs.length > 0
+    ? projectsWithLogs.map(p=>{
+        const logs=dailyLogsByProj[p.id]||[];
+        const projAddress=(p.address||p.name||'Sem endereço').replace(/</g,'&lt;');
+        const entriesHTML = logs.map(log=>{
+          const photos = dlPhotosByLog[log.id]||[];
+          const photoGrid = photos.length>0
+            ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:12px">${
+                photos.map(ph=>{
+                  const url = dlPublicUrl(ph.storage_path);
+                  return `<a href="${url}" target="_blank" style="display:block;aspect-ratio:1;background:#F0EAE2 url('${url}') center/cover no-repeat;border-radius:8px;overflow:hidden;border:1px solid #E8DDC9;cursor:pointer;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'"></a>`;
+                }).join('')
+              }</div>`
+            : '';
+          const contentText = (log.content||'').trim();
+          const contentHTML = contentText
+            ? `<div style="font-size:13px;color:#3D271A;line-height:1.55;white-space:pre-wrap;margin-top:8px">${contentText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+            : `<div style="font-size:12px;color:#999;font-style:italic;margin-top:8px">— Sem descrição —</div>`;
+          return `
+          <div style="padding:18px 20px;border-bottom:1px solid #F0EAE2">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+              <div style="font-size:13px;font-weight:700;color:#9B7535">${fmtDlDate(log.log_date)}</div>
+              ${photos.length>0?`<div style="font-size:10px;color:#999;font-weight:600">${photos.length} foto${photos.length!==1?'s':''}</div>`:''}
+            </div>
+            ${contentHTML}
+            ${photoGrid}
+          </div>`;
+        }).join('');
+        return `
+        <details style="background:#fff;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);overflow:hidden;border-left:4px solid #9B7535">
+          <summary style="cursor:pointer;padding:18px 22px;list-style:none;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#9B7535;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Diário de Obra</div>
+              <div style="font-size:16px;font-weight:800;color:#3D271A">${projAddress}</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;font-size:11px;color:#655A4E">
+              <span style="background:#FAF3E0;padding:4px 10px;border-radius:10px;font-weight:700;color:#7A5A28">${logs.length} entrada${logs.length!==1?'s':''}</span>
+              <span style="color:#9B7535;font-weight:600">clique para ver ▾</span>
+            </div>
+          </summary>
+          <div style="border-top:1px solid #F0EAE2">${entriesHTML}</div>
+        </details>`;
+      }).join('')
+    : `<div style="background:#fff;padding:30px;border-radius:14px;text-align:center;color:#999;font-style:italic;font-size:13px">Nenhuma entrada de diário disponível ainda.<br><span style="font-size:11px;color:#bbb">As atualizações da obra com fotos aparecerão aqui assim que forem registradas.</span></div>`;
+
   // ═══ Section: A Realizar (Budgets visible to client) ═══
   const $fmt=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
   const budgetsHTML=budgetsData.length>0
@@ -3218,6 +3309,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       </div>
       <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>
       <div id="portal-projects-table" style="display:none">${projectsTableHTML}</div>
+
+      <!-- SEÇÃO: DIÁRIO DE OBRA -->
+      <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Diário de Obra</div>
+        <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
+        <div style="font-size:11px;color:#999;font-weight:600">${totalDailyEntries} ${totalDailyEntries===1?'entrada':'entradas'}</div>
+      </div>
+      <div id="portal-daily-logs">${dailyLogsHTML}</div>
 
       <!-- SEÇÃO 2: A REALIZAR -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
