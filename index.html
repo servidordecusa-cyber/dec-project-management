@@ -2761,11 +2761,16 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">📈 Lucro realizado</div>
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
           </div>
-          ${totalEstimatedProfit>0?`<div style="background:rgba(248,197,112,0.2);border:1px solid rgba(248,197,112,0.4);padding:14px;border-radius:10px">
-            <div style="font-size:10px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro previsto</div>
-            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#F8C570">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
-            <div style="font-size:9px;color:#F8C570;margin-top:2px;opacity:.8">Projeção (em andamento)</div>
-          </div>`:''}
+        </div>
+        ${totalEstimatedProfit>0?`<div style="margin-top:18px;padding:18px;background:linear-gradient(135deg,rgba(248,197,112,0.15),rgba(248,197,112,0.08));border:2px solid rgba(248,197,112,0.3);border-radius:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#F8C570;letter-spacing:.5px;text-transform:uppercase">📊 Lucro Previsto</div>
+              <div style="font-size:13px;color:#F8C570;margin-top:2px;opacity:.8">Projeção dos projetos em andamento</div>
+            </div>
+            <div style="font-size:28px;font-weight:800;color:#F8C570;text-align:right">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
+          </div>
+        </div>`:''}
         </div>
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
           <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px">Por tipo de imóvel</div>
