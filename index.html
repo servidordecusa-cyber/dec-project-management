@@ -2734,11 +2734,19 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     </div>`;
 
   // ─── PROJECTS LIST WITH TIMELINE ──────────────────────────────────
-  // Sort: cancelled projects always last (others keep original order)
+  // Sort by status priority: Em andamento → Obra concluída → Vendido → Cancelado
+  // Inside same status, keep original order (relative stable sort)
+  const STATUS_ORDER={
+    in_progress:     1,
+    rehab_completed: 2,  // "Reforma concluída" agrupa com obra concluída
+    completed:       2,
+    sold:            3,
+    cancelled:       4,
+  };
   const sortedProjects=[...projects].sort((a,b)=>{
-    const aCancelled=a.cancelled===true?1:0;
-    const bCancelled=b.cancelled===true?1:0;
-    return aCancelled-bCancelled;
+    const aOrder=STATUS_ORDER[statusFor(a)]||99;
+    const bOrder=STATUS_ORDER[statusFor(b)]||99;
+    return aOrder-bOrder;
   });
   const projectsHTML=sortedProjects.map(p=>{
     // All invoices to display in the listing (includes refunds for transparency)
