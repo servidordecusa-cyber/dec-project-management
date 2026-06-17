@@ -12312,7 +12312,7 @@ function calcBudgetSummary(b){
   lines.forEach(line=>{
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
-    const mHm=+line.months_hm||1;
+    const mHm = (line.formula==='hm_interest') ? (+b.hm_months||6) : (+line.months_hm||1);
     // Override rule: if a formula line has base > 0, that overrides the formula
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
@@ -12722,7 +12722,7 @@ function renderBudgetEditorModal(){
     const commPct = commAgentPct + commClosingPct;
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
-    const mHm=+line.months_hm||1;
+    const mHm = (line.formula==='hm_interest') ? (+b.hm_months||6) : (+line.months_hm||1);
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='house_value'){
@@ -13038,7 +13038,7 @@ function useFormulaValue(idx){
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commPct = commAgentPct + commClosingPct;
-  const mHm=+line.months_hm||1;
+  const mHm = (line.formula==='hm_interest') ? (+b.hm_months||6) : (+line.months_hm||1);
   let value=0;
   if(line.formula==='house_value')      value=purchase;
   else if(line.formula==='down_cash')   value=hmLoan>0 ? Math.max(0, purchase-hmLoan) : purchase;
@@ -13084,7 +13084,7 @@ function refreshBudgetLiveCalcs(){
   (b.cost_lines||[]).forEach((line,idx)=>{
     const base=+line.base||0;
     const mCash=+line.months_cash||1;
-    const mHm=+line.months_hm||1;
+    const mHm = (line.formula==='hm_interest') ? (+b.hm_months||6) : (+line.months_hm||1);
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='house_value'){
