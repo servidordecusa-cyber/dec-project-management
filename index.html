@@ -2762,12 +2762,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
           </div>
         </div>
-        ${totalEstimatedProfit>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.15);display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:#F8C570;letter-spacing:.5px;text-transform:uppercase">📊 Lucro Previsto</div>
-            <div style="font-size:11px;color:#F8C570;margin-top:3px;opacity:.7">Projeção dos projetos em andamento</div>
+        ${totalEstimatedProfit>0?`<div style="margin-top:14px;text-align:center">
+          <div style="display:inline-block;background:rgba(248,197,112,0.15);border:1px solid rgba(248,197,112,0.3);padding:10px 16px;border-radius:8px">
+            <div style="font-size:9px;font-weight:700;color:#F8C570;letter-spacing:.4px;text-transform:uppercase">📊 Lucro Previsto</div>
+            <div style="font-size:18px;font-weight:800;color:#F8C570;margin-top:2px">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
+            <div style="font-size:9px;color:#F8C570;margin-top:1px;opacity:.7">Projeção (em andamento)</div>
           </div>
-          <div style="font-size:26px;font-weight:800;color:#F8C570;text-align:right">${totalEstimatedProfit>=0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
         </div>`:''}
         </div>
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
