@@ -3146,10 +3146,21 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             const pctClient=pr.pct_client!=null?+pr.pct_client:70;
             const lucroClient=netProfit*pctClient/100;
             const cor = netProfit>=0 ? (isSold?'#5C7A3F':'#9B7535') : '#A02021';
+            
+            // Para projetos em andamento: mostrar Lucro Previsto baseado em ARV
+            let lucroPrevistoValue = lucroClient;
+            if(!isSold && +pr.arv>0){
+              const arv=+pr.arv||0;
+              const sellingCostsEstimated=+pr.selling_costs||0;
+              const lenderSaleEstimated=+pr.lender_costs_sale||0;
+              const estProfit=arv-netInvested-sellingCostsEstimated-lenderSaleEstimated;
+              lucroPrevistoValue = estProfit*pctClient/100;
+            }
+            
             const tag = isSold
               ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
-              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">EST. · ROI ${roiTotal.toFixed(0)}%</div>`;
-            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
+              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
+            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroPrevistoValue)}</div>${tag}`;
           }
 
           return `
@@ -12936,7 +12947,7 @@ function renderBudgetEditorModal(){
             </div>
             <div>
               <label style="font-size:10px;font-weight:700;color:#655A4E;display:block;margin-bottom:3px">HM Closing Costs ($)</label>
-              <input type="number" min="0" step="0.01" value="${b.hm_closing_costs||''}" oninput="updateBudgetField('hm_closing_costs',this.value)" placeholder="fee fixo do HM" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:5px;outline:none;font-family:inherit">
+              <div style="padding:7px 10px;font-size:13px;background:#FAF3E0;border:1.5px solid #E6D599;border-radius:5px;font-family:inherit;color:#655A4E;font-weight:600">$2,250.00 (custo fixo)</div>
             </div>
           </div>
         </details>
