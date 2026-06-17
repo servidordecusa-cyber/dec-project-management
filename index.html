@@ -13,21 +13,70 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
+/* ═══ DEC GROUP BRAND GUIDELINES 2026 — Official Fonts ═══ */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 *{box-sizing:border-box;margin:0;padding:0}
 
 /* Remove ugly spinners from all number inputs (cleaner UI) */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
 :root{
-  /* DEC Group Brand Palette */
-  --navy:#15120E;--blue:#3D271A;--light:#FAF7F3;
-  --p1:#B85450;--p1l:#F8E8E5;--p2:#C68A4A;--p2l:#F5EBDA;
-  --p3:#5C7A3F;--p3l:#ECEFE3;--p4:#7B5C8C;--p4l:#EDE5F0;
-  --gold:#B8860B;--gray:#FAF7F3;--gray2:#D5C9BC;--gray3:#655A4E;
-  --text:#15120E;--white:#fff;--shadow:0 2px 12px rgba(61,39,26,.09);
+  /* ═══ DEC GROUP — Paleta Oficial (Brand Guidelines 2026) ═══ */
+  /* Paleta Original — 5 cores principais */
+  --dec-preto:#15120E;        /* Preto DEC — Fundo principal e texto primário */
+  --dec-marrom-esc:#3D271A;   /* Marrom Escuro — Cor secundária quente, logos */
+  --dec-marrom-med:#655A4E;   /* Marrom Médio — Textos secundários */
+  --dec-latte:#D5C9BC;        /* Latte / Bege — Fundo claro, contraste */
+  --dec-gold:#9B7535;         /* Gold Amber — Cor de destaque premium */
+
+  /* Paleta Extendida — 6 tons */
+  --dec-noir:#1B1A17;
+  --dec-charcoal:#353330;
+  --dec-taupe:#655E57;
+  --dec-stone:#A59A8D;
+  --dec-greige:#C8C0B8;
+  --dec-gold-amber:#9B7535;
+
+  /* Tons claros derivados (backgrounds suaves) */
+  --dec-light:#FAF7F3;
+  --dec-gold-light:#F5EBDA;
+  --dec-latte-light:#EDE5DC;
+
+  /* Cores funcionais (mantém saúde/erro pra UX) */
+  --p1:#B85450;--p1l:#F8E8E5;    /* Vermelho (erro/cancelado) */
+  --p3:#5C7A3F;--p3l:#ECEFE3;    /* Verde (sucesso/aprovado) */
+
+  /* ═══ Aliases para compatibilidade com código existente ═══ */
+  --navy:var(--dec-preto);
+  --blue:var(--dec-marrom-esc);
+  --light:var(--dec-light);
+  --p2:var(--dec-gold);          /* dourado de destaque */
+  --p2l:var(--dec-gold-light);
+  --p4:#7B5C8C;--p4l:#EDE5F0;    /* roxo (legado, pouco usado) */
+  --gold:var(--dec-gold);        /* dourado oficial DEC */
+  --gray:var(--dec-light);
+  --gray2:var(--dec-latte);
+  --gray3:var(--dec-marrom-med);
+  --text:var(--dec-preto);
+  --white:#fff;
+  --shadow:0 2px 12px rgba(61,39,26,.09);
+
+  /* Fontes oficiais (Broad Sans é paga — usando substitutas elegantes) */
+  --font-display:'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-body:'Inter', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
 }
-body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background:var(--gray);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+body{font-family:var(--font-body);background:var(--gray);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+/* Títulos grandes usam fonte display (serifa elegante similar a Broad Sans) */
+h1,h2{font-family:var(--font-display);font-weight:400;letter-spacing:.01em}
+h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
+
+/* Labels e detalhes em SemiBold caps (segue manual: "LABEL / DETALHE — SEMIBOLD CAPS") */
+.label-detail{font-family:var(--font-body);font-weight:600;text-transform:uppercase;letter-spacing:1.5px;font-size:10px;color:var(--dec-marrom-med)}
 
 /* LOGIN */
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--navy)}
@@ -156,7 +205,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 .sb-lnk.active.s3{background:rgba(46,125,50,.2);border-left-color:#A5D6A7}
 .sb-lnk.active.s4{background:rgba(106,27,154,.2);border-left-color:#CE93D8}
 .sb-ntag{font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:auto}
-.t1{background:#F8E8E5;color:#B85450}.t2{background:#F5EBDA;color:#C68A4A}
+.t1{background:#F8E8E5;color:#B85450}.t2{background:#F5EBDA;color:#9B7535}
 .t3{background:#ECEFE3;color:#5C7A3F}.t4{background:#EDE5F0;color:#7B5C8C}
 .sb-sync{padding:10px 15px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.3)}
 .sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4CAF50;margin-right:5px}
@@ -557,7 +606,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
       <!-- DAILY LOG PAGE -->
       <div class="page" id="page-daily">
-        <div class="page-title">📔 Diário de Obra <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">Diário do Supervisor</span></div>
+        <div class="page-title">📔 Diário de Obra <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">Diário do Supervisor</span></div>
         <div class="page-sub">Registro diário do que foi executado na obra · 1 entrada por dia/autor · fotos até 5 por entrada · após 24h da criação fica travado para edição</div>
 
         <!-- New entry form -->
@@ -574,7 +623,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
             <textarea id="dl-content" placeholder="Descreva as atividades realizadas, observações importantes, problemas encontrados, decisões tomadas..." style="width:100%;min-height:100px;padding:10px 12px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;font-family:inherit;resize:vertical"></textarea>
           </div>
           <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <button onclick="dlPickTasksFromGantt()" style="padding:7px 14px;background:#fff;color:#3D271A;border:1.5px solid #C68A4A;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📅 Puxar tarefas do Gantt</button>
+            <button onclick="dlPickTasksFromGantt()" style="padding:7px 14px;background:#fff;color:#3D271A;border:1.5px solid #9B7535;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📅 Puxar tarefas do Gantt</button>
             <label style="padding:7px 14px;background:#fff;color:#3D271A;border:1.5px solid #5C7A3F;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">
               📷 Anexar fotos (máx 5)
               <input id="dl-photos" type="file" accept="image/*" multiple style="display:none" onchange="dlOnPhotosChange(this)">
@@ -601,7 +650,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
       <!-- Property & Finance (CEO ONLY) -->
       <div class="page" id="page-property">
-        <div class="page-title">💎 Property &amp; Finance <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">💎 Property &amp; Finance <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Detailed property data + flip economics · Changes save automatically</div>
 
         <!-- Card 2: Acquisition -->
@@ -752,7 +801,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div class="page" id="page-listing">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
           <div>
-            <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+            <div class="page-title">📋 Listing Checklist <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
             <div class="page-sub">Complete property data for listing the home for sale · Auto-saved</div>
           </div>
           <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateListingPDF()">📄 Generate Listing PDF</button>
@@ -1171,7 +1220,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
       <!-- Recurring Costs Detail (CEO ONLY) -->
       <div class="page" id="page-recurring">
-        <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
 
         <!-- Vendor filter — search for a specific vendor's notes -->
@@ -1286,7 +1335,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 
       <!-- Supply Chain Analysis (CEO ONLY) -->
       <div class="page" id="page-supply">
-        <div class="page-title">📊 Supply Chain <span style="font-size:11px;background:#F5EBDA;color:#A86A2C;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">📊 Supply Chain <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Análise dos seus gastos · Insights e oportunidades de economia</div>
 
         <!-- Filters card -->
@@ -1381,10 +1430,10 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
       <div class="card-title" style="margin:0;border:0;padding:0">🗺️ DEC Group USA — Atuação na Flórida</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:600">
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#C68A4A;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #C68A4A"></span>In Progress</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9B7535;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9B7535"></span>In Progress</span>
         <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#5C7A3F;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #5C7A3F"></span>Completed</span>
         <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#3D271A;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #3D271A"></span>For Sale</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#B8860B;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #B8860B"></span>Sold</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9B7535;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9B7535"></span>Sold</span>
       </div>
     </div>
     <div id="home-map" style="height:420px;border-radius:8px;background:#F0EAE2;overflow:hidden"></div>
@@ -1441,7 +1490,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
   </div>
   <div id="cd-header" style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;padding:24px 28px;color:#fff;margin-bottom:20px"></div>
   <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:2px solid #F0EAE2">
-    <button class="cd-tab active" data-tab="projects" onclick="cdSwitchTab('projects')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid #C68A4A;color:#3D271A;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">📁 Projetos</button>
+    <button class="cd-tab active" data-tab="projects" onclick="cdSwitchTab('projects')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid #9B7535;color:#3D271A;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">📁 Projetos</button>
     <button class="cd-tab" data-tab="budgets" onclick="cdSwitchTab('budgets')" style="padding:12px 22px;background:transparent;border:0;border-bottom:3px solid transparent;color:#655A4E;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:-2px">🧮 Orçamentos</button>
   </div>
   <div id="cd-tab-projects" class="cd-tab-content"></div>
@@ -1620,9 +1669,9 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
       <div style="font-size:24px;font-weight:800;color:#2D7D5F;margin-top:6px" id="wc-in-paid">$0</div>
       <div style="font-size:11px;color:#999;margin-top:3px" id="wc-in-paid-count">0 invoice(s)</div>
     </div>
-    <div style="background:#fff;border:1px solid #A86A2C;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-      <div style="font-size:11px;color:#A86A2C;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📥 Previstas (Open)</div>
-      <div style="font-size:24px;font-weight:800;color:#A86A2C;margin-top:6px" id="wc-in-open">$0</div>
+    <div style="background:#fff;border:1px solid #7A5A28;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div style="font-size:11px;color:#7A5A28;font-weight:700;text-transform:uppercase;letter-spacing:.3px">📥 Previstas (Open)</div>
+      <div style="font-size:24px;font-weight:800;color:#7A5A28;margin-top:6px" id="wc-in-open">$0</div>
       <div style="font-size:11px;color:#999;margin-top:3px" id="wc-in-open-count">0 invoice(s)</div>
     </div>
     <div style="background:#fff;border:1px solid #C62B2B;border-radius:12px;padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -1768,8 +1817,8 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     <h2 id="im-title">➕ New Invoice</h2>
     <input type="hidden" id="im-id">
     <!-- Parent invoice selector (optional — for subcategories) -->
-    <div class="fg" style="background:#F5EBDA;padding:10px 12px;border-radius:7px;border:1px dashed #A86A2C">
-      <label style="font-size:11px;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:4px;display:block">📎 Subcategoria de:</label>
+    <div class="fg" style="background:#F5EBDA;padding:10px 12px;border-radius:7px;border:1px dashed #7A5A28">
+      <label style="font-size:11px;color:#7A5A28;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:4px;display:block">📎 Subcategoria de:</label>
       <select id="im-parent" onchange="onInvoiceParentChange()" style="width:100%;padding:8px 10px;border:1px solid var(--gray2);border-radius:6px;background:#fff;font-family:inherit;font-size:13px">
         <option value="">— Não é subcategoria (invoice principal) —</option>
       </select>
@@ -1846,9 +1895,9 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
     </div>
 
     <!-- Partial payments section (only shown when status = partial_paid) -->
-    <div id="im-partial-wrap" style="display:none;background:#FFF8E7;border:1.5px dashed #B8860B;border-radius:8px;padding:14px;margin-top:8px">
+    <div id="im-partial-wrap" style="display:none;background:#FFF8E7;border:1.5px dashed #9B7535;border-radius:8px;padding:14px;margin-top:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:700;color:#B8860B;text-transform:uppercase;letter-spacing:.4px">💵 Pagamentos parciais</div>
+        <div style="font-size:12px;font-weight:700;color:#9B7535;text-transform:uppercase;letter-spacing:.4px">💵 Pagamentos parciais</div>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="addPartialPayment()">+ Adicionar pagamento</button>
       </div>
       <div id="im-partial-list"></div>
@@ -1861,7 +1910,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
           <span style="color:#655A4E">Pago:</span>
           <strong id="im-partial-paid-total" style="color:#2D7D5F">$0.00</strong>
           <span style="color:#655A4E;margin-left:14px">Saldo:</span>
-          <strong id="im-partial-balance" style="color:#B8860B">$0.00</strong>
+          <strong id="im-partial-balance" style="color:#9B7535">$0.00</strong>
         </div>
       </div>
       <div id="im-partial-complete-hint" style="display:none;font-size:11px;color:#2D7D5F;margin-top:8px;padding:6px 10px;background:#DCEFE6;border-radius:6px">
@@ -1926,7 +1975,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 <div class="modal-overlay" id="modal-vendor-note">
   <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
     <h2>🤖 Nota processada — revise e aprove</h2>
-    <div id="vn-confidence-warnings" style="display:none;margin-bottom:12px;padding:10px 12px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:6px;font-size:12px;color:#A86A2C"></div>
+    <div id="vn-confidence-warnings" style="display:none;margin-bottom:12px;padding:10px 12px;background:#FFF4E0;border-left:3px solid #9B7535;border-radius:6px;font-size:12px;color:#7A5A28"></div>
 
     <div id="vn-attach-info" style="margin-bottom:12px;padding:10px 12px;background:#FAF7F3;border-radius:6px;font-size:12px;color:#655A4E;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <span>📎 <span id="vn-attach-name">arquivo.pdf</span></span>
@@ -1939,7 +1988,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <select id="vn-vendor-select" onchange="onVendorNoteVendorChange()">
           <option value="">— select —</option>
         </select>
-        <div id="vn-vendor-new-row" style="display:none;margin-top:6px;padding:8px 10px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:5px;font-size:12px">
+        <div id="vn-vendor-new-row" style="display:none;margin-top:6px;padding:8px 10px;background:#FFF4E0;border-left:3px solid #9B7535;border-radius:5px;font-size:12px">
           ⚠️ Vendor <strong id="vn-vendor-new-name"></strong> não está cadastrado.
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
             <button onclick="vendorNoteCreateVendor()" style="padding:4px 10px;font-size:11px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-weight:600">✅ Criar e usar</button>
@@ -2009,7 +2058,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
 <div class="modal-overlay" id="modal-vendor-note-recurring">
   <div class="modal" style="max-width:580px;max-height:90vh;overflow-y:auto">
     <h2>🤖 Conta processada — revise e aprove</h2>
-    <div id="vnr-confidence-warnings" style="display:none;margin-bottom:12px;padding:10px 12px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:6px;font-size:12px;color:#A86A2C"></div>
+    <div id="vnr-confidence-warnings" style="display:none;margin-bottom:12px;padding:10px 12px;background:#FFF4E0;border-left:3px solid #9B7535;border-radius:6px;font-size:12px;color:#7A5A28"></div>
 
     <div id="vnr-attach-info" style="margin-bottom:12px;padding:10px 12px;background:#FAF7F3;border-radius:6px;font-size:12px;color:#655A4E;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <span>📎 <span id="vnr-attach-name">arquivo.pdf</span></span>
@@ -2022,7 +2071,7 @@ body{font-family:'Inter','Helvetica Neue','Segoe UI',Arial,sans-serif;background
         <select id="vnr-vendor-select" onchange="onRecurringNoteVendorChange()">
           <option value="">— select —</option>
         </select>
-        <div id="vnr-vendor-new-row" style="display:none;margin-top:6px;padding:8px 10px;background:#FFF4E0;border-left:3px solid #C68A4A;border-radius:5px;font-size:12px">
+        <div id="vnr-vendor-new-row" style="display:none;margin-top:6px;padding:8px 10px;background:#FFF4E0;border-left:3px solid #9B7535;border-radius:5px;font-size:12px">
           ⚠️ Vendor <strong id="vnr-vendor-new-name"></strong> não está cadastrado.
           <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
             <button onclick="recurringNoteCreateVendor()" style="padding:4px 10px;font-size:11px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-weight:600">✅ Criar e usar</button>
@@ -2137,13 +2186,13 @@ if (typeof pdfjsLib !== 'undefined') {
 // ═══ CONFIG ══════════════════════════════════════════════════════════
 const PHASES=[
   {id:'ph1',n:1,label:'Phase 1 — Demolition',  color:'#B85450',colorL:'#F8E8E5'},
-  {id:'ph2',n:2,label:'Phase 2 — Preparation', color:'#C68A4A',colorL:'#F5EBDA'},
+  {id:'ph2',n:2,label:'Phase 2 — Preparation', color:'#9B7535',colorL:'#F5EBDA'},
   {id:'ph3',n:3,label:'Phase 3 — Installation',color:'#5C7A3F',colorL:'#ECEFE3'},
   {id:'ph4',n:4,label:'Phase 4 — Finishing',   color:'#7B5C8C',colorL:'#EDE5F0'},
 ];
 const GROUPS=[
   {id:'ph1', name:'🔴 Phase 1 — Demolition',  color:'#B85450'},
-  {id:'ph2', name:'🟠 Phase 2 — Preparation', color:'#C68A4A'},
+  {id:'ph2', name:'🟠 Phase 2 — Preparation', color:'#9B7535'},
   {id:'ph3', name:'🟢 Phase 3 — Installation',color:'#5C7A3F'},
   {id:'ph4', name:'🟣 Phase 4 — Finishing',   color:'#7B5C8C'},
 ];
@@ -2424,7 +2473,7 @@ function _fmtDate(d){if(!d) return '—';const dt=new Date(d+'T00:00:00');return
 function _invStatusBadge(status){
   const map={
     paid:{label:'✅ Pago',bg:'#E8F2E8',color:'#2D6A2D'},
-    open:{label:'⏳ Pendente',bg:'#FFF4E0',color:'#A86A2C'},
+    open:{label:'⏳ Pendente',bg:'#FFF4E0',color:'#7A5A28'},
     cancelled:{label:'❌ Cancelada',bg:'#F5E8E8',color:'#A02021'},
   };
   const s=map[status]||map.open;
@@ -2496,10 +2545,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     return 'in_progress';
   };
   const STATUS_BADGES={
-    in_progress:     {label:'Em andamento',     icon:'🔄', bg:'#F5EBDA', color:'#A86A2C'},
+    in_progress:     {label:'Em andamento',     icon:'🔄', bg:'#F5EBDA', color:'#7A5A28'},
     completed:       {label:'Obra concluída',   icon:'✅', bg:'#ECEFE3', color:'#5C7A3F'},
     rehab_completed: {label:'Reforma concluída',icon:'🔧', bg:'#EDE5F1', color:'#7B5E8B'},
-    sold:            {label:'Vendido',          icon:'💰', bg:'#FAF3E0', color:'#B8860B'},
+    sold:            {label:'Vendido',          icon:'💰', bg:'#FAF3E0', color:'#9B7535'},
     cancelled:       {label:'Cancelado',        icon:'❌', bg:'#F5E8E8', color:'#A02021'},
   };
 
@@ -2563,7 +2612,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           </div>
           <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">💰 Total investido</div>
-            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#FFD699">${_fmtMoney(totalInvested)}</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#E8C57F">${_fmtMoney(totalInvested)}</div>
           </div>
           <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">✅ Retorno realizado</div>
@@ -2700,10 +2749,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <div style="position:absolute;left:20px;top:12px;bottom:12px;width:2px;background:#E8DDC9"></div>
           ${events.map(ev=>{
             const dateStr=ev.date?_fmtDate(ev.date):'Atual';
-            const amtColor=(ev.kind==='return'||ev.kind==='refund')?'#2D6A2D':ev.kind==='invest'?'#A86A2C':'#655A4E';
+            const amtColor=(ev.kind==='return'||ev.kind==='refund')?'#2D6A2D':ev.kind==='invest'?'#7A5A28':'#655A4E';
             const amtPrefix=(ev.kind==='return'||ev.kind==='refund')?'+':'';
             const amtStr=ev.amount!=null?`<div style="font-weight:800;color:${amtColor};font-size:14px;text-align:right;min-width:90px">${amtPrefix}${_fmtMoney(ev.amount)}</div>`:'';
-            const dotBg=(ev.kind==='return'||ev.kind==='refund')?'#5C7A3F':ev.kind==='invest'?'#C68A4A':ev.kind==='progress'?'#3D271A':ev.kind==='cancelled'?'#A02021':'#999';
+            const dotBg=(ev.kind==='return'||ev.kind==='refund')?'#5C7A3F':ev.kind==='invest'?'#9B7535':ev.kind==='progress'?'#3D271A':ev.kind==='cancelled'?'#A02021':'#999';
             return `<div style="display:flex;align-items:flex-start;gap:14px;padding:10px 0;position:relative">
               <div style="position:relative;z-index:2;width:32px;height:32px;background:${dotBg};color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;box-shadow:0 0 0 3px #fff">${ev.icon}</div>
               <div style="flex:1;min-width:0">
@@ -2805,7 +2854,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       projSummaryHTML=`
         <div style="padding:18px 22px;background:#FAF7F3;border-bottom:1px solid #F0EAE2">
           ${rowsHTML}
-          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:16px 18px;margin-top:10px;background:linear-gradient(135deg,#B8860B,#C68A4A);color:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(184,134,11,0.25)">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:16px 18px;margin-top:10px;background:linear-gradient(135deg,#9B7535,#9B7535);color:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(184,134,11,0.25)">
             <div>
               <div style="font-size:11px;font-weight:700;opacity:.85;letter-spacing:.5px;text-transform:uppercase">💰 Você recebeu</div>
               <div style="font-size:10px;opacity:.7;font-weight:500;margin-top:2px">${pctClient}% do lucro da operação</div>
@@ -2826,8 +2875,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:16px;font-weight:800;color:#2D6A2D;margin-top:2px">${_fmtMoney(totalPaid)}</div>
           </div>
           <div>
-            <div style="font-size:10px;font-weight:700;color:#A86A2C;text-transform:uppercase;letter-spacing:.4px">⏳ Pendentes</div>
-            <div style="font-size:16px;font-weight:800;color:#A86A2C;margin-top:2px">${_fmtMoney(totalOpen)}</div>
+            <div style="font-size:10px;font-weight:700;color:#7A5A28;text-transform:uppercase;letter-spacing:.4px">⏳ Pendentes</div>
+            <div style="font-size:16px;font-weight:800;color:#7A5A28;margin-top:2px">${_fmtMoney(totalOpen)}</div>
           </div>
           ${refunded>0?`<div>
             <div style="font-size:10px;font-weight:700;color:#2D6A2D;text-transform:uppercase;letter-spacing:.4px">↩️ Reembolsado</div>
@@ -2845,10 +2894,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       <div style="padding:12px 20px;background:#fff;border-bottom:1px solid #F0EAE2">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px">📐 Progresso da obra</span>
-          <span style="font-size:13px;font-weight:800;color:${progress===100?'#5C7A3F':'#C68A4A'}">${progress}%</span>
+          <span style="font-size:13px;font-weight:800;color:${progress===100?'#5C7A3F':'#9B7535'}">${progress}%</span>
         </div>
         <div style="background:#F0EAE2;height:8px;border-radius:4px;overflow:hidden">
-          <div style="background:${progress===100?'#5C7A3F':'#C68A4A'};height:100%;width:${progress}%;transition:width .4s"></div>
+          <div style="background:${progress===100?'#5C7A3F':'#9B7535'};height:100%;width:${progress}%;transition:width .4s"></div>
         </div>
       </div>`:'';
 
@@ -2856,14 +2905,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     // Matches the "Project Consolidated" report layout: Purchase date, Final Sale Price, Execution time
     const $fmtMoney2=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     const soldHeaderHTML=status==='sold'?`
-      <div style="margin-top:14px;padding:12px 14px;background:rgba(255,255,255,0.1);border-left:3px solid #FFD699;border-radius:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;font-size:12px">
+      <div style="margin-top:14px;padding:12px 14px;background:rgba(255,255,255,0.1);border-left:3px solid #E8C57F;border-radius:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;font-size:12px">
         ${pr.purchase_date?`<div>
           <span style="opacity:.7;font-weight:600">📅 Purchase date:</span>
           <span style="font-weight:700;margin-left:6px">${_fmtDate(pr.purchase_date)}</span>
         </div>`:''}
         ${projectSale>0?`<div>
           <span style="opacity:.7;font-weight:600">💵 Final Sale Price:</span>
-          <span style="font-weight:700;color:#FFD699;margin-left:6px">${$fmtMoney2(projectSale)}</span>
+          <span style="font-weight:700;color:#E8C57F;margin-left:6px">${$fmtMoney2(projectSale)}</span>
         </div>`:''}
         ${executionDays!=null?`<div>
           <span style="opacity:.7;font-weight:600">⏱️ Execution time:</span>
@@ -2944,7 +2993,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             </td>
             <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$fmtProj(purchase)}</td>
             <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$fmtProj(netInvested)}</td>
-            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#A86A2C;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
+            <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
             <td style="padding:12px 14px;text-align:right;font-size:13px;font-weight:800;color:${roiColor}">${roiLabel}</td>
           </tr>`;
         }).join('');
@@ -2976,7 +3025,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     ? budgetsData.map((b,idx)=>{
         const mode=b.client_view_mode||'hm';
         const modeLabel={cash:'💵 Cash',hm:'💰 Hard Money',both:'🔀 Análise dos 2'}[mode]||'💰 Hard Money';
-        const accentColor=mode==='cash'?'#5C7A3F':'#C68A4A';
+        const accentColor=mode==='cash'?'#5C7A3F':'#9B7535';
         return `
         <details style="background:#fff;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);overflow:hidden;border-left:4px solid ${accentColor}">
           <summary style="cursor:pointer;padding:20px 24px;list-style:none;user-select:none">
@@ -3015,7 +3064,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>
         <!-- Welcome (right) -->
         <div style="flex:1;min-width:200px">
-          <div style="font-size:11px;font-weight:700;color:#C68A4A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Bem-vindo ao Portal do Investidor</div>
+          <div style="font-size:11px;font-weight:700;color:#9B7535;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Bem-vindo ao Portal do Investidor</div>
           <h1 style="font-size:26px;color:#3D271A;font-weight:800;margin:0">👋 Olá, ${(client.name||'Investidor').replace(/</g,'&lt;')}</h1>
           <p style="color:#655A4E;font-size:13px;margin-top:6px">Acompanhe seu portfólio e seus projetos abaixo</p>
         </div>
@@ -3040,7 +3089,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
       <!-- SEÇÃO 2: A REALIZAR -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="font-size:11px;font-weight:800;color:#C68A4A;letter-spacing:2px;text-transform:uppercase;padding:4px 0">📋 A Realizar</div>
+        <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0">📋 A Realizar</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${budgetsData.length} ${budgetsData.length===1?'proposta':'propostas'}</div>
         ${budgetsData.length>0?`
@@ -3477,9 +3526,9 @@ function buildProjectCard(p,statusMeta){
     ${typeBadge?`<div style="padding:6px 14px 0">${typeBadge}</div>`:''}
     <div class="pc-body">
       <div class="pc-pl"><span>Schedule</span><span>${pct}%</span></div>
-      <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#5C7A3F':pct>50?'#C68A4A':'#3D271A'}"></div></div>
+      <div class="pc-bo"><div class="pc-bi" style="width:${pct}%;background:${pct===100?'#5C7A3F':pct>50?'#9B7535':'#3D271A'}"></div></div>
       <div class="pc-br"><span>Estimated</span><strong style="color:#3D271A">${fmt(est)}</strong></div>
-      <div class="pc-br"><span>Actual</span><strong style="color:#C68A4A">${fmt(act)}</strong></div>
+      <div class="pc-br"><span>Actual</span><strong style="color:#9B7535">${fmt(act)}</strong></div>
       <div class="pc-br"><span>Variance</span><strong style="color:${vColor}">${vTx}</strong></div>
     </div>
     <div class="pc-ftr"><span>${p.start_date||'No date'} → ${p.end_date||'No end'}</span><strong>PM: ${p.pm||'—'}</strong></div>`;
@@ -3532,11 +3581,11 @@ function projectStatus(pid){
 }
 
 const STATUS_META={
-  in_progress:      {label:'In Progress',     icon:'🔄', color:'#C68A4A', bg:'#F5EBDA'},
+  in_progress:      {label:'In Progress',     icon:'🔄', color:'#9B7535', bg:'#F5EBDA'},
   completed:        {label:'Completed',       icon:'✅', color:'#5C7A3F', bg:'#ECEFE3'},
   rehab_completed:  {label:'Rehab Completed', icon:'🔧', color:'#7B5E8B', bg:'#EDE5F1'},
   for_sale:         {label:'For Sale',        icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
-  sold:             {label:'Sold',            icon:'💰', color:'#B8860B', bg:'#FAF3E0'},
+  sold:             {label:'Sold',            icon:'💰', color:'#9B7535', bg:'#FAF3E0'},
   cancelled:        {label:'Cancelled',       icon:'⛔', color:'#C62B2B', bg:'#FDF2F0'},
 };
 
@@ -5484,12 +5533,12 @@ function _scRenderResult(result) {
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <div style="font-size:20px">⚠️</div>
       <div style="font-weight:800;color:#3D271A;font-size:14px">Variações de preço entre vendors</div>
-      ${anomaliesData.length > 0 ? `<div style="margin-left:auto;background:#F5EBDA;color:#A86A2C;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">${anomaliesData.length} itens</div>` : ''}
+      ${anomaliesData.length > 0 ? `<div style="margin-left:auto;background:#F5EBDA;color:#7A5A28;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700">${anomaliesData.length} itens</div>` : ''}
     </div>
   `;
   if (anomaliesText.length > 0) {
     anomaliesHtml += `
-      <div style="background:#FFF9F0;border-left:3px solid #A86A2C;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#3D271A;line-height:1.5">
+      <div style="background:#FFF9F0;border-left:3px solid #7A5A28;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#3D271A;line-height:1.5">
         <div style="font-weight:700;margin-bottom:4px">🔍 Pontos pra investigar:</div>
         <ul style="margin:0;padding-left:18px">
           ${anomaliesText.map(a => `<li style="margin-bottom:3px">${_scEsc(a)}</li>`).join('')}
@@ -5513,7 +5562,7 @@ function _scRenderResult(result) {
             <tr style="border-bottom:1px solid #F0EAE2">
               <td style="padding:7px 4px;color:#3D271A;font-weight:600">${_scEsc(a.item)}</td>
               <td style="padding:7px 4px;text-align:right;color:#3D271A">${_scFmtUSD(a.total_spent)}</td>
-              <td style="padding:7px 4px;text-align:right;color:${a.variance_pct >= 20 ? '#A02021' : '#A86A2C'};font-weight:700">${a.variance_pct}%</td>
+              <td style="padding:7px 4px;text-align:right;color:${a.variance_pct >= 20 ? '#A02021' : '#7A5A28'};font-weight:700">${a.variance_pct}%</td>
               <td style="padding:7px 4px;color:#655A4E;font-size:10px">
                 ${a.vendors.map(v => `<div>${_scEsc(v.vendor)}: <strong>${_scFmtUSD(v.avg_unit_cost)}</strong>/un</div>`).join('')}
               </td>
@@ -5550,7 +5599,7 @@ function _scRenderResult(result) {
               <td style="padding:7px 4px;color:#3D271A">${i + 1}. ${_scEsc(it.name)}</td>
               <td style="padding:7px 4px;text-align:right;color:#3D271A;font-weight:700">${_scFmtUSD(it.total)}</td>
               <td style="padding:7px 4px;text-align:right;color:#655A4E">${it.times_purchased}</td>
-              <td style="padding:7px 4px;text-align:right;color:${it.vendor_count > 1 ? '#A86A2C' : '#655A4E'}">${it.vendor_count}</td>
+              <td style="padding:7px 4px;text-align:right;color:${it.vendor_count > 1 ? '#7A5A28' : '#655A4E'}">${it.vendor_count}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -6504,7 +6553,7 @@ function generateReport(){
      #3D271A — Brown Dark (títulos, section bars)
      #655A4E — Brown Medium (texto secundário)
      #D5C9BC — Beige Light (fundos suaves)
-     #B8860B — Hotstamping Gold (destaques) */
+     #9B7535 — Hotstamping Gold (destaques) */
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Century Gothic','CenturyGothic','AppleGothic',sans-serif;color:#15120E;padding:30px;background:#fff;font-size:10pt;line-height:1.4}
   .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #3D271A;padding-bottom:18px;margin-bottom:24px;gap:20px}
@@ -6515,7 +6564,7 @@ function generateReport(){
   .h-center .subtitle{color:#655A4E;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:3px}
   .h-right{text-align:right;font-size:11px;color:#655A4E;flex:0 0 auto;min-width:160px}
   .h-right strong{color:#15120E;font-weight:700}
-  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:24px;font-size:12px;background:#FAF7F3;padding:14px 18px;border-radius:4px;border-left:3px solid #B8860B}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:24px;font-size:12px;background:#FAF7F3;padding:14px 18px;border-radius:4px;border-left:3px solid #9B7535}
   .info-grid div{display:flex;gap:6px}
   .info-grid strong{color:#3D271A;min-width:90px;font-weight:700}
   .section-title{background:#3D271A;color:#D5C9BC;padding:9px 14px;font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-top:20px;margin-bottom:0;border-radius:3px 3px 0 0}
@@ -6534,11 +6583,11 @@ function generateReport(){
   .summary-row strong{color:#3D271A;font-weight:700}
   .summary-row span{color:#15120E;font-weight:600}
   .summary-row.highlight{background:#FAF7F3;font-weight:700;font-size:14px;border-top:1px solid #D5C9BC;border-bottom:1px solid #D5C9BC}
-  .summary-row.highlight strong{color:#B8860B;letter-spacing:.5px}
-  .summary-row.highlight span{color:#B8860B;font-size:15px}
+  .summary-row.highlight strong{color:#9B7535;letter-spacing:.5px}
+  .summary-row.highlight span{color:#9B7535;font-size:15px}
   .summary-row.final{background:#15120E;color:#D5C9BC;font-weight:700;font-size:15px;letter-spacing:.5px;text-transform:uppercase}
   .summary-row.final strong{color:#D5C9BC}
-  .summary-row.final span{color:#B8860B;font-size:17px;letter-spacing:0;text-transform:none}
+  .summary-row.final span{color:#9B7535;font-size:17px;letter-spacing:0;text-transform:none}
   .footer{margin-top:32px;padding-top:14px;border-top:1px solid #D5C9BC;text-align:center;font-size:10px;color:#655A4E;letter-spacing:.5px}
   .footer strong{color:#3D271A}
   @media print{body{padding:18px}.header{margin-bottom:18px}}
@@ -6832,7 +6881,7 @@ function _dreSectionHTML(d,title){
         <tr><td style="padding:7px 12px 7px 24px;border-bottom:1px solid #F0EAE2">💼 Company fixed costs (Office, Salaries, Marketing, etc.)</td><td style="padding:7px 12px;border-bottom:1px solid #F0EAE2;text-align:right">${fmt(d.fixedCostsTotal)}</td></tr>
         <tr style="background:#FAF7F3"><td style="padding:9px 12px;font-weight:700;color:var(--p1);text-transform:uppercase;font-size:11px">TOTAL EXPENSES</td><td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--p1);font-size:14px">${fmt(d.recurringExpense+d.fixedCostsTotal)}</td></tr>
 
-        <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) DEC NET PROFIT</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#B8860B">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
+        <tr style="background:#15120E;color:#fff"><td style="padding:14px 12px;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.8px">(=) DEC NET PROFIT</td><td style="padding:14px 12px;text-align:right;font-weight:800;font-size:18px;color:#9B7535">${_fmtSignedNeg(d.lucroLiquido)}</td></tr>
       </table>
       <div style="font-size:10px;color:var(--gray3);font-style:italic;margin-top:10px;padding:8px 12px;background:#FAF7F3;border-left:3px solid var(--gold);border-radius:0 6px 6px 0">💡 Refund does not count as revenue (it is only a pass-through). Only <strong>paid</strong> invoices count.</div>
     </div>`;
@@ -6942,12 +6991,12 @@ async function runAIResearch(){
           <div style="font-size:12px;color:#655A4E">Searching Zillow, Realtor, county records...</div>
         </div>
       </div>
-      <div style="margin:18px 0;padding:14px 16px;background:#FAF7F3;border-radius:8px;border-left:4px solid #B8860B">
+      <div style="margin:18px 0;padding:14px 16px;background:#FAF7F3;border-radius:8px;border-left:4px solid #9B7535">
         <div style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Address</div>
         <div style="font-size:14px;font-weight:600;color:#15120E">${address.replace(/</g,'&lt;')}</div>
       </div>
       <div id="ai-research-status" style="display:flex;align-items:center;gap:10px;padding:14px;background:#fff;border:1.5px solid #F0EAE2;border-radius:8px;color:#655A4E;font-size:13px">
-        <div style="width:18px;height:18px;border:2.5px solid #F0EAE2;border-top-color:#B8860B;border-radius:50%;animation:airesspin 1s linear infinite"></div>
+        <div style="width:18px;height:18px;border:2.5px solid #F0EAE2;border-top-color:#9B7535;border-radius:50%;animation:airesspin 1s linear infinite"></div>
         <span>This usually takes 20-40 seconds. Please wait...</span>
       </div>
       <style>@keyframes airesspin{to{transform:rotate(360deg)}}</style>
@@ -7012,7 +7061,7 @@ function showAIResultsModal(d,meta){
         <button onclick="document.getElementById('ai-research-modal').remove()" style="background:transparent;color:#655A4E;border:1px solid #F0EAE2;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit">✕</button>
       </div>
 
-      <div style="background:#FAF7F3;border-radius:8px;padding:14px 16px;margin-bottom:14px;border-left:4px solid #B8860B">
+      <div style="background:#FAF7F3;border-radius:8px;padding:14px 16px;margin-bottom:14px;border-left:4px solid #9B7535">
         <div style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Address found</div>
         <div style="font-size:14px;font-weight:700;color:#15120E">${(d.address_found||'').replace(/</g,'&lt;')}</div>
         ${d.county?`<div style="font-size:11px;color:#655A4E;margin-top:4px">County: ${d.county}</div>`:''}
@@ -7047,7 +7096,7 @@ function showAIResultsModal(d,meta){
         </tbody>
       </table>
 
-      ${d.notes?`<div style="background:#FFF8E7;border-left:3px solid #B8860B;padding:10px 14px;font-size:12px;color:#15120E;margin-bottom:14px;border-radius:4px"><strong>Notes:</strong> ${d.notes.replace(/</g,'&lt;')}</div>`:''}
+      ${d.notes?`<div style="background:#FFF8E7;border-left:3px solid #9B7535;padding:10px 14px;font-size:12px;color:#15120E;margin-bottom:14px;border-radius:4px"><strong>Notes:</strong> ${d.notes.replace(/</g,'&lt;')}</div>`:''}
 
       ${sources.length>0?`<div style="font-size:11px;color:#655A4E;margin-bottom:14px"><strong>Sources:</strong> ${sources.map(s=>`<a href="${s}" target="_blank" style="color:#006AFF;text-decoration:none;margin-right:6px">${new URL(s).hostname.replace('www.','')}</a>`).join(' · ')}</div>`:''}
 
@@ -7431,7 +7480,7 @@ async function renderWorkingCapitalCashFlow(){
       const proj=i.project_id?projects.find(p=>p.id===i.project_id):null;
       // Resolve project address: prefer linked project's address, fallback to invoice property_address
       const projAddr=proj?(proj.address||proj.name||''):(i.property_address||'');
-      const statusBg=i.status==='paid'?'background:#DCEFE6;color:#2D7D5F':'background:#FFF3D9;color:#A86A2C';
+      const statusBg=i.status==='paid'?'background:#DCEFE6;color:#2D7D5F':'background:#FFF3D9;color:#7A5A28';
       const statusLbl=i.status==='paid'?'Paid':'Pending';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #F0EAE2;gap:8px">
         <div style="flex:1;min-width:0">
@@ -7560,7 +7609,7 @@ async function generateWorkingCapitalPDF(){
           <td style="padding:6px 10px;border-bottom:1px solid #eee">#${i.invoice_number} · ${(cli?cli.name:'?').replace(/</g,'&lt;')}<br><span style="color:#999;font-size:9px">${projAddr.replace(/</g,'&lt;')}</span></td>
           <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999">${fmtDate(i.date)}</td>
           <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee">
-            <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:${i.status==='paid'?'#DCEFE6;color:#2D7D5F':'#FFF3D9;color:#A86A2C'}">${i.status==='paid'?'PAID':'OPEN'}</span>
+            <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:${i.status==='paid'?'#DCEFE6;color:#2D7D5F':'#FFF3D9;color:#7A5A28'}">${i.status==='paid'?'PAID':'OPEN'}</span>
           </td>
           <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee;color:#2D7D5F;font-weight:700">${$$(i.amount)}</td>
         </tr>`;
@@ -7589,22 +7638,22 @@ body{padding:24px 32px;color:#3D271A;background:#fff;font-size:11px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
 .kpi{padding:12px;border-radius:8px;text-align:center}
 .kpi.green{background:#F2F4EC;border:1.5px solid #5C7A3F}
-.kpi.orange{background:#FFF8E7;border:1.5px solid #C68A4A}
+.kpi.orange{background:#FFF8E7;border:1.5px solid #9B7535}
 .kpi.red{background:#F9EBEB;border:1.5px solid #C62B2B}
 .kpi.dark{background:#3D271A;color:#fff;border:1.5px solid #3D271A}
 .kpi-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.85}
 .kpi-v{font-size:18px;font-weight:800;margin-top:4px}
 .kpi.green .kpi-v{color:#2D7D5F}
-.kpi.orange .kpi-v{color:#A86A2C}
+.kpi.orange .kpi-v{color:#7A5A28}
 .kpi.red .kpi-v{color:#C62B2B}
-.kpi.dark .kpi-v{color:#FFD699}
+.kpi.dark .kpi-v{color:#E8C57F}
 .kpi-h{font-size:9px;opacity:.75;margin-top:2px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .section{background:#fff;border:1px solid #E8DDC9;border-radius:8px;overflow:hidden}
 .section h3{background:#3D271A;color:#fff;padding:8px 12px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-weight:700}
 .section h3 small{font-weight:400;color:rgba(255,255,255,0.7);font-size:9px;letter-spacing:0;text-transform:none;margin-left:6px}
 table{width:100%;border-collapse:collapse}
-th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655A4E;font-weight:700;border-bottom:1.5px solid #C68A4A;text-transform:uppercase;letter-spacing:.3px}
+th{background:#FAF7F3;padding:6px 10px;text-align:left;font-size:10px;color:#655A4E;font-weight:700;border-bottom:1.5px solid #9B7535;text-transform:uppercase;letter-spacing:.3px}
 .totrow{background:#3D271A;color:#fff;font-weight:800}
 .totrow td{padding:8px 10px;font-size:12px;border-bottom:0}
 .footer{margin-top:24px;padding-top:12px;border-top:1px solid #D5C9BC;text-align:center;font-size:9px;color:#999;letter-spacing:.5px}
@@ -7738,8 +7787,8 @@ function renderFinancial(){
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totInvested)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totSale)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${totGross>=0?'':'-'}${fmt(Math.abs(totGross))}</td>
-      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#B8860B">${totNet>=0?'':'-'}${fmt(Math.abs(totNet))}</td>
-      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#B8860B">${avgROI.toFixed(1)}%</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${totNet>=0?'':'-'}${fmt(Math.abs(totNet))}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${avgROI.toFixed(1)}%</td>
       <td></td>
     </tr>`;
 }
@@ -7832,10 +7881,10 @@ function renderHome(){
 let _homeMapInstance=null;
 let _homeMapMarkers=[];
 const STATUS_PIN_COLOR={
-  in_progress: '#C68A4A',  // amber
+  in_progress: '#9B7535',  // amber
   completed:   '#5C7A3F',  // olive green
   for_sale:    '#3D271A',  // dark brown
-  sold:        '#B8860B',  // golden
+  sold:        '#9B7535',  // golden
 };
 
 const FLORIDA_CENTER=[28.0, -83.5];
@@ -8004,7 +8053,7 @@ function renderHomeRevenueChart(paidInv){
     type:'bar',
     data:{
       labels:months.map(m=>m.label),
-      datasets:[{label:'Revenue',data:months.map(m=>m.total),backgroundColor:'#B8860B',borderColor:'#3D271A',borderWidth:0,borderRadius:4}]
+      datasets:[{label:'Revenue',data:months.map(m=>m.total),backgroundColor:'#9B7535',borderColor:'#3D271A',borderWidth:0,borderRadius:4}]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
@@ -8059,9 +8108,9 @@ const FIXED_COST_CATEGORIES=[
   {key:'salaries',   label:'👥 Salaries',                 color:'#5C7A3F'},
   {key:'professional',label:'💼 Professional services',   color:'#B85450'},
   {key:'software',   label:'📱 Software & Tools',         color:'#7B5C8C'},
-  {key:'marketing',  label:'📢 Marketing',                color:'#C68A4A'},
+  {key:'marketing',  label:'📢 Marketing',                color:'#9B7535'},
   {key:'insurance',  label:'🛡️ Insurance',                color:'#655A4E'},
-  {key:'travel',     label:'✈️ Travel',                   color:'#A86A2C'},
+  {key:'travel',     label:'✈️ Travel',                   color:'#7A5A28'},
   {key:'other',      label:'📌 Other',                    color:'#15120E'},
 ];
 
@@ -8155,7 +8204,7 @@ function renderFixedCosts(){
   document.getElementById('fc-tfoot').innerHTML=`
     <tr style="background:#3D271A;color:#D5C9BC">
       <td colspan="3" style="padding:11px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px">TOTAL (${list.length} entries)</td>
-      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#B8860B">${fmt(total)}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${fmt(total)}</td>
       <td colspan="2"></td>
     </tr>`;
 }
@@ -8317,8 +8366,8 @@ const PAYMENT_METHOD_LABELS={
   ach:'ACH', credit_card:'Credit Card', working_capital:'💰 Working Capital', other:'Other',
 };
 const INVOICE_STATUS_META={
-  open: {label:'PENDING', color:'#A86A2C', bg:'#F5EBDA'},
-  partial_paid:{label:'Partial Paid', color:'#B8860B', bg:'#FFF8E7'},
+  open: {label:'PENDING', color:'#7A5A28', bg:'#F5EBDA'},
+  partial_paid:{label:'Partial Paid', color:'#9B7535', bg:'#FFF8E7'},
   paid: {label:'Paid',      color:'#5C7A3F', bg:'#ECEFE3'},
   cancelled:{label:'Cancelled',color:'#655A4E', bg:'#E8E0D5'},
 };
@@ -8440,7 +8489,7 @@ function renderInvoices(){
     const rowStyle=i.status==='cancelled'?'opacity:.6;text-decoration:line-through':'';
     const isSub=!!i.parent_invoice_id;
     const kindIcon=i.kind==='final_roi'
-      ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#B8860B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>'
+      ?'<span title="Final ROI" style="display:inline-block;background:#FAF3E0;color:#9B7535;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💎 ROI</span>'
       :i.kind==='refund'
         ?'<span title="Refund" style="display:inline-block;background:#FFE5D9;color:#C62B2B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💸 REF</span>'
       :i.kind==='third_party_asset_manager'
@@ -8462,13 +8511,13 @@ function renderInvoices(){
     // Subcategory styling: lighter background, indent on number column
     const subBg=isSub?'background:#FBF8F2;':'';
     const subIndent=isSub?'padding-left:32px;':'';
-    const subPrefix=isSub?'<span style="color:#A86A2C;font-size:11px;margin-right:4px">↳</span>':'';
+    const subPrefix=isSub?'<span style="color:#7A5A28;font-size:11px;margin-right:4px">↳</span>':'';
     // Partial paid progress
     let amountCell=fmt(i.amount||0);
     if(i.status==='partial_paid'){
       const payments=invoicePayments[i.id]||[];
       const paidSum=payments.reduce((s,p)=>s+(+p.amount||0),0);
-      amountCell=`${fmt(i.amount||0)}<div style="font-size:10px;color:#B8860B;font-weight:600;margin-top:2px">$${paidSum.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} pago</div>`;
+      amountCell=`${fmt(i.amount||0)}<div style="font-size:10px;color:#9B7535;font-weight:600;margin-top:2px">$${paidSum.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} pago</div>`;
     }
     return `<tr style="border-bottom:1px solid #F0EAE2;${subBg}${rowStyle}">
       <td style="padding:10px 12px;font-weight:700;color:var(--navy);${subIndent}">${subPrefix}#${i.invoice_number}</td>
@@ -8573,7 +8622,7 @@ function _updatePartialTotals(){
   if(ptEl) ptEl.textContent=fmt(paidTotal);
   if(bEl){
     bEl.textContent=fmt(balance);
-    bEl.style.color=balance===0?'#2D7D5F':(balance<0?'#C62B2B':'#B8860B');
+    bEl.style.color=balance===0?'#2D7D5F':(balance<0?'#C62B2B':'#9B7535');
   }
   // Show "complete" hint when paid = invoice total (with tolerance for floating point)
   const hint=document.getElementById('im-partial-complete-hint');
@@ -9185,7 +9234,7 @@ function generateListingPDF(){
   .hdr .meta{text-align:right;font-size:10pt;color:#15120E}
   .hdr .meta div{margin-bottom:3px}
   .hdr .meta strong{color:#3D271A;font-weight:700}
-  .summary{background:#FAF7F3 !important;border-left:4px solid #B8860B;padding:14px 18px;margin-bottom:22px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .summary{background:#FAF7F3 !important;border-left:4px solid #9B7535;padding:14px 18px;margin-bottom:22px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .summary div{margin-bottom:4px;font-size:11pt}
   .summary strong{color:#3D271A;font-weight:700;display:inline-block;width:170px}
   .section-title{font-size:11pt;font-weight:700;color:#fff !important;background:#3D271A !important;text-transform:uppercase;letter-spacing:1.5px;padding:8px 14px;margin:18px 0 0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -9255,7 +9304,7 @@ function generateListingPDF(){
     <div style="font-size:14px;font-weight:600;letter-spacing:.4px">Property Listing Report — Preview</div>
     <div style="display:flex;gap:10px">
       <button id="lpv-close" style="background:transparent;color:#fff;border:1px solid #655A4E;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">✕ Close</button>
-      <button id="lpv-print" style="background:#B8860B;color:#fff;border:0;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🖨 Print / Save as PDF</button>
+      <button id="lpv-print" style="background:#9B7535;color:#fff;border:0;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🖨 Print / Save as PDF</button>
     </div>`;
   modal.appendChild(bar);
   const iframe=document.createElement('iframe');
@@ -9348,7 +9397,7 @@ function generateInvoicePDF(id){
   .totals-tbl{font-size:13px;min-width:300px}
   .totals-tbl .row{display:flex;justify-content:space-between;padding:8px 14px;color:#655A4E}
   .totals-tbl .row.final{background:#3D271A !important;color:#D5C9BC !important;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-top:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .totals-tbl .row.final .v{color:#B8860B !important;font-size:15px;letter-spacing:0;text-transform:none}
+  .totals-tbl .row.final .v{color:#9B7535 !important;font-size:15px;letter-spacing:0;text-transform:none}
   .notes-box{background:#FAF7F3 !important;margin-top:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .notes-box .lbl{background:#655A4E !important;color:#fff !important;padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .notes-body{padding:14px;text-align:center;font-size:12px;color:#15120E;line-height:1.7}
@@ -9429,7 +9478,7 @@ function generateInvoicePDF(id){
     <div style="font-size:14px;font-weight:600;letter-spacing:.4px">${docLabel} — Preview</div>
     <div style="display:flex;gap:10px">
       <button id="ipv-close" style="background:transparent;color:#fff;border:1px solid #655A4E;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">✕ Close</button>
-      <button id="ipv-print" style="background:#B8860B;color:#fff;border:0;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🖨 Print / Save as PDF</button>
+      <button id="ipv-print" style="background:#9B7535;color:#fff;border:0;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🖨 Print / Save as PDF</button>
     </div>`;
   modal.appendChild(bar);
   // Iframe with the invoice HTML
@@ -9594,11 +9643,11 @@ function _buildDuplicateChooserHtml(inputName, matches, entityType){
     <div style="font-size:14px;color:#3D271A;margin-bottom:14px;line-height:1.5">
       Você está cadastrando <strong>"${inputName.replace(/</g,'&lt;')}"</strong> mas já existe ${matches.length===1?'um '+typeLabel:matches.length+' '+typeLabel+'s'} parecido${matches.length>1?'s':''}:
     </div>
-    <div style="background:#FFF8E7;border:1.5px dashed #B8860B;border-radius:8px;padding:12px;margin-bottom:16px;max-height:280px;overflow-y:auto">`;
+    <div style="background:#FFF8E7;border:1.5px dashed #9B7535;border-radius:8px;padding:12px;margin-bottom:16px;max-height:280px;overflow-y:auto">`;
   matches.forEach(m=>{
     const badge=m.kind==='exact'
       ? `<span style="background:#DCEFE6;color:#2D7D5F;padding:2px 8px;border-radius:9px;font-size:10px;font-weight:700;margin-left:8px">✓ MATCH EXATO</span>`
-      : `<span style="background:#FFF3D9;color:#A86A2C;padding:2px 8px;border-radius:9px;font-size:10px;font-weight:700;margin-left:8px">~ ${Math.round(m.score*100)}%</span>`;
+      : `<span style="background:#FFF3D9;color:#7A5A28;padding:2px 8px;border-radius:9px;font-size:10px;font-weight:700;margin-left:8px">~ ${Math.round(m.score*100)}%</span>`;
     html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #F0EAE2">
       <div>
         <strong style="color:#3D271A">${m.name.replace(/</g,'&lt;')}</strong>${badge}
@@ -9609,7 +9658,7 @@ function _buildDuplicateChooserHtml(inputName, matches, entityType){
   html+=`</div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
       <button onclick="_dupChooserPick('__cancel__')" style="background:transparent;border:1px solid var(--gray2);color:#655A4E;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">Cancelar</button>
-      <button onclick="_dupChooserPick('__create__')" style="background:#B8860B;color:#fff;border:0;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">+ Criar novo mesmo assim</button>
+      <button onclick="_dupChooserPick('__create__')" style="background:#9B7535;color:#fff;border:0;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">+ Criar novo mesmo assim</button>
     </div>
   </div>`;
   return html;
@@ -10218,7 +10267,7 @@ function renderClients(){
     return `
     <tr style="border-bottom:1px solid #F0EAE2">
       <td style="padding:10px 12px;font-weight:600;color:var(--navy)">
-        <a onclick="openClientDetail('${c.id}')" style="color:#3D271A;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#C68A4A;text-decoration-thickness:2px">${c.name||''}</a>
+        <a onclick="openClientDetail('${c.id}')" style="color:#3D271A;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#9B7535;text-decoration-thickness:2px">${c.name||''}</a>
       </td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.address||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.email||'<span style="color:var(--gray3)">—</span>'}</td>
@@ -10280,7 +10329,7 @@ function cdRenderHeader(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button onclick="openClientModal('${c.id}')" style="padding:8px 16px;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">✏️ Editar</button>
         ${hasToken
-          ? `<button onclick="copyInvestorLink('${c.id}')" style="padding:8px 16px;background:#C68A4A;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📋 Copiar link investidor</button>`
+          ? `<button onclick="copyInvestorLink('${c.id}')" style="padding:8px 16px;background:#9B7535;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📋 Copiar link investidor</button>`
           : `<button onclick="generateInvestorToken('${c.id}').then(()=>cdRenderHeader())" style="padding:8px 16px;background:#5C7A3F;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">🔗 Gerar link investidor</button>`
         }
       </div>
@@ -10291,7 +10340,7 @@ function cdSwitchTab(tab){
   _cdActiveTab=tab;
   document.querySelectorAll('.cd-tab').forEach(b=>{
     const isActive=b.dataset.tab===tab;
-    b.style.borderBottomColor=isActive?'#C68A4A':'transparent';
+    b.style.borderBottomColor=isActive?'#9B7535':'transparent';
     b.style.color=isActive?'#3D271A':'#655A4E';
     b.style.fontWeight=isActive?'700':'600';
   });
@@ -10315,7 +10364,7 @@ function cdRenderProjects(){
   el.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px">
     <div style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">📁 Projetos (${list.length})</div>
     ${list.map(p=>`
-      <div onclick="openProject('${p.id}')" style="background:#FAF7F3;border-radius:8px;padding:14px 18px;margin-bottom:10px;cursor:pointer;border:1.5px solid transparent;transition:all .2s" onmouseover="this.style.borderColor='#C68A4A'" onmouseout="this.style.borderColor='transparent'">
+      <div onclick="openProject('${p.id}')" style="background:#FAF7F3;border-radius:8px;padding:14px 18px;margin-bottom:10px;cursor:pointer;border:1.5px solid transparent;transition:all .2s" onmouseover="this.style.borderColor='#9B7535'" onmouseout="this.style.borderColor='transparent'">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-size:14px;font-weight:800;color:#3D271A">${(p.name||p.address||'?').replace(/</g,'&lt;')}</div>
@@ -10339,7 +10388,7 @@ async function cdRenderBudgets(){
   const $$=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
   const dt=d=>{if(!d)return'—';const dd=new Date(d);return dd.toLocaleDateString('pt-BR');};
   const statusBadges={
-    draft:{label:'📝 Rascunho',bg:'#FAF3E0',color:'#A86A2C'},
+    draft:{label:'📝 Rascunho',bg:'#FAF3E0',color:'#7A5A28'},
     approved:{label:'✅ Aprovado',bg:'#DCEFE6',color:'#2D6A2D'},
     rejected:{label:'❌ Rejeitado',bg:'#F5E8E8',color:'#A02021'},
     archived:{label:'📦 Arquivado',bg:'#E8DDC9',color:'#655A4E'},
@@ -10397,8 +10446,8 @@ async function cdRenderBudgets(){
               <div style="font-weight:800;color:#3D271A;font-size:13px">${$$(b.arv)}</div>
             </div>
             <div style="text-align:right">
-              <div style="color:#B8860B;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">Lucro HM</div>
-              <div style="font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:13px">${$$(calc.hm.profit)}</div>
+              <div style="color:#9B7535;font-weight:600;font-size:9px;letter-spacing:.3px;text-transform:uppercase">Lucro HM</div>
+              <div style="font-weight:800;color:${calc.hm.profit>=0?'#9B7535':'#A02021'};font-size:13px">${$$(calc.hm.profit)}</div>
             </div>
           </div>
         </div>
@@ -11632,7 +11681,7 @@ function updateTaskBadge(tid,t){
   if(!badge) return;
   const pct=+t?.pct||0;
   if(pct===100){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#ECEFE3;color:#5C7A3F';badge.textContent='✅ Done';if(row){row.className='task-row tr-done';}}
-  else if(pct>0){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#F5EBDA;color:#C68A4A';badge.textContent='🔄 '+pct+'%';if(row){row.className='task-row tr-prog';row.style.borderLeftColor='#C68A4A';}}
+  else if(pct>0){badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#F5EBDA;color:#9B7535';badge.textContent='🔄 '+pct+'%';if(row){row.className='task-row tr-prog';row.style.borderLeftColor='#9B7535';}}
   else{badge.style.cssText='padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#E8E0D5;color:#655A4E';badge.textContent='⏳ Not Started';if(row){row.className='task-row';row.style.borderLeftColor='';}}
 }
 function updateSchedProgress(){
@@ -11678,7 +11727,7 @@ function renderDashboard(){
   dChart('d');
   const ctx=document.getElementById('d-chart');
   if(ctx) charts_['d']=new Chart(ctx,{type:'doughnut',data:{labels:['Estimated','Actual','Remaining'],
-    datasets:[{data:[est,act,Math.max(0,est-act)],backgroundColor:['#3D271A','#C68A4A','#D5C9BC'],borderWidth:2,borderColor:'#fff'}]},
+    datasets:[{data:[est,act,Math.max(0,est-act)],backgroundColor:['#3D271A','#9B7535','#D5C9BC'],borderWidth:2,borderColor:'#fff'}]},
     options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},responsive:true,maintainAspectRatio:false,cutout:'55%'}});
   const ov=ROOMS.map(r=>({n:r.name,e:calcRoomItemTotal(CID,r.id,'est'),a:calcRoomItemTotal(CID,r.id,'actual')}))
     .filter(r=>r.a>0&&r.a>r.e).sort((a,b)=>(b.a-b.e)-(a.a-a.e)).slice(0,5);
@@ -11714,7 +11763,7 @@ function renderComparison(){
   ]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v2=>'$'+v2.toLocaleString()}}},responsive:true,maintainAspectRatio:false}});
   const ctxD=document.getElementById('cmp-cd');
   const rwd=ROOMS.filter(r=>calcRoomItemTotal(CID,r.id,'est')>0||calcRoomItemTotal(CID,r.id,'actual')>0);
-  if(ctxD) charts_['cd']=new Chart(ctxD,{type:'doughnut',data:{labels:rwd.map(r=>r.name),datasets:[{data:rwd.map(r=>calcRoomItemTotal(CID,r.id,'est')||0.001),backgroundColor:['#3D271A','#C68A4A','#5C7A3F','#7B5C8C','#B85450','#B8860B','#0277BD','#558B2F','#4527A0','#AD1457','#00838F','#37474F','#558B2F','#A86A2C','#3D271A','#283593'],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
+  if(ctxD) charts_['cd']=new Chart(ctxD,{type:'doughnut',data:{labels:rwd.map(r=>r.name),datasets:[{data:rwd.map(r=>calcRoomItemTotal(CID,r.id,'est')||0.001),backgroundColor:['#3D271A','#9B7535','#5C7A3F','#7B5C8C','#B85450','#9B7535','#0277BD','#558B2F','#4527A0','#AD1457','#00838F','#37474F','#558B2F','#7A5A28','#3D271A','#283593'],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},responsive:true,maintainAspectRatio:false}});
   let html=`<thead><tr style="background:var(--navy);color:#fff"><th style="padding:9px 12px">Phase</th><th style="padding:9px 12px">Item</th><th class="r" style="padding:9px 12px">Estimated</th><th class="r" style="padding:9px 12px">Actual</th><th class="r" style="padding:9px 12px">Variance</th><th style="padding:9px 12px;text-align:center">Status</th></tr></thead><tbody>`;
   let ge=0,ga=0;
   ROOMS.forEach(r=>{
@@ -11926,7 +11975,7 @@ async function renderBudgets(){
   const $$=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
   const dt=d=>{if(!d)return'—';const dd=new Date(d);return dd.toLocaleDateString('pt-BR');};
   const statusBadges={
-    draft:{label:'📝 Rascunho',bg:'#FAF3E0',color:'#A86A2C'},
+    draft:{label:'📝 Rascunho',bg:'#FAF3E0',color:'#7A5A28'},
     approved:{label:'✅ Aprovado',bg:'#DCEFE6',color:'#2D6A2D'},
     rejected:{label:'❌ Rejeitado',bg:'#F5E8E8',color:'#A02021'},
     archived:{label:'📦 Arquivado',bg:'#E8DDC9',color:'#655A4E'},
@@ -11936,7 +11985,7 @@ async function renderBudgets(){
     const sb=statusBadges[b.status]||statusBadges.draft;
     const mode = b.client_view_mode || 'hm';
     const modeLabel = {cash:'💵 Cash', hm:'💰 HM', both:'🔀 Ambos'}[mode] || '💰 HM';
-    return `<div style="background:#fff;border-radius:10px;padding:18px 22px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1.5px solid #F0EAE2;transition:all .2s" onmouseover="this.style.borderColor='#C68A4A';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)'" onmouseout="this.style.borderColor='#F0EAE2';this.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'">
+    return `<div style="background:#fff;border-radius:10px;padding:18px 22px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1.5px solid #F0EAE2;transition:all .2s" onmouseover="this.style.borderColor='#9B7535';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)'" onmouseout="this.style.borderColor='#F0EAE2';this.style.boxShadow='0 2px 8px rgba(0,0,0,.04)'">
       <div onclick="openBudgetEditor('${b.id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
         <div style="flex:1;min-width:200px">
           <div style="font-size:16px;font-weight:800;color:#3D271A;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -11960,8 +12009,8 @@ async function renderBudgets(){
             <div style="font-weight:800;color:${calc.cash.profit>=0?'#5C7A3F':'#A02021'};font-size:15px">${$$(calc.cash.profit)} <span style="font-size:11px;font-weight:600">(${calc.cash.profit_pct.toFixed(1)}%)</span></div>
           </div>
           <div style="text-align:right">
-            <div style="color:#B8860B;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase">Lucro HM</div>
-            <div style="font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:15px">${$$(calc.hm.profit)} <span style="font-size:11px;font-weight:600">(${calc.hm.profit_pct.toFixed(1)}%)</span></div>
+            <div style="color:#9B7535;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase">Lucro HM</div>
+            <div style="font-weight:800;color:${calc.hm.profit>=0?'#9B7535':'#A02021'};font-size:15px">${$$(calc.hm.profit)} <span style="font-size:11px;font-weight:600">(${calc.hm.profit_pct.toFixed(1)}%)</span></div>
           </div>
         </div>
       </div>
@@ -12149,9 +12198,9 @@ function renderBudgetClientView(b, mode){
   const $$0= v => '$ ' + (+v||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
   // Helper: render one scenario card
   function scenarioCard(view, label, isPrimary){
-    const accentColor = view.isHM ? '#C68A4A' : '#5C7A3F';
+    const accentColor = view.isHM ? '#9B7535' : '#5C7A3F';
     const accentGradient = view.isHM
-      ? 'linear-gradient(135deg,#B8860B,#C68A4A)'
+      ? 'linear-gradient(135deg,#9B7535,#9B7535)'
       : 'linear-gradient(135deg,#5C7A3F,#7A9659)';
     const icon = view.isHM ? '💰' : '💵';
     return `
@@ -12220,7 +12269,7 @@ function renderBudgetClientView(b, mode){
         <img src="${typeof DEC_LOGO_B64!=='undefined'?DEC_LOGO_B64:''}" alt="DEC Group" style="height:64px;width:auto;display:block">
       </div>
       <div style="flex:1;min-width:200px">
-        <div style="font-size:11px;font-weight:700;color:#C68A4A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Proposta de Investimento</div>
+        <div style="font-size:11px;font-weight:700;color:#9B7535;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Proposta de Investimento</div>
         <h1 style="font-size:24px;color:#3D271A;font-weight:800;margin:0">${clientName}</h1>
         ${address ? `<p style="color:#655A4E;font-size:13px;margin-top:6px">📍 ${address}</p>` : ''}
       </div>
@@ -12252,15 +12301,15 @@ function renderBudgetClientTable(budgetsArr){
     const view=calcBudgetClientView(b, scenarioToUse);
     const address=(b.address||b.name||'Sem endereço').replace(/</g,'&lt;');
     const modeLabel={cash:'💵 Cash',hm:'💰 HM',both:'🔀 HM*'}[mode]||'💰 HM';
-    const accentColor=view.isHM?'#C68A4A':'#5C7A3F';
-    const roiColor=view.roi>=15?'#5C7A3F':(view.roi>=0?'#B8860B':'#A02021');
+    const accentColor=view.isHM?'#9B7535':'#5C7A3F';
+    const roiColor=view.roi>=15?'#5C7A3F':(view.roi>=0?'#9B7535':'#A02021');
     return `
     <tr style="border-bottom:1px solid #F0EAE2">
       <td style="padding:12px 14px;font-size:13px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${accentColor}"></span>
           <strong style="color:#3D271A">${address}</strong>
-          <span style="display:inline-block;padding:1px 7px;background:#F5EBDA;color:#A86A2C;border-radius:8px;font-size:9px;font-weight:700;letter-spacing:.3px">${modeLabel}</span>
+          <span style="display:inline-block;padding:1px 7px;background:#F5EBDA;color:#7A5A28;border-radius:8px;font-size:9px;font-weight:700;letter-spacing:.3px">${modeLabel}</span>
         </div>
       </td>
       <td style="padding:12px 10px;text-align:right;font-size:13px;font-weight:700;color:#3D271A">${$$0(view.purchase)}</td>
@@ -12447,14 +12496,14 @@ function renderBudgetEditorModal(){
     const kindBadge=line.kind==='info'
       ?`<span style="display:inline-block;padding:2px 6px;background:#E8DDC9;color:#655A4E;border-radius:4px;font-size:9px;font-weight:700">INFO</span>`
       :line.kind==='closing'
-      ?`<span style="display:inline-block;padding:2px 6px;background:#FFF4E0;color:#A86A2C;border-radius:4px;font-size:9px;font-weight:700">CLOSING</span>`
+      ?`<span style="display:inline-block;padding:2px 6px;background:#FFF4E0;color:#7A5A28;border-radius:4px;font-size:9px;font-weight:700">CLOSING</span>`
       :`<span style="display:inline-block;padding:2px 6px;background:#F2F4EC;color:#5C7A3F;border-radius:4px;font-size:9px;font-weight:700">CUSTO</span>`;
     // Auto-value tooltip for formula lines (so user knows what it would be on 0)
     let autoHint='';
     if(isFormula && !hasOverride){
       autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#5C7A3F;margin-top:2px;font-style:italic">auto</div>`;
     } else if(isFormula && hasOverride){
-      autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#C68A4A;margin-top:2px;font-style:italic">manual</div>`;
+      autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#9B7535;margin-top:2px;font-style:italic">manual</div>`;
     } else {
       autoHint=`<div id="bm-line-hint-${idx}" style="font-size:9px;color:#999;margin-top:2px;font-style:italic"></div>`;
     }
@@ -12468,9 +12517,9 @@ function renderBudgetEditorModal(){
       <td style="padding:6px 4px;text-align:right">
         <div style="display:inline-flex;align-items:center;gap:4px;justify-content:flex-end">
           ${isFormula && !hasOverride
-            ? `<button onclick="useFormulaValue(${idx})" title="Pegar o valor auto-calculado e colocar como manual (assim você pode editar)" style="background:#C68A4A;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:9px;font-weight:700;padding:3px 6px;font-family:inherit;white-space:nowrap">📐 Usar</button>`
+            ? `<button onclick="useFormulaValue(${idx})" title="Pegar o valor auto-calculado e colocar como manual (assim você pode editar)" style="background:#9B7535;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:9px;font-weight:700;padding:3px 6px;font-family:inherit;white-space:nowrap">📐 Usar</button>`
             : ''}
-          <input id="bm-line-base-${idx}" type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático. Digite um valor pra sobrescrever.':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#C68A4A':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
+          <input id="bm-line-base-${idx}" type="number" min="0" step="0.01" value="${line.base||''}" oninput="updateBudgetLine(${idx},'base',this.value)" placeholder="${isFormula?'auto':'0.00'}" title="${isFormula?'Deixe 0 pra usar o cálculo automático. Digite um valor pra sobrescrever.':'Valor base'}" style="width:90px;padding:5px 7px;font-size:12px;border:1.5px solid ${hasOverride && isFormula?'#9B7535':'var(--gray2)'};border-radius:4px;outline:none;text-align:right;${hasOverride && isFormula?'background:#FFF8E7;font-weight:700':''}">
         </div>
         ${autoHint}
       </td>
@@ -12517,14 +12566,14 @@ function renderBudgetEditorModal(){
         </div>
       </div>
       <!-- Hard Money scenario -->
-      <div style="background:#FAF3E0;border-left:4px solid #B8860B;border-radius:8px;padding:18px">
-        <div style="font-size:13px;font-weight:800;color:#B8860B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🏦 Cenário Hard Money · ${b.hm_months} meses</div>
+      <div style="background:#FAF3E0;border-left:4px solid #9B7535;border-radius:8px;padding:18px">
+        <div style="font-size:13px;font-weight:800;color:#9B7535;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🏦 Cenário Hard Money · ${b.hm_months} meses</div>
         <div style="display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px">
           <span style="color:#655A4E">Cash investido</span><span id="bm-hm-invested" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.invested)}</span>
           <span style="color:#655A4E">Descontos no closing</span><span id="bm-hm-descontos" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.descontos_closing)}</span>
           <span style="color:#655A4E">Preço de Venda</span><span id="bm-hm-sale" style="text-align:right;font-weight:700;color:#3D271A">${$fmt(calc.hm.sale)}</span>
-          <span style="color:#B8860B;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span id="bm-hm-profit" style="text-align:right;font-weight:800;color:${calc.hm.profit>=0?'#B8860B':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.hm.profit)}</span>
-          <span style="color:#B8860B;font-weight:700">% LUCRO</span><span id="bm-hm-profit-pct" style="text-align:right;font-weight:800;color:${calc.hm.profit_pct>=0?'#B8860B':'#A02021'};font-size:16px">${calc.hm.profit_pct.toFixed(1)}%</span>
+          <span style="color:#9B7535;font-weight:700;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">LUCRO</span><span id="bm-hm-profit" style="text-align:right;font-weight:800;color:${calc.hm.profit>=0?'#9B7535':'#A02021'};font-size:16px;padding-top:8px;border-top:1px solid #E8DDC9;margin-top:4px">${$fmt(calc.hm.profit)}</span>
+          <span style="color:#9B7535;font-weight:700">% LUCRO</span><span id="bm-hm-profit-pct" style="text-align:right;font-weight:800;color:${calc.hm.profit_pct>=0?'#9B7535':'#A02021'};font-size:16px">${calc.hm.profit_pct.toFixed(1)}%</span>
         </div>
       </div>
     </div>`;
@@ -12593,18 +12642,18 @@ function renderBudgetEditorModal(){
 
         <!-- GRUPO 2: HARD MONEY (essencial) -->
         <div style="margin-bottom:14px">
-          <div style="font-size:10px;font-weight:700;color:#B8860B;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#B8860B"></span>
+          <div style="font-size:10px;font-weight:700;color:#9B7535;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#9B7535"></span>
             💰 Hard Money
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
             <div>
-              <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">% HM Loan</label>
+              <label style="font-size:10px;font-weight:700;color:#9B7535;display:block;margin-bottom:3px">% HM Loan</label>
               <input type="number" min="0" max="1" step="0.01" value="${b.hm_pct||''}" oninput="updateBudgetField('hm_pct',this.value)" placeholder="ex 0.70 = 70%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
               <div id="bm-hm-hint" style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
             </div>
             <div>
-              <label style="font-size:10px;font-weight:700;color:#B8860B;display:block;margin-bottom:3px">Meses HM</label>
+              <label style="font-size:10px;font-weight:700;color:#9B7535;display:block;margin-bottom:3px">Meses HM</label>
               <input type="number" min="1" max="48" step="1" value="${b.hm_months||6}" oninput="updateBudgetField('hm_months',this.value)" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
             </div>
             <div>
@@ -12682,7 +12731,7 @@ function renderBudgetEditorModal(){
         ${b.id?`<button onclick="deleteBudget()" style="padding:8px 14px;background:transparent;color:#A02021;border:1.5px solid #FFB5B5;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">🗑 Deletar</button>`:''}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${b.id?`<button onclick="generateBudgetPDF()" style="padding:8px 14px;background:#fff;color:#3D271A;border:1.5px solid #C68A4A;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">🖨 PDF</button>
+        ${b.id?`<button onclick="generateBudgetPDF()" style="padding:8px 14px;background:#fff;color:#3D271A;border:1.5px solid #9B7535;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">🖨 PDF</button>
         <button onclick="downloadBudgetExcel()" style="padding:8px 14px;background:#fff;color:#3D271A;border:1.5px solid #5C7A3F;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📥 Excel</button>`:''}
         <button onclick="closeBudgetEditor()" style="padding:8px 14px;background:transparent;color:#655A4E;border:1.5px solid var(--gray2);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">Cancelar</button>
         <button onclick="saveBudget()" style="padding:8px 22px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">💾 Salvar</button>
@@ -12834,7 +12883,7 @@ function refreshBudgetLiveCalcs(){
     if(!e) return;
     const isCash=id.includes('cash');
     const profit=isCash?calc.cash.profit:calc.hm.profit;
-    e.style.color=profit>=0 ? (isCash?'#5C7A3F':'#B8860B') : '#A02021';
+    e.style.color=profit>=0 ? (isCash?'#5C7A3F':'#9B7535') : '#A02021';
   });
   // 5. Update "auto"/"manual" hints on formula lines (without re-render)
   (b.cost_lines||[]).forEach((line,idx)=>{
@@ -12845,7 +12894,7 @@ function refreshBudgetLiveCalcs(){
     if(hintEl){
       if(base>0){
         hintEl.textContent='manual';
-        hintEl.style.color='#C68A4A';
+        hintEl.style.color='#9B7535';
       } else {
         hintEl.textContent='auto';
         hintEl.style.color='#5C7A3F';
@@ -12853,7 +12902,7 @@ function refreshBudgetLiveCalcs(){
     }
     if(inputEl){
       if(base>0){
-        inputEl.style.borderColor='#C68A4A';
+        inputEl.style.borderColor='#9B7535';
         inputEl.style.background='#FFF8E7';
         inputEl.style.fontWeight='700';
       } else {
@@ -13002,10 +13051,10 @@ function generateBudgetPDF(){
   .brand{font-size:24px;font-weight:800;letter-spacing:.5px}
   .brand .sub{font-size:11px;color:#999;font-weight:600;letter-spacing:1.5px}
   .title{text-align:right;font-size:13px;color:#655A4E;letter-spacing:1px;text-transform:uppercase}
-  .info-row{display:flex;gap:30px;margin-bottom:18px;padding:12px 16px;background:#FAF7F3;border-left:4px solid #C68A4A;border-radius:6px}
+  .info-row{display:flex;gap:30px;margin-bottom:18px;padding:12px 16px;background:#FAF7F3;border-left:4px solid #9B7535;border-radius:6px}
   .info-row strong{color:#3D271A;font-weight:700}
   .info-row span{color:#655A4E}
-  h2{font-size:14px;color:#3D271A;text-transform:uppercase;letter-spacing:.6px;margin:18px 0 8px;padding-bottom:4px;border-bottom:2px solid #C68A4A}
+  h2{font-size:14px;color:#3D271A;text-transform:uppercase;letter-spacing:.6px;margin:18px 0 8px;padding-bottom:4px;border-bottom:2px solid #9B7535}
   table{width:100%;border-collapse:collapse;margin-bottom:14px}
   th{background:#3D271A;color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:700}
   th.r{text-align:right}
@@ -13014,19 +13063,19 @@ function generateBudgetPDF(){
   .totals{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
   .scen{padding:14px 18px;border-radius:8px}
   .scen.cash{background:#F2F4EC;border-left:4px solid #5C7A3F}
-  .scen.hm{background:#FAF3E0;border-left:4px solid #B8860B}
+  .scen.hm{background:#FAF3E0;border-left:4px solid #9B7535}
   .scen h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
   .scen.cash h3{color:#5C7A3F}
-  .scen.hm h3{color:#B8860B}
+  .scen.hm h3{color:#9B7535}
   .scen .row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
   .scen .lucro{padding-top:8px;border-top:1px solid #ddd;margin-top:6px;font-weight:700;font-size:14px}
   .scen.cash .lucro{color:#5C7A3F}
-  .scen.hm .lucro{color:#B8860B}
+  .scen.hm .lucro{color:#9B7535}
   .footer{margin-top:30px;padding-top:14px;border-top:1px solid #eee;text-align:center;color:#999;font-size:10px}
-  .notes{margin-top:14px;padding:10px 14px;background:#FFF8E7;border-left:3px solid #C68A4A;font-size:11px;color:#655A4E;border-radius:4px}
+  .notes{margin-top:14px;padding:10px 14px;background:#FFF8E7;border-left:3px solid #9B7535;font-size:11px;color:#655A4E;border-radius:4px}
 </style></head><body>
   <div class="header">
-    <div class="brand">DEC<span style="color:#C68A4A">GROUP</span>
+    <div class="brand">DEC<span style="color:#9B7535">GROUP</span>
       <div class="sub">USA</div>
     </div>
     <div class="title">Orçamento<br>Viabilidade Pré-Projeto</div>
@@ -13297,7 +13346,7 @@ function dlRenderList(){
     const photos=_dlPhotosByLog[e.id]||[];
     const tasks=Array.isArray(e.tasks_done)?e.tasks_done:[];
     const tasksHTML=tasks.length>0
-      ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">${tasks.map(t=>`<span style="display:inline-block;padding:3px 9px;background:#F5EBDA;color:#A86A2C;border-radius:10px;font-size:11px;font-weight:600">${(t.phase_id?'['+t.phase_id.toUpperCase()+'] ':'')+(t.name||'').replace(/</g,'&lt;')}</span>`).join('')}</div>`
+      ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">${tasks.map(t=>`<span style="display:inline-block;padding:3px 9px;background:#F5EBDA;color:#7A5A28;border-radius:10px;font-size:11px;font-weight:600">${(t.phase_id?'['+t.phase_id.toUpperCase()+'] ':'')+(t.name||'').replace(/</g,'&lt;')}</span>`).join('')}</div>`
       : '';
     const photosHTML=photos.length>0
       ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${photos.map(p=>`<a href="javascript:dlOpenPhoto('${p.storage_path}')" style="display:inline-block;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1.5px solid #F0EAE2;background:#FAF7F3 url('${dlPhotoUrl(p.storage_path)}') center/cover no-repeat;text-decoration:none" title="Ver foto"></a>`).join('')}</div>`
@@ -13354,7 +13403,7 @@ function dlPickTasksFromGantt(){
     const checked=selectedKeys.has(t.task_key)?'checked':'';
     return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #F0EAE2;cursor:pointer;font-size:13px">
       <input type="checkbox" ${checked} value="${i}" style="cursor:pointer">
-      <span><strong style="color:#A86A2C">[${t.phase_id.toUpperCase()}]</strong> ${t.name.replace(/</g,'&lt;')}</span>
+      <span><strong style="color:#7A5A28">[${t.phase_id.toUpperCase()}]</strong> ${t.name.replace(/</g,'&lt;')}</span>
     </label>`;
   }).join('');
   m.innerHTML=`<div style="background:#fff;border-radius:12px;max-width:600px;width:100%;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:80vh;display:flex;flex-direction:column">
@@ -13388,8 +13437,8 @@ function dlConfirmTasksPick(allTasks){
 function dlRenderSelectedTasks(){
   const el=document.getElementById('dl-tasks-selected');
   if(_dlSelectedTasks.length===0){el.innerHTML='';return;}
-  el.innerHTML=`<div style="padding:10px 12px;background:#F5EBDA;border-left:3px solid #C68A4A;border-radius:5px">
-    <div style="font-size:11px;font-weight:700;color:#A86A2C;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">Tarefas selecionadas</div>
+  el.innerHTML=`<div style="padding:10px 12px;background:#F5EBDA;border-left:3px solid #9B7535;border-radius:5px">
+    <div style="font-size:11px;font-weight:700;color:#7A5A28;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">Tarefas selecionadas</div>
     <div style="display:flex;flex-wrap:wrap;gap:5px">
       ${_dlSelectedTasks.map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 4px 3px 9px;background:#fff;color:#3D271A;border-radius:10px;font-size:11px;font-weight:600">[${t.phase_id.toUpperCase()}] ${t.name.replace(/</g,'&lt;')} <button onclick="dlRemoveSelectedTask(${i})" style="background:transparent;border:0;cursor:pointer;color:#A02021;font-size:13px;padding:0 4px;line-height:1">×</button></span>`).join('')}
     </div>
