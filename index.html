@@ -12710,6 +12710,10 @@ function renderBudgetEditorModal(){
   const linesHTML=b.cost_lines.map((line,idx)=>{
     const isFormula=!!line.formula;
     const isExtra=line.is_extra===true;
+    // Limpar SVG do nome para comparação
+    const cleanName = line.name.replace(/<svg[^>]*>.*?<\/svg>/g, '').trim();
+    // Auto-detect lock_to_hm_months para linhas antigas (que não têm salvo)
+    const shouldLock = line.lock_to_hm_months || line.formula==='hm_interest' || cleanName.includes('Juros do Hard Money') || cleanName.includes('Água/Luz') || cleanName.includes('Corte de grama');
     // Compute per-scenario values for display
     const purchase=+b.purchase_price||0;
     const arv=+b.arv||0;
@@ -12788,7 +12792,7 @@ function renderBudgetEditorModal(){
       </td>
       <td id="bm-line-cash-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valCash)}</td>
       <td style="padding:6px 4px;text-align:center">
-        ${line.lock_to_hm_months
+        ${shouldLock
           ? `<input id="bm-locked-hm-${idx}" type="number" min="0" max="48" step="1" value="${+b.hm_months||6}" disabled style="width:50px;padding:5px;font-size:12px;border:1.5px solid #D4A574;border-radius:4px;text-align:center;background:#FAF3E0;font-weight:600;color:#7A5A28;cursor:not-allowed" title="Sincronizado com Meses HM (lá em cima) - não pode editar">`
           : `<input type="number" min="0" max="48" step="1" value="${line.months_hm||1}" oninput="updateBudgetLine(${idx},'months_hm',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">`}
       </td>
@@ -13120,7 +13124,9 @@ function refreshBudgetLiveCalcs(){
     if(cashEl) cashEl.textContent=$$2(valCash);
     if(hmEl)   hmEl.textContent  =$$2(valHm);
     // Atualizar inputs de meses bloqueados para usar b.hm_months global
-    if(line.lock_to_hm_months){
+    const cleanName = line.name.replace(/<svg[^>]*>.*?<\/svg>/g, '').trim();
+    const shouldLock = line.lock_to_hm_months || line.formula==='hm_interest' || cleanName.includes('Juros do Hard Money') || cleanName.includes('Água/Luz') || cleanName.includes('Corte de grama');
+    if(shouldLock){
       const lockedInput = document.getElementById('bm-locked-hm-'+idx);
       if(lockedInput) lockedInput.value = +b.hm_months||6;
     }
