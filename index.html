@@ -12282,6 +12282,12 @@ async function renderBudgets(){
   }).join('');
 }
 
+// ─── Helper: Check if a line should be locked to HM months ─────────────────
+function isLineLocked(line){
+  const cleanName = line.name.replace(/<svg[^>]*>.*?<\/svg>/g, '').trim();
+  return line.lock_to_hm_months || line.formula==='hm_interest' || cleanName.includes('Juros do Hard Money') || cleanName.includes('Água/Luz') || cleanName.includes('Corte de grama');
+}
+
 // ─── Compute scenario totals from a budget record ─────────────────────
 // CASH scenario: company pays everything in cash (no HM loan, no interest, no down HM)
 // HM scenario:   company uses HM loan to fund part of the purchase
@@ -12311,8 +12317,8 @@ function calcBudgetSummary(b){
   let hmDescontos=0;       // HM scenario: closing reductions (will include HM principal)
   lines.forEach(line=>{
     const base=+line.base||0;
-    const mCash=+line.months_cash||1;
-    const mHm=+line.months_hm||1;
+    const mCash=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_cash||1);
+    const mHm=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_hm||1);
     // Override rule: if a formula line has base > 0, that overrides the formula
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
@@ -12726,8 +12732,8 @@ function renderBudgetEditorModal(){
     const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
     const commPct = commAgentPct + commClosingPct;
     const base=+line.base||0;
-    const mCash=+line.months_cash||1;
-    const mHm=+line.months_hm||1;
+    const mCash=shouldLock ? (+b.hm_months||6) : (+line.months_cash||1);
+    const mHm=shouldLock ? (+b.hm_months||6) : (+line.months_hm||1);
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='house_value'){
@@ -12786,7 +12792,9 @@ function renderBudgetEditorModal(){
         ${autoHint}
       </td>
       <td style="padding:6px 4px;text-align:center">
-        ${(line.formula==='down_cash'||line.formula==='rehab'||line.formula==='commission_6'||isFormula===false)
+        ${shouldLock
+          ? `<input id="bm-locked-cash-${idx}" type="number" min="0" max="48" step="1" value="${+b.hm_months||6}" disabled style="width:50px;padding:5px;font-size:12px;border:1.5px solid #D4A574;border-radius:4px;text-align:center;background:#FAF3E0;font-weight:600;color:#7A5A28;cursor:not-allowed" title="Sincronizado com Meses HM (lá em cima) - não pode editar">`
+          : (line.formula==='down_cash'||line.formula==='rehab'||line.formula==='commission_6'||isFormula===false)
           ?`<input type="number" min="0" max="48" step="1" value="${line.months_cash||1}" oninput="updateBudgetLine(${idx},'months_cash',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">`
           :'—'}
       </td>
@@ -13045,7 +13053,7 @@ function useFormulaValue(idx){
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commPct = commAgentPct + commClosingPct;
-  const mHm=+line.months_hm||1;
+  const mHm=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_hm||1);
   let value=0;
   if(line.formula==='house_value')      value=purchase;
   else if(line.formula==='down_cash')   value=hmLoan>0 ? Math.max(0, purchase-hmLoan) : purchase;
@@ -13090,8 +13098,8 @@ function refreshBudgetLiveCalcs(){
   // 2. Update per-line displayed values
   (b.cost_lines||[]).forEach((line,idx)=>{
     const base=+line.base||0;
-    const mCash=+line.months_cash||1;
-    const mHm=+line.months_hm||1;
+    const mCash=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_cash||1);
+    const mHm=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_hm||1);
     const hasOverride = base > 0;
     let valCash=0, valHm=0;
     if(line.formula==='house_value'){
@@ -13127,8 +13135,10 @@ function refreshBudgetLiveCalcs(){
     const cleanName = line.name.replace(/<svg[^>]*>.*?<\/svg>/g, '').trim();
     const shouldLock = line.lock_to_hm_months || line.formula==='hm_interest' || cleanName.includes('Juros do Hard Money') || cleanName.includes('Água/Luz') || cleanName.includes('Corte de grama');
     if(shouldLock){
-      const lockedInput = document.getElementById('bm-locked-hm-'+idx);
-      if(lockedInput) lockedInput.value = +b.hm_months||6;
+      const lockedInputHm = document.getElementById('bm-locked-hm-'+idx);
+      if(lockedInputHm) lockedInputHm.value = +b.hm_months||6;
+      const lockedInputCash = document.getElementById('bm-locked-cash-'+idx);
+      if(lockedInputCash) lockedInputCash.value = +b.hm_months||6;
     }
   });
   // 3. Update scenario summary totals (Cash + HM cards + Gross Profit)
