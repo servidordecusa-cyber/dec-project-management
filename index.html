@@ -12789,7 +12789,7 @@ function renderBudgetEditorModal(){
       <td id="bm-line-cash-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valCash)}</td>
       <td style="padding:6px 4px;text-align:center">
         ${line.lock_to_hm_months
-          ? `<input type="number" min="0" max="48" step="1" value="${+b.hm_months||6}" disabled style="width:50px;padding:5px;font-size:12px;border:1.5px solid #D4A574;border-radius:4px;text-align:center;background:#FAF3E0;font-weight:600;color:#7A5A28;cursor:not-allowed" title="Sincronizado com Meses HM (lá em cima) - não pode editar">`
+          ? `<input id="bm-locked-hm-${idx}" type="number" min="0" max="48" step="1" value="${+b.hm_months||6}" disabled style="width:50px;padding:5px;font-size:12px;border:1.5px solid #D4A574;border-radius:4px;text-align:center;background:#FAF3E0;font-weight:600;color:#7A5A28;cursor:not-allowed" title="Sincronizado com Meses HM (lá em cima) - não pode editar">`
           : `<input type="number" min="0" max="48" step="1" value="${line.months_hm||1}" oninput="updateBudgetLine(${idx},'months_hm',this.value)" style="width:50px;padding:5px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;text-align:center">`}
       </td>
       <td id="bm-line-hm-${idx}" style="padding:6px 4px;text-align:right;font-weight:600;color:#3D271A">${$fmt(valHm)}</td>
@@ -13121,10 +13121,8 @@ function refreshBudgetLiveCalcs(){
     if(hmEl)   hmEl.textContent  =$$2(valHm);
     // Atualizar inputs de meses bloqueados para usar b.hm_months global
     if(line.lock_to_hm_months){
-      const inputs = document.querySelectorAll(`input[style*="FAF3E0"]`);
-      inputs.forEach(inp => {
-        if(inp.value != (+b.hm_months||6)) inp.value = +b.hm_months||6;
-      });
+      const lockedInput = document.getElementById('bm-locked-hm-'+idx);
+      if(lockedInput) lockedInput.value = +b.hm_months||6;
     }
   });
   // 3. Update scenario summary totals (Cash + HM cards + Gross Profit)
