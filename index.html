@@ -10810,9 +10810,9 @@ async function cdApproveBudget(budgetId){
     name:addr,
     address:addr,
     customer:b.client_id,
-    purchase_price:+b.purchase_price||0,
-    start:new Date().toISOString().slice(0,10),
+    start_date:new Date().toISOString().slice(0,10),
     pm:'',
+    notes:b.name ? `Orçamento: ${b.name}` : ''
   };
   const {data:newProj,error:projErr}=await sb.from('projects').insert(projectPayload).select().single();
   if(projErr){toast('Erro criar projeto: '+projErr.message,false);return;}
@@ -10828,6 +10828,33 @@ async function cdApproveBudget(budgetId){
   if(!projects.find(p=>p.id===newProj.id)) projects.push(newProj);
   toast('✅ Projeto criado! Redirecionando...',true);
   setTimeout(()=>openProject(newProj.id),800);
+}
+
+// Atualiza status e cria projeto automaticamente se aprovado
+async function updateBudgetStatusAndApprove(newStatus){
+  if(!_bdgCurrent) return;
+  const oldStatus = _bdgCurrent.status;
+  _bdgCurrent.status = newStatus;
+  
+  // Se mudou para 'approved', tenta criar projeto automaticamente
+  if(newStatus === 'approved' && oldStatus !== 'approved'){
+    // Salva primeiro o status
+    const {error: saveErr} = await sb.from('budgets').update({status: 'approved'}).eq('id', _bdgCurrent.id);
+    if(saveErr){
+      toast('Erro ao atualizar status: '+saveErr.message, false);
+      _bdgCurrent.status = oldStatus; // reverte
+      return;
+    }
+    // Depois cria o projeto automaticamente
+    setTimeout(()=> cdApproveBudget(_bdgCurrent.id), 300);
+  } else {
+    // Só atualiza o status sem criar projeto
+    const {error} = await sb.from('budgets').update({status: newStatus}).eq('id', _bdgCurrent.id);
+    if(error){
+      toast('Erro ao atualizar status: '+error.message, false);
+      _bdgCurrent.status = oldStatus;
+    }
+  }
 }
 
 
@@ -12874,7 +12901,7 @@ function renderBudgetEditorModal(){
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:#655A4E;letter-spacing:.4px;text-transform:uppercase;display:block;margin-bottom:4px">Status</label>
-          <select onchange="_bdgCurrent.status=this.value" style="width:100%;padding:8px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer">
+          <select onchange="updateBudgetStatusAndApprove(this.value)" style="width:100%;padding:8px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer">
             <option value="draft" ${b.status==='draft'?'selected':''}>Rascunho</option>
             <option value="approved" ${b.status==='approved'?'selected':''}>Aprovado</option>
             <option value="rejected" ${b.status==='rejected'?'selected':''}>Rejeitado</option>
