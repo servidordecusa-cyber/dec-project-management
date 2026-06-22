@@ -4193,11 +4193,17 @@ async function confirmAddItem(){
   if(!budgetMap[CID]) budgetMap[CID]={};
   if(!budgetMap[CID][gid]) budgetMap[CID][gid]={};
   if(!budgetMap[CID][gid][islug]) budgetMap[CID][gid][islug]={est:0,actual:0,est_note:'',actual_note:'',est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,category:''};
-  await sb.from('budget_items').upsert({project_id:CID,room_id:gid,item_slug:islug,
+  const {error: upsertErr} = await sb.from('budget_items').upsert({project_id:CID,room_id:gid,item_slug:islug,
     item_name:clean,est:0,actual:0,est_note:'',actual_note:'',
     est_supplier:'',actual_supplier:'',est_qty:0,actual_qty:0,est_unit_cost:0,actual_unit_cost:0,
     category:''},
     {onConflict:'project_id,room_id,item_slug'});
+  if(upsertErr){
+    toast('⚠ Erro ao salvar item: '+upsertErr.message, false);
+    // Remove from itemsMap se falhou no DB
+    itemsMap[CID][gid] = itemsMap[CID][gid].filter(x => x.slug !== islug);
+    return;
+  }
   // Re-render BOTH tables (est + act) so item shows up in both
   renderItems('est',gid);
   renderItems('act',gid);
