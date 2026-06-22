@@ -10113,7 +10113,8 @@ function formatDuplicateMessage(source, dups){
 
 function populateVendorDropdowns(){
   // Used in Actual Costs supplier dropdowns
-  // We don't have a single dropdown — multiple per row, so just expose a helper that renders <options>return '<option value="">— Select —</option>'+
+  // We don't have a single dropdown — multiple per row, so just expose a helper that renders <options>
+  return '<option value="">— Select —</option>'+
     vendors.map(v=>`<option value="${v.id}">${(v.name||'').replace(/"/g,'&quot;')}</option>`).join('');
 }
 
