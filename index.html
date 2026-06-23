@@ -2743,6 +2743,15 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   const profitPct=totalInvested>0 ? ((totalProfit/totalInvested)*100).toFixed(1) : 0;
   const estimatedProfitPct=totalInvested>0 ? ((totalEstimatedProfit/totalInvested)*100).toFixed(1) : 0;
 
+  // Build type breakdown HTML
+  const typeChips=Object.entries(typeCount).map(([k,c])=>{
+    const meta=PROJECT_TYPE_LABELS[k]||{label:'Não classificado',icon:'❓'};
+    return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border:1px solid #E8DDC9;border-radius:18px;font-size:12px;color:#3D271A;font-weight:600">
+      <span style="font-size:14px">${meta.icon}</span>
+      <span>${meta.label}: <strong>${c}</strong></span>
+    </div>`;
+  }).join('');
+
   const dashboardHTML=`
     <div style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden;color:#fff">
       <div style="padding:22px 24px 12px">
