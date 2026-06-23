@@ -3201,7 +3201,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const netProfit = calcNetProfit(p.id);
           const pctClient = +pr.pct_client || 70;
           const lucroCliente = netProfit * pctClient / 100;
-          const totalInvested = purchasePrice + calcTotal2(p.id);
+          const totalInvested = wholesalePrice + calcTotal2(p.id);
           const roiTotal = totalInvested > 0 ? (netProfit / totalInvested * 100) : 0;
           const cor = netProfit >= 0 ? (isSold ? '#5C7A3F' : '#9B7535') : '#A02021';
           const roiHTML = netProfit !== 0
