@@ -2617,19 +2617,14 @@ function calcGrossProfit(projectId, propertyByProj){
   return sale - sellingCosts - lenderSale;
 }
 
-// ─── Calcular Total2 (Invoices + Recurring) para dashboard ──────────────────
-function calcTotal2ForDashboard(projectId){
+// ─── Calcular Total2 (Costs + Recurring Costs) para dashboard ──────────────
+function calcTotal2ForDashboard(projectId, propertyByProj){
+  propertyByProj = propertyByProj || {};
   if(!projectId) return 0;
-  const invoicesForPortal = window._portalInvoices || [];
-  // INVOICES operacionais (status !== 'cancelled')
-  const opInvoices = invoicesForPortal.filter(i => {
-    if(i.project_id !== projectId) return false;
-    if(i.status === 'cancelled') return false;
-    const k = i.kind || 'operational';
-    return k === 'operational' || k === 'third_party_asset_manager';
-  });
-  const invoicesTotal = opInvoices.reduce((s, i) => s + (+i.amount || 0), 0);
-  return invoicesTotal;
+  const p = propertyByProj[projectId] || {};
+  const costs = +p.costs || 0;
+  const recurringCosts = +p.recurring_costs || 0;
+  return costs + recurringCosts;
 }
 
 // ─── Calcular Net Profit para qualquer projeto (GLOBAL) ────────────────────
@@ -2640,7 +2635,7 @@ function calcNetProfit(projectId, propertyByProj){
   const wholesalePrice = +p.wholesale_price || 0;
   const hardMoney = +p.hard_money || 0;
   const cash = wholesalePrice - hardMoney; // CASH = wholesale - hardmoney
-  const total2 = calcTotal2ForDashboard(projectId);
+  const total2 = calcTotal2ForDashboard(projectId, propertyByProj);
   const sellingCosts = +p.selling_costs || 0;
   const lenderSale = +p.lender_payback_sale || 0;
   const totalInvested = cash + total2;
@@ -2649,9 +2644,6 @@ function calcNetProfit(projectId, propertyByProj){
 }
 
 function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog){
-  // Make invoices globally accessible for calcTotal2ForDashboard
-  window._portalInvoices = invoices;
-  
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
@@ -3207,7 +3199,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           }
 
           // ─── COLUNAS INVOICES e GROSS PROFIT ──────────────────────
-          const total2 = calcTotal2ForDashboard(p.id);
+          const total2 = calcTotal2ForDashboard(p.id, propertyByProj);
           const grossProfit = calcGrossProfit(p.id, propertyByProj);
           const invoicesHTML = total2 > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(total2)}</div>`
