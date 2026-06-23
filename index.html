@@ -6756,8 +6756,8 @@ function calcNetProfit(projectId){
 // ─── Calcular TOTAL 2 (custos do projeto) para qualquer projeto ──────────
 function calcTotal2(projectId){
   const p=propertyMap[projectId]||{};
-  // Operational invoices (paid invoices only)
-  const invoicesOp=investableInvoices(projectId).filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+  // Operational invoices (paid invoices only) — usando invoices global
+  const invoicesOp=(invoices||[]).filter(i=>i.project_id===projectId&&i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
   // Recurring costs
   const rcdData=recurringMap[projectId]||{};
   const recRows=RC_ITEMS.map(itemName=>{
