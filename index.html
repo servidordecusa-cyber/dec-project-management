@@ -2609,43 +2609,61 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
-// ─── Calcular TOTAL 2 para Dashboard (usa MESMA LÓGICA do PDF) ──
+// ─── TOTAL 2 — usa EXATA mesma lógica do PDF ──
 function calcTotal2ForDashboard(projectId){
   if(!projectId) return 0;
-  // Operational invoices — uses same filter as PDF: status !== 'cancelled'
-  const allInvoices=(invoices||[]);
-  console.log(`DEBUG: All invoices count=${allInvoices.length}`, allInvoices.slice(0,3));
-  const filteredInvoices=allInvoices.filter(i=>i.project_id===projectId && i.status!=='cancelled' && ((i.kind||'operational')==='operational'));
-  console.log(`DEBUG: Filtered for project ${projectId}: count=${filteredInvoices.length}`, filteredInvoices);
-  const invoicesOp=filteredInvoices.reduce((s,i)=>s+(+i.amount||0),0);
-  console.log(`DEBUG: invoicesOp=${invoicesOp}`);
   
-  // Recurring costs
+  // INVOICES — exact filter from PDF
+  const opInvoices=(invoices||[])
+    .filter(i=>{
+      if(i.project_id!==projectId) return false;
+      if(i.status==='cancelled') return false;
+      const k=i.kind||'operational';
+      return k==='operational'||k==='third_party_asset_manager';
+    });
+  const invoicesTotal=opInvoices.reduce((s,i)=>s+(+i.amount||0),0);
+  
+  // RECURRING — from recurringMap
   const rcdData=recurringMap[projectId]||{};
-  const recTotal=RC_ITEMS.map(itemName=>{
+  const recRows=RC_ITEMS.map(itemName=>{
     const row=rcdData[itemName]||{months:{}};
     const months=row.months||{};
-    return Object.values(months).reduce((s,v)=>s+(+v||0),0);
-  }).reduce((s,v)=>s+v,0);
-  console.log(`DEBUG: recTotal=${recTotal}`);
+    const total=Object.values(months).reduce((s,v)=>s+(+v||0),0);
+    return {desc:itemName+(row.notes?' — '+row.notes:''),val:total};
+  }).filter(r=>r.val>0);
+  const recTotal=recRows.reduce((s,r)=>s+r.val,0);
   
-  // DEC Invoice, Documents, High End costs
-  const getExtraCostsForProject=(category)=>((extraCostsMap[projectId]||{})[category])||[];
-  const decItems=getExtraCostsForProject('dec_invoice');
-  const decExtraTotal=decItems.reduce((s,e)=>s+(+e.amount||0),0);
-  const docItems=getExtraCostsForProject('documents');
-  const docTotal=docItems.reduce((s,e)=>s+(+e.amount||0),0);
-  const heItems=getExtraCostsForProject('high_end');
-  const heTotal=heItems.reduce((s,e)=>s+(+e.amount||0),0);
-  console.log(`DEBUG: dec=${decExtraTotal}, docs=${docTotal}, he=${heTotal}`);
+  // DEC INVOICE
+  const decItems=(extraCostsMap[projectId]||{})['dec_invoice']||[];
+  const decRows=decItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name,
+    val:+it.amount||0
+  }));
+  const decExtraTotal=decRows.reduce((s,r)=>s+r.val,0);
   
-  // Holding costs
+  // DOCUMENTS
+  const docItems=(extraCostsMap[projectId]||{})['documents']||[];
+  const docRows=docItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name,
+    val:+it.amount||0
+  }));
+  const docTotal=docRows.reduce((s,r)=>s+r.val,0);
+  
+  // HIGH END
+  const heItems=(extraCostsMap[projectId]||{})['high_end']||[];
+  const heRows=heItems.filter(it=>(+it.amount||0)>0).map(it=>({
+    desc:it.name,
+    val:+it.amount||0
+  }));
+  const heTotal=heRows.reduce((s,r)=>s+r.val,0);
+  
+  // HOLDING COSTS
   const p=(propertyMap[projectId]||{});
   const holdingCosts=+p.holding_costs||0;
   
-  // Total 2 — SAME LOGIC AS PDF
-  const total2=invoicesOp+recTotal+decExtraTotal+docTotal+heTotal+holdingCosts;
-  console.log(`calcTotal2ForDashboard ${projectId}: TOTAL=${total2}`);
+  // TOTAL 2 = EXACT SAME FORMULA AS PDF
+  const total2=invoicesTotal+recTotal+decExtraTotal+docTotal+heTotal+holdingCosts;
+  console.log(`TOTAL2 ${projectId}: inv=${invoicesTotal} rec=${recTotal} dec=${decExtraTotal} doc=${docTotal} he=${heTotal} holding=${holdingCosts} = ${total2}`);
   return total2;
 }
 
