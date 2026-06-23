@@ -3144,11 +3144,16 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // CASH = wholesale_price - hard_money
-          const wholesalePrice = +pr.wholesale_price || 0;
+          // WHOLESALER PRICE = EMD + CASH + OTHER_COSTS + COMMISSION + HARD MONEY
+          // CASH (investidor) = WHOLESALER - HARD MONEY
+          const emdCash = +pr.emd_cash || 0;
+          const prCash = +pr.cash || 0;
           const hardMoney = +pr.hard_money || 0;
+          const otherCosts = +pr.other_costs || 0;
+          const commission = +pr.commission || 0;
+          const wholesalePrice = emdCash + prCash + hardMoney + otherCosts + commission;
           const cash = wholesalePrice - hardMoney;
-          const cashHTML = (wholesalePrice > 0 || hardMoney > 0)
+          const cashHTML = wholesalePrice > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cash)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
