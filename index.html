@@ -3184,9 +3184,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
               lucroPrevistoValue = estProfit*pctClient/100;
             }
             
-            const tag = isSold
-              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
-              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
+            const tag = `<div style="font-size:8px;color:${cor};font-weight:700;margin-top:2px;letter-spacing:.3px">${roiTotal.toFixed(0)}%</div>`;
             roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroPrevistoValue)}</div>${tag}`;
           }
 
@@ -3218,8 +3216,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Tipo</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">hardmoney</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">invoices</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
@@ -3355,12 +3353,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         ${projects.length>0?`
         <!-- Toggle Cards / Tabela (Realizado) -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #D5C9BC;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
-          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
+          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>`:''}
       </div>
-      <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>
-      <div id="portal-projects-table" style="display:none">${projectsTableHTML}</div>
+      <div id="portal-projects-cards" style="display:none">${projectsHTML}${noProjectsHTML}</div>
+      <div id="portal-projects-table">${projectsTableHTML}</div>
 
       <!-- SEÇÃO: DIÁRIO DE OBRA -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -3378,12 +3376,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         ${budgetsData.length>0?`
         <!-- Toggle Cards / Tabela -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
-          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
+          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>`:''}
       </div>
-      <div id="portal-budgets-cards">${budgetsHTML}</div>
-      <div id="portal-budgets-table" style="display:none">${renderBudgetClientTable(budgetsData)}</div>
+      <div id="portal-budgets-cards" style="display:none">${budgetsHTML}</div>
+      <div id="portal-budgets-table">${renderBudgetClientTable(budgetsData)}</div>
 
       <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
