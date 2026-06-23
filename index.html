@@ -2654,7 +2654,9 @@ function calcNetProfit(projectId, propertyByProj){
   propertyByProj = propertyByProj || {};
   const p=propertyByProj[projectId]||{};
   const grossProfit = (+p.final_sale_price||0);
-  const cash = +p.cash||0;
+  const wholesalePrice = +p.wholesale_price||0;
+  const hardMoney = +p.hard_money||0;
+  const cash = wholesalePrice - hardMoney; // CASH = wholesale - hardmoney
   const total2 = calcTotal2ForDashboard(projectId);
   const sellingCosts = +p.selling_costs||0;
   const lenderSale = +p.lender_payback_sale||0;
