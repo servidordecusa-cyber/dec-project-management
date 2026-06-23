@@ -2611,7 +2611,16 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
-// ─── TOTAL 2 — usa EXATA mesma lógica do PDF ──
+// ─── GROSS PROFIT — Final Sale - Selling Costs - Lender Costs
+function calcGrossProfit(projectId, propertyByProj){
+  if(!projectId) return 0;
+  const p = propertyByProj[projectId] || {};
+  const sale = +p.final_sale_price || 0;
+  const sellingCosts = +p.selling_costs || 0;
+  const lenderSale = +p.lender_costs_sale || 0;
+  const grossProfit = sale - sellingCosts - lenderSale;
+  return grossProfit;
+}
 function calcTotal2ForDashboard(projectId){
   if(!projectId) return 0;
   
@@ -3223,20 +3232,16 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
             : `<span style="color:#999">—</span>`;
 
-          // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
-          // Em andamento → ARV em dourado + tag (PROJEÇÃO)
-          // Vendido → final_sale_price em verde + tag (REAL)
-          const isSold = status==='sold' && +pr.final_sale_price>0;
-          const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
-          let vendaHTML;
-          if(referenceSale > 0){
-            if(isSold){
-              vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
-            } else {
-              vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
-            }
+          // ─── COLUNA GROSS PROFIT ──────────────────────────────
+          // Gross Profit = Final Sale - Selling Costs - Lender Costs
+          const grossProfit = calcGrossProfit(p.id, propertyByProj);
+          let grossProfitHTML;
+          if(grossProfit > 0){
+            grossProfitHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(grossProfit)}</div>`;
+          } else if(grossProfit < 0){
+            grossProfitHTML = `<div style="font-weight:700;color:#A02021">${$fmtProj(grossProfit)}</div>`;
           } else {
-            vendaHTML = `<span style="color:#999">—</span>`;
+            grossProfitHTML = `<span style="color:#999">—</span>`;
           }
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
@@ -3270,7 +3275,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                 ? `<div>${$fmtProj(total2)}</div>` 
                 : `<span style="color:#999">—</span>`;
             })()}</td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${grossProfitHTML}</td>
             <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
           </tr>`;
         }).join('');
@@ -3286,7 +3291,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">hardmoney</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">invoices</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Gross Profit</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
               </thead>
