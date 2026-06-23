@@ -2615,19 +2615,18 @@ function _invStatusBadge(status){
 function calcTotal2ForDashboard(projectId){
   if(!projectId) return 0;
   
-  console.log(`=== calcTotal2ForDashboard ${projectId} ===`);
-  console.log(`invoices array:`, invoices);
-  console.log(`invoices count:`, (invoices||[]).length);
+  const invoicesForPortal = window._portalInvoices || [];
+  console.log(`calcTotal2 ${projectId}: Using invoices:`, invoicesForPortal.length);
   
   // INVOICES — exact filter from PDF
-  const opInvoices=(invoices||[])
+  const opInvoices=invoicesForPortal
     .filter(i=>{
       if(i.project_id!==projectId) return false;
       if(i.status==='cancelled') return false;
       const k=i.kind||'operational';
       return k==='operational'||k==='third_party_asset_manager';
     });
-  console.log(`opInvoices filtered:`, opInvoices);
+  console.log(`calcTotal2 ${projectId}: Filtered invoices:`, opInvoices.length, opInvoices);
   const invoicesTotal=opInvoices.reduce((s,i)=>s+(+i.amount||0),0);
   
   // RECURRING — from recurringMap
@@ -2642,27 +2641,15 @@ function calcTotal2ForDashboard(projectId){
   
   // DEC INVOICE
   const decItems=(extraCostsMap[projectId]||{})['dec_invoice']||[];
-  const decRows=decItems.filter(it=>(+it.amount||0)>0).map(it=>({
-    desc:it.name,
-    val:+it.amount||0
-  }));
-  const decExtraTotal=decRows.reduce((s,r)=>s+r.val,0);
+  const decExtraTotal=decItems.reduce((s,e)=>s+(+e.amount||0),0);
   
   // DOCUMENTS
   const docItems=(extraCostsMap[projectId]||{})['documents']||[];
-  const docRows=docItems.filter(it=>(+it.amount||0)>0).map(it=>({
-    desc:it.name,
-    val:+it.amount||0
-  }));
-  const docTotal=docRows.reduce((s,r)=>s+r.val,0);
+  const docTotal=docItems.reduce((s,e)=>s+(+e.amount||0),0);
   
   // HIGH END
   const heItems=(extraCostsMap[projectId]||{})['high_end']||[];
-  const heRows=heItems.filter(it=>(+it.amount||0)>0).map(it=>({
-    desc:it.name,
-    val:+it.amount||0
-  }));
-  const heTotal=heRows.reduce((s,r)=>s+r.val,0);
+  const heTotal=heItems.reduce((s,e)=>s+(+e.amount||0),0);
   
   // HOLDING COSTS
   const p=(propertyMap[projectId]||{});
@@ -2670,7 +2657,7 @@ function calcTotal2ForDashboard(projectId){
   
   // TOTAL 2 = EXACT SAME FORMULA AS PDF
   const total2=invoicesTotal+recTotal+decExtraTotal+docTotal+heTotal+holdingCosts;
-  console.log(`TOTAL2 ${projectId}: inv=${invoicesTotal} rec=${recTotal} dec=${decExtraTotal} doc=${docTotal} he=${heTotal} holding=${holdingCosts} = ${total2}`);
+  console.log(`TOTAL2 ${projectId} RESULT: ${total2}`);
   return total2;
 }
 
@@ -2693,6 +2680,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   console.log('projects:', projects);
   console.log('invoices:', invoices);
   console.log('invoices.length:', invoices?.length);
+  
+  // Make invoices globally accessible for calcTotal2ForDashboard
+  window._portalInvoices = invoices;
+  
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
