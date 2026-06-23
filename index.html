@@ -2765,6 +2765,11 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <div style="font-size:28px;font-weight:800;margin-top:4px">${projects.length}</div>
           </div>
           <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+            <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">💰 Total investido</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#E8C57F">${_fmtMoney(totalInvested)}</div>
+            <div style="font-size:11px;opacity:.8;margin-top:4px;color:#E8C57F">100%</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">📈 Lucro realizado</div>
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
             <div style="font-size:11px;opacity:.8;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${profitPct}%</div>
