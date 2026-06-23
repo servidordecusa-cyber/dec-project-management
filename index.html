@@ -2719,14 +2719,29 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     }
   });
 
-  // Build type breakdown HTML
-  const typeChips=Object.entries(typeCount).map(([k,c])=>{
-    const meta=PROJECT_TYPE_LABELS[k]||{label:'Não classificado',icon:'❓'};
-    return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border:1px solid #E8DDC9;border-radius:18px;font-size:12px;color:#3D271A;font-weight:600">
-      <span style="font-size:14px">${meta.icon}</span>
-      <span>${meta.label}: <strong>${c}</strong></span>
-    </div>`;
-  }).join('');
+  // Calcular Lucro Previsto (para projetos em andamento com ARV)
+  let totalEstimatedProfit=0;
+  projects.forEach(p=>{
+    const pr=propertyByProj[p.id]||{};
+    const status=statusFor(p);
+    // Apenas projetos em andamento com ARV definido
+    if(status!=='sold' && status!=='cancelled' && +pr.arv>0){
+      const purchase=purchaseFor(p.id);
+      const paidInv=investableInvoices(p.id).filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+      const refund=refundTotal(p.id);
+      const netInvested=purchase+paidInv-refund;
+      const arv=+pr.arv||0;
+      const sellingCosts=+pr.selling_costs||0;
+      const lenderSale=+pr.lender_costs_sale||0;
+      const estimatedProfit=arv-netInvested-sellingCosts-lenderSale;
+      if(estimatedProfit>0) totalEstimatedProfit+=estimatedProfit;
+    }
+  });
+
+  // Calcular percentuais
+  const returnPct=totalInvested>0 ? ((totalReturned/totalInvested)*100).toFixed(1) : 0;
+  const profitPct=totalInvested>0 ? ((totalProfit/totalInvested)*100).toFixed(1) : 0;
+  const estimatedProfitPct=totalInvested>0 ? ((totalEstimatedProfit/totalInvested)*100).toFixed(1) : 0;
 
   const dashboardHTML=`
     <div style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden;color:#fff">
@@ -2743,15 +2758,24 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">💰 Total investido</div>
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:#E8C57F">${_fmtMoney(totalInvested)}</div>
+            <div style="font-size:11px;opacity:.8;margin-top:4px;color:#E8C57F">100%</div>
           </div>
           <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">✅ Retorno realizado</div>
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:#B5E3B5">${_fmtMoney(totalReturned)}</div>
+            <div style="font-size:11px;opacity:.8;margin-top:4px;color:#B5E3B5">${returnPct}%</div>
             <div style="font-size:10px;opacity:.7;margin-top:2px">de projetos vendidos</div>
           </div>
           <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">📈 Lucro realizado</div>
             <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
+            <div style="font-size:11px;opacity:.8;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${profitPct}%</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+            <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">🎯 Lucro previsto</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#F0D4A8">${totalEstimatedProfit>0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
+            <div style="font-size:11px;opacity:.8;margin-top:4px;color:#F0D4A8">${totalEstimatedProfit>0?'+':''}${estimatedProfitPct}%</div>
+            <div style="font-size:10px;opacity:.7;margin-top:2px">em andamento</div>
           </div>
         </div>
         ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
