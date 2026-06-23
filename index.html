@@ -2608,8 +2608,9 @@ function _invStatusBadge(status){
 }
 
 // ─── Calcular TOTAL 2 (custos do projeto) para qualquer projeto (GLOBAL) ──
-function calcTotal2(projectId){
-  const p=propertyMap[projectId]||{};
+function calcTotal2(projectId, propertyByProj){
+  propertyByProj = propertyByProj || {};
+  const p=propertyByProj[projectId]||{};
   // Operational invoices (paid invoices only)
   const invoicesOp=(invoices||[]).filter(i=>i.project_id===projectId&&i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
   // Recurring costs
@@ -2629,11 +2630,12 @@ function calcTotal2(projectId){
 }
 
 // ─── Calcular Net Profit para qualquer projeto (GLOBAL) ────────────────────
-function calcNetProfit(projectId){
-  const p=propertyMap[projectId]||{};
+function calcNetProfit(projectId, propertyByProj){
+  propertyByProj = propertyByProj || {};
+  const p=propertyByProj[projectId]||{};
   const grossProfit = (+p.final_sale_price||0);
   const wholesalePrice = +p.wholesale_price||0;
-  const total2 = calcTotal2(projectId);
+  const total2 = calcTotal2(projectId, propertyByProj);
   const sellingCosts = +p.selling_costs||0;
   const lenderSale = +p.lender_payback_sale||0;
   const totalInvested = wholesalePrice + total2;
@@ -3198,10 +3200,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
           // ROI/Lucro = 70% Cliente do Net Profit
-          const netProfit = calcNetProfit(p.id);
+          const netProfit = calcNetProfit(p.id, propertyByProj);
           const pctClient = +pr.pct_client || 70;
           const lucroCliente = netProfit * pctClient / 100;
-          const totalInvested = wholesalePrice + calcTotal2(p.id);
+          const totalInvested = wholesalePrice + calcTotal2(p.id, propertyByProj);
           const roiTotal = totalInvested > 0 ? (netProfit / totalInvested * 100) : 0;
           const cor = netProfit >= 0 ? (isSold ? '#5C7A3F' : '#9B7535') : '#A02021';
           const roiHTML = netProfit !== 0
@@ -3222,7 +3224,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${(() => {
-              const total2 = calcTotal2(p.id);
+              const total2 = calcTotal2(p.id, propertyByProj);
               return total2 > 0 
                 ? `<div>${$fmtProj(total2)}</div>` 
                 : `<span style="color:#999">—</span>`;
