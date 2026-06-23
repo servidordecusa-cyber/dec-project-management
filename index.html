@@ -3161,12 +3161,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             : `<span style="color:#999">—</span>`;
 
           // ─── COLUNA INVOICES ─────────────────────────────────────
-          // INVOICES = soma extra_costs (dec_invoice) + recurring_costs
-          let invoicesTotal = 0;
-          const extraByProj = window._extraCostsByProj || {};
-          if(extraByProj[p.id]){
-            invoicesTotal = extraByProj[p.id].reduce((s, e) => s + (+e.amount || 0), 0);
-          }
+          // INVOICES = closing_costs + holding_costs + other_costs
+          const closingCosts = +pr.closing_costs || 0;
+          const holdingCosts = +pr.holding_costs || 0;
+          const invoicesTotal = closingCosts + holdingCosts + otherCosts;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
             : `<span style="color:#999">—</span>`;
