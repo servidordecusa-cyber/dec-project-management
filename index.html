@@ -3227,6 +3227,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${(() => {
               const total2 = calcTotal2(p.id, propertyByProj);
+              console.log(`Project ${p.id} INVOICES total2=${total2}`);
               return total2 > 0 
                 ? `<div>${$fmtProj(total2)}</div>` 
                 : `<span style="color:#999">—</span>`;
