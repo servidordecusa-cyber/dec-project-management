@@ -2539,9 +2539,7 @@ async function showInvestorPortal(token){
       }
       // Index property by project (one record per project)
       if(propRes && !propRes.error){
-        console.log('Property data fetched:', propRes.data);
         (propRes.data||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
-        console.log('propertyByProj map:', propertyByProj);
       } else if(propRes && propRes.error){
         console.warn('property fetch failed (non-blocking):',propRes.error.message);
       }
@@ -2609,66 +2607,7 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
-// ─── GROSS PROFIT — Final Sale - Selling Costs - Lender Costs
-function calcGrossProfit(projectId, propertyByProj){
-  if(!projectId) return 0;
-  const p = propertyByProj[projectId] || {};
-  const sale = +p.final_sale_price || 0;
-  const sellingCosts = +p.selling_costs || 0;
-  const lenderSale = +p.lender_costs_sale || 0;
-  const grossProfit = sale - sellingCosts - lenderSale;
-  return grossProfit;
-}
-function calcTotal2ForDashboard(projectId){
-  if(!projectId) return 0;
-  
-  const invoicesForPortal = window._portalInvoices || [];
-  
-  // INVOICES — exact filter from PDF
-  const opInvoices=invoicesForPortal
-    .filter(i=>{
-      if(i.project_id!==projectId) return false;
-      if(i.status==='cancelled') return false;
-      const k=i.kind||'operational';
-      return k==='operational'||k==='third_party_asset_manager';
-    });
-  const invoicesTotal=opInvoices.reduce((s,i)=>s+(+i.amount||0),0);
-  
-  // RECURRING — from recurringMap
-  const rcdData=recurringMap[projectId]||{};
-  const recRows=RC_ITEMS.map(itemName=>{
-    const row=rcdData[itemName]||{months:{}};
-    const months=row.months||{};
-    const total=Object.values(months).reduce((s,v)=>s+(+v||0),0);
-    return {desc:itemName+(row.notes?' — '+row.notes:''),val:total};
-  }).filter(r=>r.val>0);
-  const recTotal=recRows.reduce((s,r)=>s+r.val,0);
-  
-  // TOTAL 2 = Invoices + Recurring (COSTS + RECURRING como no Property & Finance)
-  const total2 = invoicesTotal + recTotal;
-  return total2;
-}
-
-// ─── Calcular Net Profit para qualquer projeto (GLOBAL) ────────────────────
-function calcNetProfit(projectId, propertyByProj){
-  propertyByProj = propertyByProj || {};
-  const p=propertyByProj[projectId]||{};
-  const grossProfit = (+p.final_sale_price||0);
-  const wholesalePrice = +p.wholesale_price||0;
-  const hardMoney = +p.hard_money||0;
-  const cash = wholesalePrice - hardMoney; // CASH = wholesale - hardmoney
-  const total2 = calcTotal2ForDashboard(projectId);
-  const sellingCosts = +p.selling_costs||0;
-  const lenderSale = +p.lender_payback_sale||0;
-  const totalInvested = cash + total2;
-  const netProfit = grossProfit - sellingCosts - lenderSale - totalInvested;
-  return netProfit;
-}
-
 function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog){
-  // Make invoices globally accessible for calcTotal2ForDashboard
-  window._portalInvoices = invoices;
-  
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
@@ -2682,7 +2621,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     if(!invByProj[inv.project_id]) invByProj[inv.project_id]=[];
     invByProj[inv.project_id].push(inv);
   });
-  console.log('invByProj:', invByProj);
 
   // ─── Helper: compute purchase total for a project (read from property_info)
   // Purchase = EMD + Cash + Other Costs + Commission (matches CEO Property & Finance)
@@ -3196,47 +3134,67 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // CASH = wholesale_price - hard_money
-          // HARD MONEY = hard_money
+          // CASH = o que o cliente desembolsou (EMD + Cash + Other + Commission)
+          //         já é exatamente o `purchase` (purchaseFor não inclui HM)
+          // HARD MONEY = financiamento separado (não soma no investido do cliente)
           const hardMoney = +pr.hard_money || 0;
-          const wholesalePrice = +pr.wholesale_price || 0;
-          const cashValue = wholesalePrice - hardMoney;
-          const cashHTML = cashValue > 0
-            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cashValue)}</div>`
+          const cashHTML = purchase > 0
+            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
             ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
             : `<span style="color:#999">—</span>`;
 
-          // ─── COLUNA GROSS PROFIT ──────────────────────────────
-          // Gross Profit = Final Sale - Selling Costs - Lender Costs
-          const grossProfit = calcGrossProfit(p.id, propertyByProj);
-          let grossProfitHTML;
-          if(grossProfit > 0){
-            grossProfitHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(grossProfit)}</div>`;
-          } else if(grossProfit < 0){
-            grossProfitHTML = `<div style="font-weight:700;color:#A02021">${$fmtProj(grossProfit)}</div>`;
+          // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
+          // Em andamento → ARV em dourado + tag (PROJEÇÃO)
+          // Vendido → final_sale_price em verde + tag (REAL)
+          const isSold = status==='sold' && +pr.final_sale_price>0;
+          const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
+          let vendaHTML;
+          if(referenceSale > 0){
+            if(isSold){
+              vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
+            } else {
+              vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
+            }
           } else {
-            grossProfitHTML = `<span style="color:#999">—</span>`;
+            vendaHTML = `<span style="color:#999">—</span>`;
           }
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
-          // ROI/Lucro = 70% Cliente do Net Profit
-          const netProfit = calcNetProfit(p.id, propertyByProj);
-          const pctClient = +pr.pct_client || 70;
-          const lucroCliente = netProfit * pctClient / 100;
-          const totalInvested = cash + calcTotal2ForDashboard(p.id);
-          const roiTotal = totalInvested > 0 ? (netProfit / totalInvested * 100) : 0;
-          const cor = netProfit >= 0 ? (isSold ? '#5C7A3F' : '#9B7535') : '#A02021';
-          const roiHTML = netProfit !== 0
-            ? `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroCliente)}</div><div style="font-size:8px;color:${cor};font-weight:700;margin-top:2px;letter-spacing:.3px">${roiTotal.toFixed(0)}%</div>`
-            : `<span style="color:#999">—</span>`;
+          // Calcula com base na referência (final sale OU arv)
+          let roiHTML = `<span style="color:#999">—</span>`;
+          if(referenceSale > 0){
+            const sellingCosts=(+pr.selling_costs||0);
+            const lenderSale=(+pr.lender_payback_sale||0);
+            const grossProfit=referenceSale-sellingCosts-lenderSale;
+            const netProfit=grossProfit-netInvested;
+            const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
+            const pctClient=pr.pct_client!=null?+pr.pct_client:70;
+            const lucroClient=netProfit*pctClient/100;
+            const cor = netProfit>=0 ? (isSold?'#5C7A3F':'#9B7535') : '#A02021';
+            
+            // Para projetos em andamento: mostrar Lucro Previsto baseado em ARV
+            let lucroPrevistoValue = lucroClient;
+            if(!isSold && +pr.arv>0){
+              const arv=+pr.arv||0;
+              const sellingCostsEstimated=+pr.selling_costs||0;
+              const lenderSaleEstimated=+pr.lender_costs_sale||0;
+              const estProfit=arv-netInvested-sellingCostsEstimated-lenderSaleEstimated;
+              lucroPrevistoValue = estProfit*pctClient/100;
+            }
+            
+            const tag = isSold
+              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
+              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
+            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroPrevistoValue)}</div>${tag}`;
+          }
 
           return `
           <tr style="border-bottom:1px solid #F0EAE2">
-            <td style="padding:14px 14px;font-size:13px;cursor:pointer" onclick="CID='${p.id}';generateReport()">
+            <td style="padding:14px 14px;font-size:13px">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <strong style="color:#3D271A;text-decoration:underline">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
+                <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
               </div>
             </td>
             <td style="padding:14px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
@@ -3245,13 +3203,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             </td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${(() => {
-              const total2 = calcTotal2ForDashboard(p.id);
-              return total2 > 0 
-                ? `<div>${$fmtProj(total2)}</div>` 
-                : `<span style="color:#999">—</span>`;
-            })()}</td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${grossProfitHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
             <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
           </tr>`;
         }).join('');
@@ -3265,9 +3218,9 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Tipo</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">hardmoney</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">invoices</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Gross Profit</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
               </thead>
@@ -3402,12 +3355,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         ${projects.length>0?`
         <!-- Toggle Cards / Tabela (Realizado) -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #D5C9BC;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
-          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
+          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>`:''}
       </div>
-      <div id="portal-projects-cards" style="display:none">${projectsHTML}${noProjectsHTML}</div>
-      <div id="portal-projects-table">${projectsTableHTML}</div>
+      <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>
+      <div id="portal-projects-table" style="display:none">${projectsTableHTML}</div>
 
       <!-- SEÇÃO: DIÁRIO DE OBRA -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -3425,12 +3378,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         ${budgetsData.length>0?`
         <!-- Toggle Cards / Tabela -->
         <div style="display:inline-flex;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
-          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
+          <button id="portal-view-cards"  onclick="portalSwitchView('cards')"  style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
+          <button id="portal-view-table" onclick="portalSwitchView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
         </div>`:''}
       </div>
-      <div id="portal-budgets-cards" style="display:none">${budgetsHTML}</div>
-      <div id="portal-budgets-table">${renderBudgetClientTable(budgetsData)}</div>
+      <div id="portal-budgets-cards">${budgetsHTML}</div>
+      <div id="portal-budgets-table" style="display:none">${renderBudgetClientTable(budgetsData)}</div>
 
       <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
