@@ -3178,12 +3178,13 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // CASH = o que o cliente desembolsou (EMD + Cash + Other + Commission)
-          //         já é exatamente o `purchase` (purchaseFor não inclui HM)
-          // HARD MONEY = financiamento separado (não soma no investido do cliente)
+          // CASH = wholesale_price - hard_money
+          // HARD MONEY = financiamento separado
+          const wholesalePrice = +pr.wholesale_price || 0;
           const hardMoney = +pr.hard_money || 0;
-          const cashHTML = purchase > 0
-            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>`
+          const cashValue = wholesalePrice - hardMoney;
+          const cashHTML = cashValue > 0
+            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cashValue)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
             ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
