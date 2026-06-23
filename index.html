@@ -2613,9 +2613,12 @@ function _invStatusBadge(status){
 function calcTotal2ForDashboard(projectId){
   if(!projectId) return 0;
   // Operational invoices — uses same filter as PDF: status !== 'cancelled'
-  const invoicesOp=(invoices||[])
-    .filter(i=>i.project_id===projectId && i.status!=='cancelled' && ((i.kind||'operational')==='operational'))
-    .reduce((s,i)=>s+(+i.amount||0),0);
+  const allInvoices=(invoices||[]);
+  console.log(`DEBUG: All invoices count=${allInvoices.length}`, allInvoices.slice(0,3));
+  const filteredInvoices=allInvoices.filter(i=>i.project_id===projectId && i.status!=='cancelled' && ((i.kind||'operational')==='operational'));
+  console.log(`DEBUG: Filtered for project ${projectId}: count=${filteredInvoices.length}`, filteredInvoices);
+  const invoicesOp=filteredInvoices.reduce((s,i)=>s+(+i.amount||0),0);
+  console.log(`DEBUG: invoicesOp=${invoicesOp}`);
   
   // Recurring costs
   const rcdData=recurringMap[projectId]||{};
@@ -2624,6 +2627,7 @@ function calcTotal2ForDashboard(projectId){
     const months=row.months||{};
     return Object.values(months).reduce((s,v)=>s+(+v||0),0);
   }).reduce((s,v)=>s+v,0);
+  console.log(`DEBUG: recTotal=${recTotal}`);
   
   // DEC Invoice, Documents, High End costs
   const getExtraCostsForProject=(category)=>((extraCostsMap[projectId]||{})[category])||[];
@@ -2633,6 +2637,7 @@ function calcTotal2ForDashboard(projectId){
   const docTotal=docItems.reduce((s,e)=>s+(+e.amount||0),0);
   const heItems=getExtraCostsForProject('high_end');
   const heTotal=heItems.reduce((s,e)=>s+(+e.amount||0),0);
+  console.log(`DEBUG: dec=${decExtraTotal}, docs=${docTotal}, he=${heTotal}`);
   
   // Holding costs
   const p=(propertyMap[projectId]||{});
@@ -2640,7 +2645,7 @@ function calcTotal2ForDashboard(projectId){
   
   // Total 2 — SAME LOGIC AS PDF
   const total2=invoicesOp+recTotal+decExtraTotal+docTotal+heTotal+holdingCosts;
-  console.log(`calcTotal2ForDashboard ${projectId}: inv=${invoicesOp}, rec=${recTotal}, dec=${decExtraTotal}, docs=${docTotal}, he=${heTotal}, holding=${holdingCosts} = ${total2}`);
+  console.log(`calcTotal2ForDashboard ${projectId}: TOTAL=${total2}`);
   return total2;
 }
 
