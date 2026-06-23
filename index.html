@@ -6439,12 +6439,13 @@ function renderExtraCosts(category){
         </div>`;
       }
       // Pre-defined items: name fixed (display-only)
-      return `<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;padding:8px 0;border-bottom:1px solid #F0EAE2;align-items:center">
+      return `<div style="display:grid;grid-template-columns:1fr 130px 30px;gap:10px;padding:8px 0;border-bottom:1px solid #F0EAE2;align-items:center">
         <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${it.name}</span></div>
         <div style="display:flex;align-items:center;gap:4px">
           <span style="font-size:13px;color:var(--gray3)">$</span>
           <input type="number" min="0" step="0.01" value="${it.amount||''}" oninput="updateExtraCost('${it.id}','amount',this.value)" placeholder="0.00" style="padding:6px 8px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:100%">
         </div>
+        <button onclick="deleteExtraCost('${it.id}')" title="Delete item" style="background:transparent;border:1.5px solid #F0EAE2;color:#C00000;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit">×</button>
       </div>`;
     }).join('');
   }
