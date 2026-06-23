@@ -2469,6 +2469,7 @@ function icon(name, opts={}){
 
 // ═══ INVESTOR PORTAL — Public view (no login, accessed via token) ═════
 async function showInvestorPortal(token){
+  console.log('>>> showInvestorPortal called with token:', token);
   // Hide login + app, show our own container
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='none';
