@@ -2687,6 +2687,10 @@ function calcNetProfit(projectId, propertyByProj){
 }
 
 function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog){
+  console.log('===== _renderInvestorPortal CALLED =====');
+  console.log('projects:', projects);
+  console.log('invoices:', invoices);
+  console.log('invoices.length:', invoices?.length);
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
@@ -2700,6 +2704,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     if(!invByProj[inv.project_id]) invByProj[inv.project_id]=[];
     invByProj[inv.project_id].push(inv);
   });
+  console.log('invByProj:', invByProj);
 
   // ─── Helper: compute purchase total for a project (read from property_info)
   // Purchase = EMD + Cash + Other Costs + Commission (matches CEO Property & Finance)
