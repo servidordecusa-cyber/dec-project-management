@@ -2518,9 +2518,9 @@ async function showInvestorPortal(token){
     let dailyLogsByProj={};
     let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, schedRes, dlRes] = await Promise.all([
+      const [invRes, budgetRes, schedRes, dlRes] = await Promise.all([
         sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
-        sb.from('property_info').select('*').in('project_id',projIds),
+        sb.from('budgets').select('*').in('converted_to_project_id',projIds),
         sb.from('schedule_tasks').select('*').in('project_id',projIds),
         sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
       ]);
@@ -2537,11 +2537,11 @@ async function showInvestorPortal(token){
           itemsByInvoice[it.invoice_id].push(it);
         });
       }
-      // Index property by project (one record per project)
-      if(propRes && !propRes.error){
-        (propRes.data||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
-      } else if(propRes && propRes.error){
-        console.warn('property fetch failed (non-blocking):',propRes.error.message);
+      // Index budgets by project (one record per project)
+      if(budgetRes && !budgetRes.error){
+        (budgetRes.data||[]).forEach(b=>{ propertyByProj[b.converted_to_project_id]=b; });
+      } else if(budgetRes && budgetRes.error){
+        console.warn('budgets fetch failed (non-blocking):',budgetRes.error.message);
       }
       // Group schedule_tasks by project then by task_key
       if(schedRes && !schedRes.error){
@@ -3134,11 +3134,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // CASH = wholesale_price - hard_money
-          const wholesalePrice = +pr.wholesale_price || 0;
-          const hardMoney = +pr.hard_money || 0;
-          const cash = wholesalePrice - hardMoney;
-          const cashHTML = cash > 0
+          // CASH = purchase_price - hm_loan_amount
+          // HARD MONEY = hm_loan_amount
+          const purchasePrice = +pr.purchase_price || 0;
+          const hardMoney = +pr.hm_loan_amount || 0;
+          const cash = purchasePrice - hardMoney;
+          const cashHTML = (purchasePrice > 0 || hardMoney > 0)
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cash)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
@@ -3146,68 +3147,48 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             : `<span style="color:#999">—</span>`;
 
           // ─── COLUNA INVOICES ─────────────────────────────────────
-          // INVOICES = costs + recurring_costs (de PROPERTY&FINANCE)
-          const costs = +pr.costs || 0;
-          const recurringCosts = +pr.recurring_costs || 0;
-          const invoices = costs + recurringCosts;
+          // INVOICES = soma dos costs_lines + closing_costs
+          let totalCosts = 0;
+          try {
+            const costLines = typeof pr.cost_lines === 'string' ? JSON.parse(pr.cost_lines) : (pr.cost_lines || []);
+            totalCosts = costLines.reduce((s, line) => s + (+line.base || 0), 0);
+          } catch(e) { console.warn('cost_lines parse error:', e); }
+          const invoices = totalCosts + (+pr.closing_costs || 0);
           const invoicesHTML = invoices > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoices)}</div>`
             : `<span style="color:#999">—</span>`;
 
           // ─── COLUNA GROSS PROFIT ──────────────────────────────────
-          // GROSS PROFIT = final_sale_price - selling_costs - lender_costs_sale
-          const finalSalePrice = +pr.final_sale_price || 0;
-          const sellingCosts = +pr.selling_costs || 0;
-          const lenderCostsSale = +pr.lender_costs_sale || 0;
-          const grossProfit = finalSalePrice - sellingCosts - lenderCostsSale;
+          // GROSS PROFIT = arv - closing_costs
+          const arv = +pr.arv || 0;
+          const closingCosts = +pr.closing_costs || 0;
+          const grossProfit = arv - closingCosts;
           let grossProfitHTML;
           if(grossProfit > 0) grossProfitHTML = `<div style="color:#5C7A3F;font-weight:700">${$fmtProj(grossProfit)}</div>`;
           else if(grossProfit < 0) grossProfitHTML = `<div style="color:#A02021;font-weight:700">${$fmtProj(grossProfit)}</div>`;
           else grossProfitHTML = `<span style="color:#999">—</span>`;
 
           // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
-          // Em andamento → ARV em dourado + tag (PROJEÇÃO)
-          // Vendido → final_sale_price em verde + tag (REAL)
-          const isSold = status==='sold' && +pr.final_sale_price>0;
-          const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
+          // Sempre mostra ARV (PROJEÇÃO)
+          const referenceSale = +pr.arv || 0;
           let vendaHTML;
           if(referenceSale > 0){
-            if(isSold){
-              vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
-            } else {
-              vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
-            }
+            vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
           } else {
             vendaHTML = `<span style="color:#999">—</span>`;
           }
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
-          // Calcula com base na referência (final sale OU arv)
+          // Calcula com base no ARV
           let roiHTML = `<span style="color:#999">—</span>`;
           if(referenceSale > 0){
-            const sellingCosts=(+pr.selling_costs||0);
-            const lenderSale=(+pr.lender_payback_sale||0);
-            const grossProfit=referenceSale-sellingCosts-lenderSale;
-            const netProfit=grossProfit-netInvested;
-            const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
-            const pctClient=pr.pct_client!=null?+pr.pct_client:70;
+            const netProfit = referenceSale - invoices;
+            const roiTotal=invoices>0?(netProfit/invoices*100):0;
+            const pctClient=pr.hm_pct!=null?+pr.hm_pct:70;
             const lucroClient=netProfit*pctClient/100;
-            const cor = netProfit>=0 ? (isSold?'#5C7A3F':'#9B7535') : '#A02021';
-            
-            // Para projetos em andamento: mostrar Lucro Previsto baseado em ARV
-            let lucroPrevistoValue = lucroClient;
-            if(!isSold && +pr.arv>0){
-              const arv=+pr.arv||0;
-              const sellingCostsEstimated=+pr.selling_costs||0;
-              const lenderSaleEstimated=+pr.lender_costs_sale||0;
-              const estProfit=arv-netInvested-sellingCostsEstimated-lenderSaleEstimated;
-              lucroPrevistoValue = estProfit*pctClient/100;
-            }
-            
-            const tag = isSold
-              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
-              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
-            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroPrevistoValue)}</div>${tag}`;
+            const cor = netProfit>=0 ? '#9B7535' : '#A02021';
+            const tag = `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
+            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
           }
 
           return `
