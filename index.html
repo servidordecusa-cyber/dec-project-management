@@ -5543,7 +5543,10 @@ function renderRecurringNotesHistory() {
         <td style="padding:10px 12px;font-size:12px;color:var(--text)">${vendor}</td>
         <td style="padding:10px 12px;text-align:right;font-weight:700;color:#3D271A;font-size:12px">${total}</td>
         <td style="padding:10px 12px;font-size:11px;color:var(--gray3)">${dt}</td>
-        <td style="padding:10px 12px;text-align:center"><button onclick="viewRecurringNoteHistoryFile('${n.id}')" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue)" title="${(n.original_filename||'').replace(/"/g,'&quot;')}">📎 Ver</button></td>
+        <td style="padding:10px 12px;text-align:center;display:flex;gap:6px;justify-content:center">
+          <button onclick="viewRecurringNoteHistoryFile('${n.id}')" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue)" title="${(n.original_filename||'').replace(/"/g,'&quot;')}">📎 Ver</button>
+          <button onclick="deleteRecurringNoteHistory('${n.id}')" style="padding:4px 10px;font-size:11px;background:transparent;border:1px solid #B85450;border-radius:5px;cursor:pointer;color:#B85450" title="Excluir essa nota">🗑️ Excluir</button>
+        </td>
       </tr>`;
   }).join('');
 }
@@ -5555,6 +5558,23 @@ async function viewRecurringNoteHistoryFile(noteId) {
     .createSignedUrl(note.storage_path, 60);
   if (error) { console.error('signed url', error); toast('Erro ao gerar link', false); return; }
   window.open(data.signedUrl, '_blank');
+}
+
+async function deleteRecurringNoteHistory(noteId) {
+  if (!confirm('Tem certeza que deseja excluir essa nota? Essa ação não pode ser desfeita.')) return;
+  
+  const { error } = await sb.from('vendor_notes').delete().eq('id', noteId);
+  if (error) {
+    toast('Erro ao excluir: ' + error.message, false);
+    return;
+  }
+  
+  // Remove from cache
+  _vnrHistoryCache = (_vnrHistoryCache || []).filter(n => n.id !== noteId);
+  
+  // Re-render
+  renderRecurringNotesHistory();
+  toast('✅ Nota excluída com sucesso');
 }
 // ═══ END VENDOR NOTES — RECURRING COSTS MODE ══════════════════════════
 
