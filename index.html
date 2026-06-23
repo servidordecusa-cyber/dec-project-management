@@ -2526,6 +2526,7 @@ async function showInvestorPortal(token){
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
+      console.log('Invoices loaded from Supabase:', invData.length, invData);
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
