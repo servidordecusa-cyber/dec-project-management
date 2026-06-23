@@ -2539,7 +2539,9 @@ async function showInvestorPortal(token){
       }
       // Index property by project (one record per project)
       if(propRes && !propRes.error){
+        console.log('Property data fetched:', propRes.data);
         (propRes.data||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
+        console.log('propertyByProj map:', propertyByProj);
       } else if(propRes && propRes.error){
         console.warn('property fetch failed (non-blocking):',propRes.error.message);
       }
@@ -3174,6 +3176,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // HARD MONEY = hard_money
           const hardMoney = +pr.hard_money || 0;
           const wholesalePrice = +pr.wholesale_price || 0;
+          console.log(`Project ${p.id}: wholesale=${wholesalePrice}, hardmoney=${hardMoney}, pr=`, pr);
           const cashValue = wholesalePrice - hardMoney;
           const cashHTML = cashValue > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cashValue)}</div>`
