@@ -2607,7 +2607,51 @@ function _invStatusBadge(status){
   return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${s.bg};color:${s.color};font-size:11px;font-weight:700">${s.label}</span>`;
 }
 
+// ─── Calcular Gross Profit para qualquer projeto (GLOBAL) ─────────────────
+function calcGrossProfit(projectId, propertyByProj){
+  if(!projectId) return 0;
+  const p = propertyByProj[projectId] || {};
+  const sale = +p.final_sale_price || 0;
+  const sellingCosts = +p.selling_costs || 0;
+  const lenderSale = +p.lender_costs_sale || 0;
+  return sale - sellingCosts - lenderSale;
+}
+
+// ─── Calcular Total2 (Invoices + Recurring) para dashboard ──────────────────
+function calcTotal2ForDashboard(projectId){
+  if(!projectId) return 0;
+  const invoicesForPortal = window._portalInvoices || [];
+  // INVOICES operacionais (status !== 'cancelled')
+  const opInvoices = invoicesForPortal.filter(i => {
+    if(i.project_id !== projectId) return false;
+    if(i.status === 'cancelled') return false;
+    const k = i.kind || 'operational';
+    return k === 'operational' || k === 'third_party_asset_manager';
+  });
+  const invoicesTotal = opInvoices.reduce((s, i) => s + (+i.amount || 0), 0);
+  return invoicesTotal;
+}
+
+// ─── Calcular Net Profit para qualquer projeto (GLOBAL) ────────────────────
+function calcNetProfit(projectId, propertyByProj){
+  propertyByProj = propertyByProj || {};
+  const p = propertyByProj[projectId] || {};
+  const grossProfit = (+p.final_sale_price || 0);
+  const wholesalePrice = +p.wholesale_price || 0;
+  const hardMoney = +p.hard_money || 0;
+  const cash = wholesalePrice - hardMoney; // CASH = wholesale - hardmoney
+  const total2 = calcTotal2ForDashboard(projectId);
+  const sellingCosts = +p.selling_costs || 0;
+  const lenderSale = +p.lender_payback_sale || 0;
+  const totalInvested = cash + total2;
+  const netProfit = grossProfit - sellingCosts - lenderSale - totalInvested;
+  return netProfit;
+}
+
 function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog){
+  // Make invoices globally accessible for calcTotal2ForDashboard
+  window._portalInvoices = invoices;
+  
   const portalEl=document.getElementById('investor-portal');
   propertyByProj=propertyByProj||{};
   scheduleByProj=scheduleByProj||{};
@@ -3161,6 +3205,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             vendaHTML = `<span style="color:#999">—</span>`;
           }
 
+          // ─── COLUNAS INVOICES e GROSS PROFIT ──────────────────────
+          const total2 = calcTotal2ForDashboard(p.id);
+          const grossProfit = calcGrossProfit(p.id, propertyByProj);
+          const invoicesHTML = total2 > 0
+            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(total2)}</div>`
+            : `<span style="color:#999">—</span>`;
+          let grossProfitHTML;
+          if(grossProfit > 0) grossProfitHTML = `<div style="color:#5C7A3F;font-weight:700">${$fmtProj(grossProfit)}</div>`;
+          else if(grossProfit < 0) grossProfitHTML = `<div style="color:#A02021;font-weight:700">${$fmtProj(grossProfit)}</div>`;
+          else grossProfitHTML = `<span style="color:#999">—</span>`;
+
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
           // Calcula com base na referência (final sale OU arv)
           let roiHTML = `<span style="color:#999">—</span>`;
@@ -3205,6 +3260,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${invoicesHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${grossProfitHTML}</td>
             <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
           </tr>`;
         }).join('');
@@ -3221,6 +3278,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Invoices</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Gross Profit</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
               </thead>
