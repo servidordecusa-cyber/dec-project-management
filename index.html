@@ -2469,7 +2469,6 @@ function icon(name, opts={}){
 
 // ═══ INVESTOR PORTAL — Public view (no login, accessed via token) ═════
 async function showInvestorPortal(token){
-  console.log('>>> showInvestorPortal called with token:', token);
   // Hide login + app, show our own container
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='none';
@@ -2527,7 +2526,6 @@ async function showInvestorPortal(token){
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
-      console.log('Invoices loaded from Supabase:', invData.length, invData);
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
@@ -2685,11 +2683,6 @@ function calcNetProfit(projectId, propertyByProj){
 }
 
 function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog){
-  console.log('===== _renderInvestorPortal CALLED =====');
-  console.log('projects:', projects);
-  console.log('invoices:', invoices);
-  console.log('invoices.length:', invoices?.length);
-  
   // Make invoices globally accessible for calcTotal2ForDashboard
   window._portalInvoices = invoices;
   
