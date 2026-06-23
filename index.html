@@ -2636,11 +2636,11 @@ function calcNetProfit(projectId, propertyByProj){
   propertyByProj = propertyByProj || {};
   const p=propertyByProj[projectId]||{};
   const grossProfit = (+p.final_sale_price||0);
-  const wholesalePrice = +p.wholesale_price||0;
+  const cash = +p.cash||0;
   const total2 = calcTotal2(projectId, propertyByProj);
   const sellingCosts = +p.selling_costs||0;
   const lenderSale = +p.lender_payback_sale||0;
-  const totalInvested = wholesalePrice + total2;
+  const totalInvested = cash + total2;
   const netProfit = grossProfit - sellingCosts - lenderSale - totalInvested;
   return netProfit;
 }
@@ -3205,7 +3205,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const netProfit = calcNetProfit(p.id, propertyByProj);
           const pctClient = +pr.pct_client || 70;
           const lucroCliente = netProfit * pctClient / 100;
-          const totalInvested = wholesalePrice + calcTotal2(p.id, propertyByProj);
+          const totalInvested = cash + calcTotal2(p.id, propertyByProj);
           const roiTotal = totalInvested > 0 ? (netProfit / totalInvested * 100) : 0;
           const cor = netProfit >= 0 ? (isSold ? '#5C7A3F' : '#9B7535') : '#A02021';
           const roiHTML = netProfit !== 0
