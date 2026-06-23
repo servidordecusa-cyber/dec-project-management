@@ -2623,7 +2623,6 @@ function calcTotal2ForDashboard(projectId){
   if(!projectId) return 0;
   
   const invoicesForPortal = window._portalInvoices || [];
-  console.log(`calcTotal2 ${projectId}: Using invoices:`, invoicesForPortal.length);
   
   // INVOICES — exact filter from PDF
   const opInvoices=invoicesForPortal
@@ -2633,7 +2632,6 @@ function calcTotal2ForDashboard(projectId){
       const k=i.kind||'operational';
       return k==='operational'||k==='third_party_asset_manager';
     });
-  console.log(`calcTotal2 ${projectId}: Filtered invoices:`, opInvoices.length, opInvoices);
   const invoicesTotal=opInvoices.reduce((s,i)=>s+(+i.amount||0),0);
   
   // RECURRING — from recurringMap
