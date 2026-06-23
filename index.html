@@ -2628,7 +2628,9 @@ function calcTotal2(projectId, propertyByProj){
   const docTotal=(ecMap.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
   const heTotal=(ecMap.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
   // Total 2
-  return invoicesOp+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0);
+  const total2 = invoicesOp+recTotal+decExtraTotal+docTotal+heTotal+(+p.holding_costs||0);
+  console.log(`calcTotal2 ${projectId}: invoices=${invoicesOp}, recurring=${recTotal}, decExtra=${decExtraTotal}, docs=${docTotal}, he=${heTotal}, holding=${+p.holding_costs||0}, TOTAL=${total2}`);
+  return total2;
 }
 
 // ─── Calcular Net Profit para qualquer projeto (GLOBAL) ────────────────────
