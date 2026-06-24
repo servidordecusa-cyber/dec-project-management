@@ -3194,12 +3194,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
           // ROI Cliente = (Actual Profit × pct_client) / Total Invested × 100
-          // Actual Profit = Gross Profit - INVOICES
+          // Actual Profit = Final Sale - Total Invested - Selling - Lender(sale)
           // Total Invested = CASH + INVOICES
           let roiHTML = `<span style="color:#999">—</span>`;
-          const actualProfit = grossProfit - invoicesTotal;
           const totalInvested = purchase + invoicesTotal;
-          if(totalInvested > 0 && actualProfit > 0){
+          const actualProfit = finalSalePrice - totalInvested - sellingCosts - lenderCostsSale;
+          if(totalInvested > 0 && finalSalePrice > 0){
             const pctClient = pr.pct_client != null ? +pr.pct_client : 70;
             const lucroClient = actualProfit * pctClient / 100;
             const roiClient = (lucroClient / totalInvested) * 100;
