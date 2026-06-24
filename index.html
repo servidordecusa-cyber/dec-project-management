@@ -3148,6 +3148,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // INVOICES = closing_costs + holding_costs + other_costs
           const closingCosts = +pr.closing_costs || 0;
           const holdingCosts = +pr.holding_costs || 0;
+          const otherCosts = +pr.other_costs || 0;
           const invoicesTotal = closingCosts + holdingCosts + otherCosts;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
