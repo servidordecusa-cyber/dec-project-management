@@ -2518,24 +2518,14 @@ async function showInvestorPortal(token){
     let dailyLogsByProj={};
     let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, recurringRes, schedRes, dlRes] = await Promise.all([
+      const [invRes, propRes, schedRes, dlRes] = await Promise.all([
         sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
         sb.from('property_info').select('*').in('project_id',projIds),
-        sb.from('recurring_detail_months').select('*').in('project_id',projIds),
         sb.from('schedule_tasks').select('*').in('project_id',projIds),
         sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
-      // Index recurring_detail_months by project (sum amounts)
-      const recurringByProj={};
-      if(recurringRes && !recurringRes.error){
-        (recurringRes.data||[]).forEach(r=>{
-          if(!recurringByProj[r.project_id]) recurringByProj[r.project_id]=0;
-          recurringByProj[r.project_id] += +r.amount || 0;
-        });
-        window._recurringByProj = recurringByProj;
-      }
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
@@ -3144,16 +3134,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // WHOLESALER PRICE = EMD + CASH + OTHER_COSTS + COMMISSION + HARD MONEY
-          // CASH (investidor) = WHOLESALER - HARD MONEY
-          const emdCash = +pr.emd_cash || 0;
-          const prCash = +pr.cash || 0;
+          // CASH = campo direto (property_info.cash)
+          const cash = +pr.cash || 0;
           const hardMoney = +pr.hard_money || 0;
-          const otherCosts = +pr.other_costs || 0;
-          const commission = +pr.commission || 0;
-          const wholesalePrice = emdCash + prCash + hardMoney + otherCosts + commission;
-          const cash = wholesalePrice - hardMoney;
-          const cashHTML = wholesalePrice > 0
+          const cashHTML = cash > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cash)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
@@ -3161,18 +3145,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             : `<span style="color:#999">—</span>`;
 
           // ─── COLUNA INVOICES ─────────────────────────────────────
-          // INVOICES = soma invoices table + soma recurring_detail_months
-          let invoicesTotal = 0;
-          // Invoices operacionais
-          const projInvoices = invData.filter(inv => inv.project_id === p.id);
-          projInvoices.forEach(inv => {
-            invoicesTotal += +inv.total || 0;
-          });
-          // Recurring costs
-          const recurringByProj = window._recurringByProj || {};
-          if(recurringByProj[p.id]){
-            invoicesTotal += recurringByProj[p.id];
-          }
+          // INVOICES = closing_costs + holding_costs + other_costs
+          const closingCosts = +pr.closing_costs || 0;
+          const holdingCosts = +pr.holding_costs || 0;
+          const invoicesTotal = closingCosts + holdingCosts + otherCosts;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
             : `<span style="color:#999">—</span>`;
