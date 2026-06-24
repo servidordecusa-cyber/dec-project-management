@@ -3134,13 +3134,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           
-          // ─── COLUNA INVOICES (Rehab + Recurring) ──────────────────
+          // ─── COLUNA INVOICES (Operational + Recurring) ──────────────────
           let invoicesTotal = 0;
-          // Invoices de REHAB apenas
+          // Invoices OPERACIONAL (during construction)
           const projInvoices = invoices.filter(inv => 
             inv.project_id === p.id && 
-            inv.description && 
-            inv.description.toLowerCase().includes('rehab')
+            inv.type === "Operational (during construction)"
           );
           projInvoices.forEach(inv => {
             invoicesTotal += +inv.total || 0;
