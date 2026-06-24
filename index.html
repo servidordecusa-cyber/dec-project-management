@@ -2518,24 +2518,14 @@ async function showInvestorPortal(token){
     let dailyLogsByProj={};
     let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, recurringRes, schedRes, dlRes] = await Promise.all([
+      const [invRes, propRes, schedRes, dlRes] = await Promise.all([
         sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
         sb.from('property_info').select('*').in('project_id',projIds),
-        sb.from('recurring_detail_months').select('*').in('project_id',projIds),
         sb.from('schedule_tasks').select('*').in('project_id',projIds),
         sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
-      // Index recurring_detail_months by project (sum amounts)
-      const recurringByProj={};
-      if(recurringRes && !recurringRes.error){
-        (recurringRes.data||[]).forEach(r=>{
-          if(!recurringByProj[r.project_id]) recurringByProj[r.project_id]=0;
-          recurringByProj[r.project_id] += +r.amount || 0;
-        });
-        window._recurringByProj = recurringByProj;
-      }
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
@@ -3144,67 +3134,60 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // WHOLESALER PRICE = EMD + CASH + OTHER_COSTS + COMMISSION + HARD MONEY
-          // CASH (investidor) = WHOLESALER - HARD MONEY
-          const emdCash = +pr.emd_cash || 0;
-          const prCash = +pr.cash || 0;
+          // CASH = o que o cliente desembolsou (EMD + Cash + Other + Commission)
+          //         já é exatamente o `purchase` (purchaseFor não inclui HM)
+          // HARD MONEY = financiamento separado (não soma no investido do cliente)
           const hardMoney = +pr.hard_money || 0;
-          const otherCosts = +pr.other_costs || 0;
-          const commission = +pr.commission || 0;
-          const wholesalePrice = emdCash + prCash + hardMoney + otherCosts + commission;
-          const cash = wholesalePrice - hardMoney;
-          const cashHTML = wholesalePrice > 0
-            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cash)}</div>`
+          const cashHTML = purchase > 0
+            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
             ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
             : `<span style="color:#999">—</span>`;
 
-          // ─── COLUNA INVOICES ─────────────────────────────────────
-          // INVOICES = soma invoices com "Rehab" na descrição + recurring_detail_months.amount
-          let invoicesTotal = 0;
-          
-          // Invoices de REHAB apenas
-          const projInvoices = invData.filter(inv => 
-            inv.project_id === p.id && 
-            inv.description && 
-            inv.description.toLowerCase().includes('rehab')
-          );
-          projInvoices.forEach(inv => {
-            invoicesTotal += +inv.total || 0;
-          });
-          
-          // Recurring costs
-          const recurringByProj = window._recurringByProj || {};
-          if(recurringByProj[p.id]){
-            invoicesTotal += recurringByProj[p.id];
+          // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
+          // Em andamento → ARV em dourado + tag (PROJEÇÃO)
+          // Vendido → final_sale_price em verde + tag (REAL)
+          const isSold = status==='sold' && +pr.final_sale_price>0;
+          const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
+          let vendaHTML;
+          if(referenceSale > 0){
+            if(isSold){
+              vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
+            } else {
+              vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
+            }
+          } else {
+            vendaHTML = `<span style="color:#999">—</span>`;
           }
-          
-          const invoicesHTML = invoicesTotal > 0
-            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
-            : `<span style="color:#999">—</span>`;
-
-          // ─── COLUNA GROSS PROFIT ──────────────────────────────────
-          // GROSS PROFIT = final_sale_price - selling_costs - lender_costs_sale
-          const finalSalePrice = +pr.final_sale_price || 0;
-          const sellingCosts = +pr.selling_costs || 0;
-          const lenderCostsSale = +pr.lender_costs_sale || 0;
-          const grossProfit = finalSalePrice - sellingCosts - lenderCostsSale;
-          let grossProfitHTML;
-          if(grossProfit > 0) grossProfitHTML = `<div style="color:#5C7A3F;font-weight:700">${$fmtProj(grossProfit)}</div>`;
-          else if(grossProfit < 0) grossProfitHTML = `<div style="color:#A02021;font-weight:700">${$fmtProj(grossProfit)}</div>`;
-          else grossProfitHTML = `<span style="color:#999">—</span>`;
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
-          // ROI = lucro cliente
+          // Calcula com base na referência (final sale OU arv)
           let roiHTML = `<span style="color:#999">—</span>`;
-          if(finalSalePrice > 0){
-            const netProfit = finalSalePrice - sellingCosts - lenderCostsSale - invoicesTotal;
-            const pctClient = pr.pct_client != null ? +pr.pct_client : 70;
-            const lucroClient = netProfit * pctClient / 100;
-            const cor = netProfit >= 0 ? '#9B7535' : '#A02021';
-            const tag = `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
-            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
+          if(referenceSale > 0){
+            const sellingCosts=(+pr.selling_costs||0);
+            const lenderSale=(+pr.lender_payback_sale||0);
+            const grossProfit=referenceSale-sellingCosts-lenderSale;
+            const netProfit=grossProfit-netInvested;
+            const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
+            const pctClient=pr.pct_client!=null?+pr.pct_client:70;
+            const lucroClient=netProfit*pctClient/100;
+            const cor = netProfit>=0 ? (isSold?'#5C7A3F':'#9B7535') : '#A02021';
+            
+            // Para projetos em andamento: mostrar Lucro Previsto baseado em ARV
+            let lucroPrevistoValue = lucroClient;
+            if(!isSold && +pr.arv>0){
+              const arv=+pr.arv||0;
+              const sellingCostsEstimated=+pr.selling_costs||0;
+              const lenderSaleEstimated=+pr.lender_costs_sale||0;
+              const estProfit=arv-netInvested-sellingCostsEstimated-lenderSaleEstimated;
+              lucroPrevistoValue = estProfit*pctClient/100;
+            }
+            
+            const tag = isSold
+              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
+              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
+            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroPrevistoValue)}</div>${tag}`;
           }
 
           return `
@@ -3220,8 +3203,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             </td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${invoicesHTML}</td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${grossProfitHTML}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
             <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
           </tr>`;
         }).join('');
@@ -3236,8 +3219,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Invoices</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Gross Profit</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
               </thead>
