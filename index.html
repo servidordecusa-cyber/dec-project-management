@@ -3134,10 +3134,16 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const pr=propertyByProj[p.id]||{};
 
           // ─── COLUNAS CASH e HARD MONEY ─────────────────────────
-          // CASH = campo direto (property_info.cash)
-          const cash = +pr.cash || 0;
+          // WHOLESALER PRICE = EMD + CASH + OTHER_COSTS + COMMISSION + HARD MONEY
+          // CASH (investidor) = WHOLESALER - HARD MONEY
+          const emdCash = +pr.emd_cash || 0;
+          const prCash = +pr.cash || 0;
           const hardMoney = +pr.hard_money || 0;
-          const cashHTML = cash > 0
+          const otherCosts = +pr.other_costs || 0;
+          const commission = +pr.commission || 0;
+          const wholesalePrice = emdCash + prCash + hardMoney + otherCosts + commission;
+          const cash = wholesalePrice - hardMoney;
+          const cashHTML = wholesalePrice > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(cash)}</div>`
             : `<span style="color:#999">—</span>`;
           const hmHTML = hardMoney > 0
@@ -3148,7 +3154,6 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // INVOICES = closing_costs + holding_costs + other_costs
           const closingCosts = +pr.closing_costs || 0;
           const holdingCosts = +pr.holding_costs || 0;
-          const otherCosts = +pr.other_costs || 0;
           const invoicesTotal = closingCosts + holdingCosts + otherCosts;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
