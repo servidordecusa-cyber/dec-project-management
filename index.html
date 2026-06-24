@@ -3193,29 +3193,22 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           }
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
-          // Calcula com base no Gross Profit (final_sale_price - selling_costs - lender_costs_sale)
+          // ROI Cliente = (Actual Profit × pct_client) / Total Invested × 100
+          // Actual Profit = Gross Profit - INVOICES
+          // Total Invested = CASH + INVOICES
           let roiHTML = `<span style="color:#999">—</span>`;
-          if(grossProfit > 0){
-            const netProfit=grossProfit-netInvested;
-            const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
-            const pctClient=pr.pct_client!=null?+pr.pct_client:70;
-            const lucroClient=netProfit*pctClient/100;
-            const cor = netProfit>=0 ? (isSold?'#5C7A3F':'#9B7535') : '#A02021';
-            
-            // Para projetos em andamento: mostrar Lucro Previsto baseado em ARV
-            let lucroPrevistoValue = lucroClient;
-            if(!isSold && +pr.arv>0){
-              const arv=+pr.arv||0;
-              const sellingCostsEstimated=+pr.selling_costs||0;
-              const lenderSaleEstimated=+pr.lender_costs_sale||0;
-              const estProfit=arv-netInvested-sellingCostsEstimated-lenderSaleEstimated;
-              lucroPrevistoValue = estProfit*pctClient/100;
-            }
+          const actualProfit = grossProfit - invoicesTotal;
+          const totalInvested = purchase + invoicesTotal;
+          if(totalInvested > 0 && actualProfit > 0){
+            const pctClient = pr.pct_client != null ? +pr.pct_client : 70;
+            const lucroClient = actualProfit * pctClient / 100;
+            const roiClient = (lucroClient / totalInvested) * 100;
+            const cor = actualProfit >= 0 ? (isSold ? '#5C7A3F' : '#9B7535') : '#A02021';
             
             const tag = isSold
-              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiTotal.toFixed(0)}%</div>`
+              ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiClient.toFixed(1)}%</div>`
               : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
-            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroPrevistoValue)}</div>${tag}`;
+            roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
           }
 
           return `
