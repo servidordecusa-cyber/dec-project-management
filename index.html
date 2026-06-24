@@ -3176,29 +3176,26 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
             : `<span style="color:#999">—</span>`;
 
-          // ─── COLUNA VENDA / PROJEÇÃO ──────────────────────────────
-          // Em andamento → ARV em dourado + tag (PROJEÇÃO)
-          // Vendido → final_sale_price em verde + tag (REAL)
+          // ─── COLUNA VENDA (Gross Profit) ──────────────────────────────
+          // Gross Profit = final_sale_price - selling_costs - lender_costs_sale
           const isSold = status==='sold' && +pr.final_sale_price>0;
-          const referenceSale = isSold ? (+pr.final_sale_price||0) : (+pr.arv||0);
+          const finalSalePrice = +pr.final_sale_price || 0;
+          const sellingCosts = +pr.selling_costs || 0;
+          const lenderCostsSale = +pr.lender_costs_sale || 0;
+          const grossProfit = finalSalePrice - sellingCosts - lenderCostsSale;
           let vendaHTML;
-          if(referenceSale > 0){
-            if(isSold){
-              vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
-            } else {
-              vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(referenceSale)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO (ARV)</div>`;
-            }
+          if(isSold && grossProfit > 0){
+            vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(grossProfit)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
+          } else if(!isSold && grossProfit > 0){
+            vendaHTML = `<div style="font-weight:700;color:#9B7535">${$fmtProj(grossProfit)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">PROJEÇÃO</div>`;
           } else {
             vendaHTML = `<span style="color:#999">—</span>`;
           }
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
-          // Calcula com base na referência (final sale OU arv)
+          // Calcula com base no Gross Profit (final_sale_price - selling_costs - lender_costs_sale)
           let roiHTML = `<span style="color:#999">—</span>`;
-          if(referenceSale > 0){
-            const sellingCosts=(+pr.selling_costs||0);
-            const lenderSale=(+pr.lender_payback_sale||0);
-            const grossProfit=referenceSale-sellingCosts-lenderSale;
+          if(grossProfit > 0){
             const netProfit=grossProfit-netInvested;
             const roiTotal=netInvested>0?(netProfit/netInvested*100):0;
             const pctClient=pr.pct_client!=null?+pr.pct_client:70;
