@@ -3134,15 +3134,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           
-          // ─── COLUNA INVOICES (Operational + Recurring) ──────────────────
+          // ─── COLUNA INVOICES (Rehab items + Recurring) ──────────────────
           let invoicesTotal = 0;
-          // Invoices OPERACIONAL (during construction)
-          const projInvoices = invoices.filter(inv => 
-            inv.project_id === p.id && 
-            inv.type === "Operational (during construction)"
-          );
-          projInvoices.forEach(inv => {
-            invoicesTotal += +inv.total || 0;
+          // Soma invoice_items com description contendo "Rehab"
+          const projInvoicesList = invoices.filter(inv => inv.project_id === p.id);
+          projInvoicesList.forEach(inv => {
+            const items = itemsByInvoice[inv.id] || [];
+            items.forEach(item => {
+              if(item.description && item.description.toLowerCase().includes('rehab')){
+                invoicesTotal += +item.amount || 0;
+              }
+            });
           });
           // Recurring costs
           const recurringByProj = window._recurringByProj || {};
