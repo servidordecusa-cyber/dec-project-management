@@ -2518,14 +2518,24 @@ async function showInvestorPortal(token){
     let dailyLogsByProj={};
     let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, schedRes, dlRes] = await Promise.all([
+      const [invRes, propRes, recurringRes, schedRes, dlRes] = await Promise.all([
         sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
         sb.from('property_info').select('*').in('project_id',projIds),
+        sb.from('recurring_detail_months').select('*').in('project_id',projIds),
         sb.from('schedule_tasks').select('*').in('project_id',projIds),
         sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
+      // Index recurring_detail_months by project (sum amounts)
+      const recurringByProj={};
+      if(recurringRes && !recurringRes.error){
+        (recurringRes.data||[]).forEach(r=>{
+          if(!recurringByProj[r.project_id]) recurringByProj[r.project_id]=0;
+          recurringByProj[r.project_id] += +r.amount || 0;
+        });
+        window._recurringByProj = recurringByProj;
+      }
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
@@ -3120,9 +3130,25 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   const projectsTableHTML=sortedProjects.length>0
     ? (()=>{
         const rows=sortedProjects.map(p=>{
-          const projInvoicesCounted=investableInvoices(p.id);
-          const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
-          const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+          // ─── COLUNA INVOICES (Rehab + Recurring) ──────────────────
+          let invoicesTotal = 0;
+          // Invoices de REHAB apenas
+          const projInvoices = invoices.filter(inv => 
+            inv.project_id === p.id && 
+            inv.description && 
+            inv.description.toLowerCase().includes('rehab')
+          );
+          projInvoices.forEach(inv => {
+            invoicesTotal += +inv.total || 0;
+          });
+          // Recurring costs
+          const recurringByProj = window._recurringByProj || {};
+          if(recurringByProj[p.id]){
+            invoicesTotal += recurringByProj[p.id];
+          }
+          const invoicesHTML = invoicesTotal > 0
+            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
+            : `<span style="color:#999">—</span>`;
           const refunded=refundTotal(p.id);
           const purchase=purchaseFor(p.id);
           const netInvested=purchase+totalPaid-refunded;
@@ -3203,7 +3229,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             </td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
-            <td style="padding:14px 10px;text-align:right;font-size:13px;font-weight:700;color:#5C7A3F">${$fmtProj(totalPaid)}${totalOpen>0?`<br><span style="font-size:10px;color:#7A5A28;font-weight:500">${$fmtProj(totalOpen)} pend</span>`:''}</td>
+            <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${invoicesHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${vendaHTML}</td>
             <td style="padding:14px 14px;text-align:right;font-size:13px;white-space:nowrap">${roiHTML}</td>
           </tr>`;
@@ -3219,7 +3245,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Pago</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Invoices</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
