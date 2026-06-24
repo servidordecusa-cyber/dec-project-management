@@ -3130,6 +3130,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   const projectsTableHTML=sortedProjects.length>0
     ? (()=>{
         const rows=sortedProjects.map(p=>{
+          const projInvoicesCounted=investableInvoices(p.id);
+          const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
+          const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
+          
           // ─── COLUNA INVOICES (Rehab + Recurring) ──────────────────
           let invoicesTotal = 0;
           // Invoices de REHAB apenas
