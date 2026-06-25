@@ -1467,6 +1467,14 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openClientModal()">+ New Client</button>
       </div>
     </div>
+    <!-- Link único do grupo de investidor (várias empresas juntas) -->
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#F2F4EC;border:1px solid #C8D4B5;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:12px;font-weight:800;color:#3D271A">🔗 Link do Grupo — Investidor (Urutu · Urutau · Avena · J Duran)</div>
+        <div style="font-size:11px;color:var(--gray3);margin-top:3px">Um único link que mostra as 4 empresas juntas, com dashboard somado.</div>
+      </div>
+      <button onclick="copyGroupLink()" style="padding:8px 16px;background:#9B7535;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">📋 Copiar link do grupo</button>
+    </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:800px">
         <thead>
@@ -2483,8 +2491,9 @@ const INVESTOR_GROUPS=[
   {
     token:'5q4o2o04736w5x5j69484l4j3n1z6x6q',
     label:'Investidor',
-    members:['Urutu','Urutau','Avena','JDI'],
-    // memberTokens:['<token Urutu>','<token Urutau>','<token Avena>','<token JDI>'],
+    // Prefixos do NOME do cliente no cadastro (Supabase). "JDI" = "J Duran Investments".
+    members:['Urutu','Urutau','Avena','J Duran'],
+    // memberTokens:['<token Urutu>','<token Urutau>','<token Avena>','<token J Duran>'],
   },
 ];
 
@@ -11181,6 +11190,16 @@ async function copyInvestorLink(clientId){
   const url=_investorUrl(c.investor_token);
   const ok=await _copyToClipboard(url);
   if(ok) toast('Link copiado: '+url.slice(0,60)+'...',true);
+  else toast('Erro ao copiar. URL: '+url,false);
+}
+
+// Copy the GROUP investor link (one URL that loads several companies together)
+async function copyGroupLink(){
+  const g=(typeof INVESTOR_GROUPS!=='undefined' && INVESTOR_GROUPS.length)?INVESTOR_GROUPS[0]:null;
+  if(!g){toast('Grupo não configurado',false);return;}
+  const url=_investorUrl(g.token);
+  const ok=await _copyToClipboard(url);
+  if(ok) toast('Link do grupo copiado: '+url.slice(0,60)+'...',true);
   else toast('Erro ao copiar. URL: '+url,false);
 }
 
