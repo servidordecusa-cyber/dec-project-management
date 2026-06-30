@@ -3428,7 +3428,13 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
           }
 
-          return `
+          // Linha-título da empresa (somente na visão de grupo, uma vez por empresa)
+          const _coRow=(_companyOrder && _firstOfCompany.has(p.id))
+            ? `<tr><td colspan="8" style="padding:16px 14px 8px;background:#FAF7F3;border-bottom:2px solid #E8DDC9">
+                 <span style="font-size:12px;font-weight:800;color:#9B7535;letter-spacing:1px;text-transform:uppercase">🏢 ${((_companyNames&&_companyNames[p.customer])||'Empresa').replace(/</g,'&lt;')}</span>
+               </td></tr>`
+            : '';
+          return `${_coRow}
           <tr style="border-bottom:1px solid #F0EAE2">
             <td style="padding:14px 14px;font-size:13px">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
