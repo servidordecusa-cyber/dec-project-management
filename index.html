@@ -3458,7 +3458,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             
             const tag = isSold
               ? `<div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">ROI ${roiClient.toFixed(1)}%</div>`
-              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div>`;
+              : `<div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">LUCRO PREVISTO</div><div style="font-size:9px;color:#9B7535;font-weight:700;letter-spacing:.3px">ROI ${roiClient.toFixed(1)}%</div>`;
             roiHTML = `<div style="font-weight:800;color:${cor}">${$fmtProj(lucroClient)}</div>${tag}`;
           }
 
