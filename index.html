@@ -3379,17 +3379,15 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           
-          // ─── COLUNA INVOICES (faturas Rehab + Recurring) ──────────────────
-          // Soma invoice_items com description contendo "Rehab"
-          let rehabSum = 0;
-          const projInvoicesList = invoices.filter(inv => inv.project_id === p.id);
-          projInvoicesList.forEach(inv => {
-            const items = itemsByInvoice[inv.id] || [];
-            items.forEach(item => {
-              if(item.description && item.description.toLowerCase().includes('rehab')){
-                rehabSum += +item.amount || 0;
-              }
-            });
+          // ─── COLUNA INVOICES (Operational Invoices + Recurring + Costs) ─────
+          // Operational invoices: espelha calcProjectInvoicesOperational do P&F —
+          // valor CHEIO das faturas operacionais (kind operational, não canceladas),
+          // não os itens "Rehab" (que somavam diferente, ex.: +$905 no Gainesville).
+          let opInvoicesSum = 0;
+          invoices.forEach(inv => {
+            if(inv.project_id === p.id && inv.status !== 'cancelled' && (inv.kind||'operational') === 'operational'){
+              opInvoicesSum += +inv.amount || 0;
+            }
           });
           // Recurring costs (card "Recurring Costs" do P&F)
           const recurringByProj = window._recurringByProj || {};
@@ -3398,10 +3396,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // para não duplicar com as cópias legadas de documents/high_end)
           const extraCostsByProj = window._extraCostsByProj || {};
           const costVal = +extraCostsByProj[p.id] || 0;
-          // INVOICES = Faturas Rehab + Recorrente + Costs (os três).
-          const invoicesTotal = rehabSum + recVal + costVal;
+          // INVOICES = Operational Invoices + Recorrente + Costs (igual ao P&F).
+          const invoicesTotal = opInvoicesSum + recVal + costVal;
           // Detalhamento (hover) para auditoria por projeto
-          const _invTitle = `Faturas Rehab: ${$fmtProj(rehabSum)} | Recorrente: ${$fmtProj(recVal)} | Costs P&F: ${$fmtProj(costVal)}`;
+          const _invTitle = `Operational invoices: ${$fmtProj(opInvoicesSum)} | Recorrente: ${$fmtProj(recVal)} | Costs P&F: ${$fmtProj(costVal)}`;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A" title="${_invTitle}">${$fmtProj(invoicesTotal)}</div>`
             : `<span style="color:#999" title="${_invTitle}">—</span>`;
