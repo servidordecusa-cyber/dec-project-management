@@ -2525,13 +2525,15 @@ async function _fetchInvestorBundle(clientData){
   let dailyLogsByProj={};
   let dlPhotosByLog={};
   let recurringByProj={};
+  let extraCostsByProj={}; // Property & Finance "Costs" (dec_invoice + documents + high_end)
   if(projIds.length>0){
-    const [invRes, propRes, recurringRes, schedRes, dlRes] = await Promise.all([
+    const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes] = await Promise.all([
       sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
       sb.from('property_info').select('*').in('project_id',projIds),
       sb.from('recurring_detail_months').select('*').in('project_id',projIds),
       sb.from('schedule_tasks').select('*').in('project_id',projIds),
       sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
+      sb.from('extra_costs').select('*').in('project_id',projIds),
     ]);
     if(invRes.error) throw invRes.error;
     invData=invRes.data||[];
@@ -2539,6 +2541,16 @@ async function _fetchInvestorBundle(clientData){
       (recurringRes.data||[]).forEach(r=>{
         recurringByProj[r.project_id]=(recurringByProj[r.project_id]||0)+(+r.amount||0);
       });
+    }
+    // Costs do Property & Finance: soma dec_invoice + documents + high_end por projeto
+    if(ecRes && !ecRes.error){
+      (ecRes.data||[]).forEach(e=>{
+        if(e && ['dec_invoice','documents','high_end'].includes(e.category)){
+          extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
+        }
+      });
+    } else if(ecRes && ecRes.error){
+      console.warn('extra_costs fetch failed (non-blocking):',ecRes.error.message);
     }
     const invIds=invData.map(i=>i.id);
     if(invIds.length>0){
@@ -2585,7 +2597,7 @@ async function _fetchInvestorBundle(clientData){
       console.warn('daily_logs fetch failed (non-blocking):',dlRes.error.message);
     }
   }
-  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj};
+  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj,extraCostsByProj};
 }
 
 // Grouped portal: load all member companies and render them together under one
@@ -2624,7 +2636,7 @@ async function _showInvestorGroupPortal(group){
     }
     // 3) Fetch + merge every member bundle
     const bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
-    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{}};
+    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},extraCostsByProj:{}};
     const companyOrder=[]; const nameById={};
     members.forEach((m,i)=>{
       const b=bundles[i];
@@ -2639,9 +2651,11 @@ async function _showInvestorGroupPortal(group){
       Object.assign(merged.dailyLogsByProj,b.dailyLogsByProj);
       Object.assign(merged.dlPhotosByLog,b.dlPhotosByLog);
       Object.assign(merged.recurringByProj,b.recurringByProj);
+      Object.assign(merged.extraCostsByProj,b.extraCostsByProj);
     });
     // 4) Expose grouping context for the renderer (combined dashboard + company headers)
     window._recurringByProj=merged.recurringByProj;
+    window._extraCostsByProj=merged.extraCostsByProj;
     window._portalCompanyOrder=companyOrder;
     window._portalClientNameById=nameById;
     const groupClient={id:'group:'+group.token,name:group.label||'Investidor'};
@@ -2678,6 +2692,7 @@ async function showInvestorPortal(token){
   // Single-client portal: no company grouping
   window._portalCompanyOrder=null;
   window._portalClientNameById=null;
+  window._extraCostsByProj={};
 
   try{
     // Fetch the client by token (anon RLS will return only this one)
@@ -2713,12 +2728,13 @@ async function showInvestorPortal(token){
     let dailyLogsByProj={};
     let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, recurringRes, schedRes, dlRes] = await Promise.all([
+      const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes] = await Promise.all([
         sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
         sb.from('property_info').select('*').in('project_id',projIds),
         sb.from('recurring_detail_months').select('*').in('project_id',projIds),
         sb.from('schedule_tasks').select('*').in('project_id',projIds),
         sb.from('daily_logs').select('*').in('project_id',projIds).order('log_date',{ascending:false}).order('created_at',{ascending:false}),
+        sb.from('extra_costs').select('*').in('project_id',projIds),
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
@@ -2731,6 +2747,18 @@ async function showInvestorPortal(token){
         });
         window._recurringByProj = recurringByProj;
       }
+      // Costs do Property & Finance: soma dec_invoice + documents + high_end por projeto
+      const extraCostsByProj={};
+      if(ecRes && !ecRes.error){
+        (ecRes.data||[]).forEach(e=>{
+          if(e && ['dec_invoice','documents','high_end'].includes(e.category)){
+            extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
+          }
+        });
+      } else if(ecRes && ecRes.error){
+        console.warn('extra_costs fetch failed (non-blocking):',ecRes.error.message);
+      }
+      window._extraCostsByProj = extraCostsByProj;
       // Fetch items for those invoices
       const invIds=invData.map(i=>i.id);
       if(invIds.length>0){
@@ -3367,6 +3395,11 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const recurringByProj = window._recurringByProj || {};
           if(recurringByProj[p.id]){
             invoicesTotal += recurringByProj[p.id];
+          }
+          // Costs do Property & Finance (dec_invoice + documents + high_end)
+          const extraCostsByProj = window._extraCostsByProj || {};
+          if(extraCostsByProj[p.id]){
+            invoicesTotal += extraCostsByProj[p.id];
           }
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
