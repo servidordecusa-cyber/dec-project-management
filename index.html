@@ -2525,7 +2525,7 @@ async function _fetchInvestorBundle(clientData){
   let dailyLogsByProj={};
   let dlPhotosByLog={};
   let recurringByProj={};
-  let extraCostsByProj={}; // Property & Finance "Costs" (dec_invoice + documents + high_end)
+  let extraCostsByProj={}; // Property & Finance "Costs" (categoria dec_invoice = card "Costs" do P&F)
   if(projIds.length>0){
     const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes] = await Promise.all([
       sb.from('invoices').select('*').eq('visible_to_investor',true).in('project_id',projIds).order('date',{ascending:false}),
@@ -2542,10 +2542,10 @@ async function _fetchInvestorBundle(clientData){
         recurringByProj[r.project_id]=(recurringByProj[r.project_id]||0)+(+r.amount||0);
       });
     }
-    // Costs do Property & Finance: soma dec_invoice + documents + high_end por projeto
+    // Costs do Property & Finance: soma categoria dec_invoice = card "Costs" do P&F por projeto
     if(ecRes && !ecRes.error){
       (ecRes.data||[]).forEach(e=>{
-        if(e && ['dec_invoice','documents','high_end'].includes(e.category)){
+        if(e && e.category==='dec_invoice'){
           extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
         }
       });
@@ -2747,11 +2747,11 @@ async function showInvestorPortal(token){
         });
         window._recurringByProj = recurringByProj;
       }
-      // Costs do Property & Finance: soma dec_invoice + documents + high_end por projeto
+      // Costs do Property & Finance: soma categoria dec_invoice = card "Costs" do P&F por projeto
       const extraCostsByProj={};
       if(ecRes && !ecRes.error){
         (ecRes.data||[]).forEach(e=>{
-          if(e && ['dec_invoice','documents','high_end'].includes(e.category)){
+          if(e && e.category==='dec_invoice'){
             extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
           }
         });
@@ -3396,7 +3396,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           if(recurringByProj[p.id]){
             invoicesTotal += recurringByProj[p.id];
           }
-          // Costs do Property & Finance (dec_invoice + documents + high_end)
+          // Costs do Property & Finance (categoria dec_invoice = card "Costs" do P&F)
           const extraCostsByProj = window._extraCostsByProj || {};
           if(extraCostsByProj[p.id]){
             invoicesTotal += extraCostsByProj[p.id];
