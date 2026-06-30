@@ -6786,9 +6786,12 @@ function renderExtraCosts(category){
     if(subEl) subEl.textContent=fmt(sub);
     return;
   }
-  const items=getExtraCosts(category);
+  // Mostra só itens COM custo (amount > 0) + itens custom (is_extra) que você está
+  // preenchendo. Esconde os campos padrão zerados/duplicados, deixando o card limpo.
+  // (O "+ Add item" continua disponível para lançar novos custos.)
+  const items=getExtraCosts(category).filter(it=> (+it.amount||0) > 0 || it.is_extra===true);
   if(items.length===0){
-    list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Loading items...</div>`;
+    list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum custo lançado. Use "+ Add item" para adicionar.</div>`;
   } else {
     list.innerHTML=items.map(it=>{
       // User-added items (is_extra=true): editable name + delete button
