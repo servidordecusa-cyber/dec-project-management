@@ -3379,31 +3379,31 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           
-          // ─── COLUNA INVOICES (Rehab items + Recurring) ──────────────────
-          let invoicesTotal = 0;
+          // ─── COLUNA INVOICES (faturas Rehab + Recurring) ──────────────────
           // Soma invoice_items com description contendo "Rehab"
+          let rehabSum = 0;
           const projInvoicesList = invoices.filter(inv => inv.project_id === p.id);
           projInvoicesList.forEach(inv => {
             const items = itemsByInvoice[inv.id] || [];
             items.forEach(item => {
               if(item.description && item.description.toLowerCase().includes('rehab')){
-                invoicesTotal += +item.amount || 0;
+                rehabSum += +item.amount || 0;
               }
             });
           });
           // Recurring costs
           const recurringByProj = window._recurringByProj || {};
-          if(recurringByProj[p.id]){
-            invoicesTotal += recurringByProj[p.id];
-          }
-          // Costs do Property & Finance (categoria dec_invoice = card "Costs" do P&F)
+          const recVal = +recurringByProj[p.id] || 0;
+          // Costs do P&F (card "Costs" = extra_costs.dec_invoice) — NÃO somado:
+          // já vem embutido nas faturas; somar aqui duplicava (ex.: Weldon +$700).
           const extraCostsByProj = window._extraCostsByProj || {};
-          if(extraCostsByProj[p.id]){
-            invoicesTotal += extraCostsByProj[p.id];
-          }
+          const costVal = +extraCostsByProj[p.id] || 0;
+          const invoicesTotal = rehabSum + recVal;
+          // Detalhamento (hover) para auditoria por projeto
+          const _invTitle = `Faturas Rehab: ${$fmtProj(rehabSum)} | Recorrente: ${$fmtProj(recVal)}${costVal?` | Costs P&F (não somado): ${$fmtProj(costVal)}`:''}`;
           const invoicesHTML = invoicesTotal > 0
-            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(invoicesTotal)}</div>`
-            : `<span style="color:#999">—</span>`;
+            ? `<div style="font-weight:700;color:#3D271A" title="${_invTitle}">${$fmtProj(invoicesTotal)}</div>`
+            : `<span style="color:#999" title="${_invTitle}">—</span>`;
           const refunded=refundTotal(p.id);
           const purchase=purchaseFor(p.id);
           const netInvested=purchase+totalPaid-refunded;
