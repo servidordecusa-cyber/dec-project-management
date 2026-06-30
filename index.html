@@ -2527,17 +2527,20 @@ async function _fetchInvestorBundle(clientData){
   let recurringByProj={};
   let extraCostsByProj={}; // Property & Finance "Costs" (categoria dec_invoice = card "Costs" do P&F)
   let extraCostsItemsByProj={}; // itens dec_invoice (só para tooltip de auditoria)
+  let listingByProj={}; // listing_checklist por projeto (status "For Sale")
   if(projIds.length>0){
-    const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes] = await Promise.all([
+    const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes, lcRes] = await Promise.all([
       fetchAllRows('invoices',{build:q=>q.eq('visible_to_investor',true).in('project_id',projIds),order:[{col:'date',asc:false}]}),
       fetchAllRows('property_info',{build:q=>q.in('project_id',projIds)}),
       fetchAllRows('recurring_detail_months',{build:q=>q.in('project_id',projIds)}),
       fetchAllRows('schedule_tasks',{build:q=>q.in('project_id',projIds)}),
       fetchAllRows('daily_logs',{build:q=>q.in('project_id',projIds),order:[{col:'log_date',asc:false},{col:'created_at',asc:false}]}),
       fetchAllRows('extra_costs',{build:q=>q.in('project_id',projIds)}),
+      fetchAllRows('listing_checklist',{build:q=>q.in('project_id',projIds)}),
     ]);
     if(invRes.error) throw invRes.error;
     invData=invRes.data||[];
+    if(lcRes && !lcRes.error){ (lcRes.data||[]).forEach(l=>{ listingByProj[l.project_id]=l; }); }
     if(recurringRes && !recurringRes.error){
       (recurringRes.data||[]).forEach(r=>{
         recurringByProj[r.project_id]=(recurringByProj[r.project_id]||0)+(+r.amount||0);
@@ -2598,7 +2601,7 @@ async function _fetchInvestorBundle(clientData){
       console.warn('daily_logs fetch failed (non-blocking):',dlRes.error.message);
     }
   }
-  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj,extraCostsByProj,extraCostsItemsByProj};
+  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj,extraCostsByProj,extraCostsItemsByProj,listingByProj};
 }
 
 // Grouped portal: load all member companies and render them together under one
@@ -2637,7 +2640,7 @@ async function _showInvestorGroupPortal(group){
     }
     // 3) Fetch + merge every member bundle
     const bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
-    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{}};
+    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
     const companyOrder=[]; const nameById={};
     members.forEach((m,i)=>{
       const b=bundles[i];
@@ -2654,11 +2657,13 @@ async function _showInvestorGroupPortal(group){
       Object.assign(merged.recurringByProj,b.recurringByProj);
       Object.assign(merged.extraCostsByProj,b.extraCostsByProj);
       Object.assign(merged.extraCostsItemsByProj,b.extraCostsItemsByProj);
+      Object.assign(merged.listingByProj,b.listingByProj);
     });
     // 4) Expose grouping context for the renderer (combined dashboard + company headers)
     window._recurringByProj=merged.recurringByProj;
     window._extraCostsByProj=merged.extraCostsByProj;
     window._extraCostsItemsByProj=merged.extraCostsItemsByProj;
+    window._listingByProj=merged.listingByProj;
     window._portalCompanyOrder=companyOrder;
     window._portalClientNameById=nameById;
     const groupClient={id:'group:'+group.token,name:group.label||'Investidor'};
@@ -2697,6 +2702,7 @@ async function showInvestorPortal(token){
   window._portalClientNameById=null;
   window._extraCostsByProj={};
   window._extraCostsItemsByProj={};
+  window._listingByProj={};
 
   try{
     // Fetch the client by token (anon RLS will return only this one)
@@ -2732,16 +2738,21 @@ async function showInvestorPortal(token){
     let dailyLogsByProj={};
     let dlPhotosByLog={};
     if(projIds.length>0){
-      const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes] = await Promise.all([
+      const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes, lcRes] = await Promise.all([
         fetchAllRows('invoices',{build:q=>q.eq('visible_to_investor',true).in('project_id',projIds),order:[{col:'date',asc:false}]}),
         fetchAllRows('property_info',{build:q=>q.in('project_id',projIds)}),
         fetchAllRows('recurring_detail_months',{build:q=>q.in('project_id',projIds)}),
         fetchAllRows('schedule_tasks',{build:q=>q.in('project_id',projIds)}),
         fetchAllRows('daily_logs',{build:q=>q.in('project_id',projIds),order:[{col:'log_date',asc:false},{col:'created_at',asc:false}]}),
         fetchAllRows('extra_costs',{build:q=>q.in('project_id',projIds)}),
+        fetchAllRows('listing_checklist',{build:q=>q.in('project_id',projIds)}),
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
+      // Listing checklist por projeto (status "For Sale")
+      const listingByProj={};
+      if(lcRes && !lcRes.error){ (lcRes.data||[]).forEach(l=>{ listingByProj[l.project_id]=l; }); }
+      window._listingByProj = listingByProj;
       // Index recurring_detail_months by project (sum amounts)
       const recurringByProj={};
       if(recurringRes && !recurringRes.error){
@@ -2902,12 +2913,15 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   };
 
   // ─── Helper: compute project status (mirror of CEO logic, no listing checklist)
-  // Priority: cancelled > sold > rehab_completed > completed > in_progress
+  // Priority: cancelled > sold > for_sale > rehab_completed > completed > in_progress
   const statusFor=(p)=>{
     if(p.cancelled===true) return 'cancelled';
     const pr=propertyByProj[p.id]||{};
     const progress=gradeFor(p.id);
     if(pr.sale_date) return 'sold';
+    // For Sale: listing_checklist.listed === 'yes' (espelha a lógica do CEO)
+    const lc=(window._listingByProj||{})[p.id]||{};
+    if(lc.listed==='yes') return 'for_sale';
     if(p.project_type==='rehab' && progress===100) return 'rehab_completed';
     if(progress===100) return 'completed';
     return 'in_progress';
@@ -2916,6 +2930,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     in_progress:     {label:'Em andamento',     icon:'🔄', bg:'#F5EBDA', color:'#7A5A28'},
     completed:       {label:'Obra concluída',   icon:'✅', bg:'#ECEFE3', color:'#5C7A3F'},
     rehab_completed: {label:'Reforma concluída',icon:'🔧', bg:'#EDE5F1', color:'#7B5E8B'},
+    for_sale:        {label:'À venda',          icon:'🏷️', bg:'#FAF7F3', color:'#3D271A'},
     sold:            {label:'Vendido',          icon:'💰', bg:'#FAF3E0', color:'#9B7535'},
     cancelled:       {label:'Cancelado',        icon:'❌', bg:'#F5E8E8', color:'#A02021'},
   };
@@ -3034,8 +3049,9 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     in_progress:     1,
     rehab_completed: 2,  // "Reforma concluída" agrupa com obra concluída
     completed:       2,
-    sold:            3,
-    cancelled:       4,
+    for_sale:        3,  // À venda
+    sold:            4,
+    cancelled:       5,
   };
   // Grouped portal context (set by _showInvestorGroupPortal). When present,
   // projects are ordered company-by-company, then by status inside each company.
