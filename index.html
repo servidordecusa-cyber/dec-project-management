@@ -3391,16 +3391,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
               }
             });
           });
-          // Recurring costs
+          // Recurring costs (card "Recurring Costs" do P&F)
           const recurringByProj = window._recurringByProj || {};
           const recVal = +recurringByProj[p.id] || 0;
-          // Costs do P&F (card "Costs" = extra_costs.dec_invoice) — NÃO somado:
-          // já vem embutido nas faturas; somar aqui duplicava (ex.: Weldon +$700).
+          // Costs do P&F (card "Costs" = extra_costs.dec_invoice)
           const extraCostsByProj = window._extraCostsByProj || {};
           const costVal = +extraCostsByProj[p.id] || 0;
-          const invoicesTotal = rehabSum + recVal;
+          // INVOICES = Costs + Recurring (espelha o Property & Finance).
+          // As faturas Rehab NÃO entram (ficam só no tooltip para referência).
+          const invoicesTotal = costVal + recVal;
           // Detalhamento (hover) para auditoria por projeto
-          const _invTitle = `Faturas Rehab: ${$fmtProj(rehabSum)} | Recorrente: ${$fmtProj(recVal)}${costVal?` | Costs P&F (não somado): ${$fmtProj(costVal)}`:''}`;
+          const _invTitle = `Costs P&F: ${$fmtProj(costVal)} | Recorrente: ${$fmtProj(recVal)} | Faturas Rehab (não somado): ${$fmtProj(rehabSum)}`;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A" title="${_invTitle}">${$fmtProj(invoicesTotal)}</div>`
             : `<span style="color:#999" title="${_invTitle}">—</span>`;
