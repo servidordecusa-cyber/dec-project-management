@@ -3379,14 +3379,16 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const totalPaid=projInvoicesCounted.filter(i=>i.status==='paid').reduce((s,i)=>s+(+i.amount||0),0);
           const totalOpen=projInvoicesCounted.filter(i=>i.status==='open').reduce((s,i)=>s+(+i.amount||0),0);
           
-          // ─── COLUNA INVOICES (Operational Invoices + Recurring + Costs) ─────
-          // Operational invoices: espelha calcProjectInvoicesOperational do P&F —
-          // valor CHEIO das faturas operacionais (kind operational, não canceladas),
-          // não os itens "Rehab" (que somavam diferente, ex.: +$905 no Gainesville).
+          // ─── COLUNA INVOICES (Operational Invoices + Recorrente + Costs) ────
+          // Espelha calcProjectInvoicesOperational do P&F: soma o VALOR das
+          // faturas OPERATIONAL (kind 'operational', não canceladas). Faturas
+          // Working Capital e Refund ficam de fora — igual ao Property & Finance.
           let opInvoicesSum = 0;
+          const _opItems = []; // só para o tooltip de auditoria (não afeta cálculo)
           invoices.forEach(inv => {
             if(inv.project_id === p.id && inv.status !== 'cancelled' && (inv.kind||'operational') === 'operational'){
               opInvoicesSum += +inv.amount || 0;
+              _opItems.push(`#${inv.invoice_number||inv.id} ${inv.description||''}: ${$fmtProj(+inv.amount||0)}`);
             }
           });
           // Recurring costs (card "Recurring Costs" do P&F)
@@ -3398,8 +3400,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const costVal = +extraCostsByProj[p.id] || 0;
           // INVOICES = Operational Invoices + Recorrente + Costs (igual ao P&F).
           const invoicesTotal = opInvoicesSum + recVal + costVal;
-          // Detalhamento (hover) para auditoria por projeto
-          const _invTitle = `Operational invoices: ${$fmtProj(opInvoicesSum)} | Recorrente: ${$fmtProj(recVal)} | Costs P&F: ${$fmtProj(costVal)}`;
+          // Detalhamento (hover) para auditoria por projeto — DISPLAY ONLY, não muda o cálculo
+          const _invTitle = (`TOTAL: ${$fmtProj(invoicesTotal)}\n`+
+            `• Operational invoices: ${$fmtProj(opInvoicesSum)}\n`+
+            (_opItems.length?`   ${_opItems.join('\n   ')}\n`:'')+
+            `• Recorrente: ${$fmtProj(recVal)}\n`+
+            `• Costs P&F (dec_invoice): ${$fmtProj(costVal)}`).replace(/"/g,"'");
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A" title="${_invTitle}">${$fmtProj(invoicesTotal)}</div>`
             : `<span style="color:#999" title="${_invTitle}">—</span>`;
