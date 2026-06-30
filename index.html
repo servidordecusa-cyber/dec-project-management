@@ -3394,14 +3394,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // Recurring costs (card "Recurring Costs" do P&F)
           const recurringByProj = window._recurringByProj || {};
           const recVal = +recurringByProj[p.id] || 0;
-          // Costs do P&F (card "Costs" = extra_costs.dec_invoice)
+          // Costs do P&F (card "Costs" = extra_costs.dec_invoice, só essa categoria
+          // para não duplicar com as cópias legadas de documents/high_end)
           const extraCostsByProj = window._extraCostsByProj || {};
           const costVal = +extraCostsByProj[p.id] || 0;
-          // INVOICES = Costs + Recurring (espelha o Property & Finance).
-          // As faturas Rehab NÃO entram (ficam só no tooltip para referência).
-          const invoicesTotal = costVal + recVal;
+          // INVOICES = Faturas Rehab + Recorrente + Costs (os três).
+          const invoicesTotal = rehabSum + recVal + costVal;
           // Detalhamento (hover) para auditoria por projeto
-          const _invTitle = `Costs P&F: ${$fmtProj(costVal)} | Recorrente: ${$fmtProj(recVal)} | Faturas Rehab (não somado): ${$fmtProj(rehabSum)}`;
+          const _invTitle = `Faturas Rehab: ${$fmtProj(rehabSum)} | Recorrente: ${$fmtProj(recVal)} | Costs P&F: ${$fmtProj(costVal)}`;
           const invoicesHTML = invoicesTotal > 0
             ? `<div style="font-weight:700;color:#3D271A" title="${_invTitle}">${$fmtProj(invoicesTotal)}</div>`
             : `<span style="color:#999" title="${_invTitle}">—</span>`;
