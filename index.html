@@ -3448,20 +3448,30 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           //         já é exatamente o `purchase` (purchaseFor não inclui HM)
           // HARD MONEY = financiamento separado (não soma no investido do cliente)
           const hardMoney = +pr.hard_money || 0;
+          // Auditoria CASH (display only): mostra os 4 componentes do property_info
+          const _cashTitle = (`CASH = EMD + Cash + Other costs + Commission\n`+
+            `• EMD: ${$fmtProj(+pr.emd_cash||0)}\n`+
+            `• Cash: ${$fmtProj(+pr.cash||0)}\n`+
+            `• Other costs: ${$fmtProj(+pr.other_costs||0)}\n`+
+            `• Commission: ${$fmtProj(+pr.commission||0)}\n`+
+            `= ${$fmtProj(purchase)}`).replace(/"/g,"'");
           const cashHTML = purchase > 0
-            ? `<div style="font-weight:700;color:#3D271A">${$fmtProj(purchase)}</div>`
-            : `<span style="color:#999">—</span>`;
+            ? `<div style="font-weight:700;color:#3D271A" title="${_cashTitle}">${$fmtProj(purchase)}</div>`
+            : `<span style="color:#999" title="${_cashTitle}">—</span>`;
           const hmHTML = hardMoney > 0
             ? `<div style="font-weight:700;color:#9B7535">${$fmtProj(hardMoney)}</div><div style="font-size:9px;color:#9B7535;font-weight:700;margin-top:3px;letter-spacing:.3px">FINANCIAMENTO</div>`
             : `<span style="color:#999">—</span>`;
 
           // ─── COLUNA VENDA (Gross Profit) ──────────────────────────────
-          // Gross Profit = final_sale_price - selling_costs - lender_costs_sale
-          const isSold = status==='sold' && +pr.final_sale_price>0;
+          // Gross Profit = (Final Sale Price; se vazio, usa o ARV) - selling_costs - lender_costs_sale
           const finalSalePrice = +pr.final_sale_price || 0;
+          const arv = +pr.arv || 0;
+          const isSold = status==='sold' && finalSalePrice>0;
+          // Projeção usa o Final Sale; quando não há Final Sale, cai no ARV (igual ao Lucro Previsto do dashboard)
+          const saleForCalc = finalSalePrice > 0 ? finalSalePrice : arv;
           const sellingCosts = +pr.selling_costs || 0;
           const lenderCostsSale = +pr.lender_costs_sale || 0;
-          const grossProfit = finalSalePrice - sellingCosts - lenderCostsSale;
+          const grossProfit = saleForCalc - sellingCosts - lenderCostsSale;
           let vendaHTML;
           if(isSold && grossProfit > 0){
             vendaHTML = `<div style="font-weight:700;color:#5C7A3F">${$fmtProj(grossProfit)}</div><div style="font-size:9px;color:#5C7A3F;font-weight:700;margin-top:3px;letter-spacing:.3px">REAL</div>`;
@@ -3477,8 +3487,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // Total Invested = CASH + INVOICES
           let roiHTML = `<span style="color:#999">—</span>`;
           const totalInvested = purchase + invoicesTotal;
-          const actualProfit = finalSalePrice - totalInvested - sellingCosts - lenderCostsSale;
-          if(totalInvested > 0 && finalSalePrice > 0){
+          const actualProfit = saleForCalc - totalInvested - sellingCosts - lenderCostsSale;
+          if(totalInvested > 0 && saleForCalc > 0){
             const pctClient = pr.pct_client != null ? +pr.pct_client : 70;
             const lucroClient = actualProfit * pctClient / 100;
             const roiClient = (lucroClient / totalInvested) * 100;
