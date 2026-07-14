@@ -5293,7 +5293,7 @@ async function approveVendorNote() {
     window.DEBUG_DUPLICATES = false;
   }
   // Segunda trava: mesmo arquivo de nota já lançado (independe de fornecedor)
-  const fileDups = findNotaDuplicatesByFile(CID, _vnCurrent.original_filename, total) || [];
+  const fileDups = findNotaDuplicatesByFile(CID, _vnCurrent.original_filename, total, _vnCurrent.file_size_bytes) || [];
   fileDups.forEach(fd => {
     if (!dups.some(d => d.gid === fd.gid && d.item_name === fd.item_name)) dups.push(fd);
   });
@@ -10776,32 +10776,36 @@ function findActualDuplicates(projectId, amount, supplier, excludeKeys){
  * @param {number} amount - total da nota (opcional, reforça o match)
  * @returns {Array}
  */
-function findNotaDuplicatesByFile(projectId, filename, amount){
-  if(!projectId || !filename) return [];
+function findNotaDuplicatesByFile(projectId, filename, amount, sizeBytes){
+  if(!projectId) return [];
   const norm = s => String(s||'').trim().toLowerCase();
   const fn = norm(filename);
-  if(!fn) return [];
+  const sz = +sizeBytes || 0;
+  if(!fn && !sz) return [];
   const out=[];
   const am = attachMap[projectId] || {};
   Object.keys(am).forEach(gid=>{
     const byItem = am[gid] || {};
     Object.keys(byItem).forEach(islug=>{
       (byItem[islug]||[]).forEach(att=>{
-        if(norm(att.name) !== fn) return;
+        const nameMatch = fn && norm(att.name) === fn;
+        // Mesmo tamanho EXATO em bytes = mesmo arquivo (pega nome diferente do mesmo PDF)
+        const sizeMatch = sz>0 && (+att.size||0) === sz;
+        if(!nameMatch && !sizeMatch) return;
         const row = ((budgetMap[projectId]||{})[gid]||{})[islug] || {};
         const rowActual = +row.actual || 0;
         const rowUnit   = +row.actual_unit_cost || 0;
-        // Se temos o valor, exige que bata (unit, actual, ou que o actual contenha o valor);
-        // sem valor, o próprio nome do arquivo já basta.
-        const amtOk = !amount || amount<=0
-          || Math.abs(rowUnit-amount)<0.01
-          || Math.abs(rowActual-amount)<0.01
-          || rowActual >= amount - 0.01;
-        if(!amtOk) return;
+        // sizeMatch é forte o suficiente sozinho. Se só o nome bateu, confirma pelo valor.
+        if(!sizeMatch){
+          const amtOk = !amount || amount<=0
+            || Math.abs(rowUnit-amount)<0.01
+            || Math.abs(rowActual-amount)<0.01
+            || rowActual >= amount - 0.01;
+          if(!amtOk) return;
+        }
         const items=(itemsMap[projectId]||{})[gid]||[];
         const item=items.find(i=>i.slug===islug);
         const g=GROUPS.find(x=>x.id===gid);
-        // Evita duplicar a mesma linha no resultado
         if(out.some(o=>o.gid===gid && o.item_name===(item?item.name:islug))) return;
         out.push({
           gid,
@@ -10809,7 +10813,7 @@ function findNotaDuplicatesByFile(projectId, filename, amount){
           item_name: item?item.name:islug,
           amount: rowUnit||rowActual,
           supplier_name: row.actual_supplier||'',
-          note: ' (mesmo arquivo de nota já anexado)',
+          note: sizeMatch ? ' (mesmo arquivo — tamanho idêntico)' : ' (mesmo nome de arquivo)',
         });
       });
     });
