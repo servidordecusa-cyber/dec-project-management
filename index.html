@@ -593,6 +593,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           </div>
           <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
+          <div style="margin-top:13px"><div class="fg"><label>📁 Pasta de documentos (Google Drive) <span style="font-size:10px;color:var(--gray3)">— aparece como botão no portal do investidor</span></label><input id="pf-drive" type="url" placeholder="https://drive.google.com/drive/folders/..." oninput="debouncePF()"></div></div>
           <div id="pf-research" style="margin-top:14px"></div>
           <!-- Cancelled section -->
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
@@ -3669,7 +3670,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             <td style="padding:14px 14px;font-size:13px">
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap">
                 ${p.cover_photo?`<span data-cover-path="${p.cover_photo.replace(/"/g,'&quot;')}" style="width:48px;height:48px;border-radius:8px;background:#F0EAE2 center/cover no-repeat;flex-shrink:0;border:1px solid #E8DDC9;display:inline-block"></span>`:''}
-                <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
+                <div>
+                  <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
+                  ${p.drive_folder_url?`<a href="${(p.drive_folder_url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 9px;background:#FAF3E0;border:1px solid #E8DDC9;border-radius:8px;font-size:11px;font-weight:700;color:#9B7535;text-decoration:none;white-space:nowrap">📁 Documentos</a>`:''}
+                </div>
               </div>
             </td>
             <td style="padding:14px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
@@ -6639,6 +6643,7 @@ function loadProjectForms(p){
     ['pf-water-acc','water_account'],
     ['pf-power-acc','power_account'],
     ['pf-type','project_type'],
+    ['pf-drive','drive_folder_url'],
     ['pf-cancelled-reason','cancelled_reason'],
   ];
   extras.forEach(([elId,key])=>{
@@ -6700,6 +6705,7 @@ async function savePF(){
     water_account:v('pf-water-acc'),
     power_account:v('pf-power-acc'),
     project_type:v('pf-type')||null,
+    drive_folder_url:v('pf-drive')||null,
     cancelled:isCancelled,
     cancelled_reason:isCancelled?(v('pf-cancelled-reason')||null):null,
     cancelled_at:cancelledAt};
