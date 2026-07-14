@@ -5283,25 +5283,31 @@ async function approveVendorNote() {
   }
 
   // ─── DUPLICATE DETECTION ───────────────────────────────────────────
-  // Use vendorId if available, else fall back to vendorName (legacy strings)
+  // (1) por VALOR + FORNECEDOR (quando há fornecedor identificado)
+  // (2) pela PRÓPRIA NOTA — mesmo arquivo já anexado no projeto (funciona SEM fornecedor)
   const supplierForCheck = vendorId || vendorName;
+  let dups = [];
   if (supplierForCheck) {
-    // Enable debug logging temporarily — helps diagnose missed duplicates
     window.DEBUG_DUPLICATES = true;
-    const dups = findActualDuplicates(CID, total, supplierForCheck, null);
+    dups = findActualDuplicates(CID, total, supplierForCheck, null) || [];
     window.DEBUG_DUPLICATES = false;
-    if (dups.length > 0) {
-      if (!confirm(formatDuplicateMessage('actual', dups))) {
-        // User wants to cancel — re-enable button
-        const btn0 = document.getElementById('vn-approve-btn');
-        if (btn0) { btn0.disabled = false; btn0.textContent = ' Aprovar e Lançar'; }
-        return;
-      }
-    } else {
-      console.log('[Duplicate Check] No duplicates found for amount=' + total + ' supplier=' + supplierForCheck);
+  }
+  // Segunda trava: mesmo arquivo de nota já lançado (independe de fornecedor)
+  const fileDups = findNotaDuplicatesByFile(CID, _vnCurrent.original_filename, total) || [];
+  fileDups.forEach(fd => {
+    if (!dups.some(d => d.gid === fd.gid && d.item_name === fd.item_name)) dups.push(fd);
+  });
+  // Terceira trava: mesmo VALOR já lançado (independe de fornecedor e de arquivo)
+  const amtDups = findActualDuplicatesByAmount(CID, total) || [];
+  amtDups.forEach(ad => {
+    if (!dups.some(d => d.gid === ad.gid && d.item_name === ad.item_name)) dups.push(ad);
+  });
+  if (dups.length > 0) {
+    if (!confirm(formatDuplicateMessage('actual', dups))) {
+      const btn0 = document.getElementById('vn-approve-btn');
+      if (btn0) { btn0.disabled = false; btn0.textContent = ' Aprovar e Lançar'; }
+      return;
     }
-  } else {
-    console.warn('[Duplicate Check] Skipped — no supplier identified (vendorId="' + vendorId + '" vendorName="' + vendorName + '")');
   }
 
   const btn = document.getElementById('vn-approve-btn');
@@ -10759,6 +10765,90 @@ function findActualDuplicates(projectId, amount, supplier, excludeKeys){
     console.log('[DUP CHECK] matches found:', matches.length, matches);
   }
   return matches;
+}
+
+/**
+ * Detecta duplicata pela PRÓPRIA NOTA (mesmo arquivo já anexado no projeto).
+ * Funciona mesmo SEM fornecedor identificado. Casa por nome do arquivo
+ * (e confirma pelo valor quando disponível, pra evitar falso positivo em nomes genéricos).
+ * @param {string} projectId
+ * @param {string} filename - nome do arquivo da nota atual
+ * @param {number} amount - total da nota (opcional, reforça o match)
+ * @returns {Array}
+ */
+function findNotaDuplicatesByFile(projectId, filename, amount){
+  if(!projectId || !filename) return [];
+  const norm = s => String(s||'').trim().toLowerCase();
+  const fn = norm(filename);
+  if(!fn) return [];
+  const out=[];
+  const am = attachMap[projectId] || {};
+  Object.keys(am).forEach(gid=>{
+    const byItem = am[gid] || {};
+    Object.keys(byItem).forEach(islug=>{
+      (byItem[islug]||[]).forEach(att=>{
+        if(norm(att.name) !== fn) return;
+        const row = ((budgetMap[projectId]||{})[gid]||{})[islug] || {};
+        const rowActual = +row.actual || 0;
+        const rowUnit   = +row.actual_unit_cost || 0;
+        // Se temos o valor, exige que bata (unit, actual, ou que o actual contenha o valor);
+        // sem valor, o próprio nome do arquivo já basta.
+        const amtOk = !amount || amount<=0
+          || Math.abs(rowUnit-amount)<0.01
+          || Math.abs(rowActual-amount)<0.01
+          || rowActual >= amount - 0.01;
+        if(!amtOk) return;
+        const items=(itemsMap[projectId]||{})[gid]||[];
+        const item=items.find(i=>i.slug===islug);
+        const g=GROUPS.find(x=>x.id===gid);
+        // Evita duplicar a mesma linha no resultado
+        if(out.some(o=>o.gid===gid && o.item_name===(item?item.name:islug))) return;
+        out.push({
+          gid,
+          groupName: g?g.name:gid,
+          item_name: item?item.name:islug,
+          amount: rowUnit||rowActual,
+          supplier_name: row.actual_supplier||'',
+          note: ' (mesmo arquivo de nota já anexado)',
+        });
+      });
+    });
+  });
+  return out;
+}
+
+/**
+ * Detecta duplicata só por VALOR (independe de fornecedor e de arquivo).
+ * Última rede de segurança: pega a mesma nota re-enviada sem fornecedor e
+ * com nome de arquivo diferente. Casa unit cost, actual, ou múltiplos.
+ * @param {string} projectId
+ * @param {number} amount
+ * @returns {Array}
+ */
+function findActualDuplicatesByAmount(projectId, amount){
+  if(!projectId || !amount || amount<=0) return [];
+  const out=[];
+  const bm=budgetMap[projectId]||{};
+  GROUPS.forEach(g=>{
+    const room=bm[g.id]||{};
+    Object.entries(room).forEach(([islug,d])=>{
+      const rowActual=+d.actual||0, rowUnit=+d.actual_unit_cost||0, rowQty=+d.actual_qty||0;
+      const matchUnit     = rowUnit>0   && Math.abs(rowUnit-amount)<0.01;
+      const matchActual   = rowActual>0 && Math.abs(rowActual-amount)<0.01;
+      const matchMultiple = rowActual>0 && rowQty>1 && Math.abs(rowActual-(amount*rowQty))<0.01;
+      if(!(matchUnit||matchActual||matchMultiple)) return;
+      const items=(itemsMap[projectId]||{})[g.id]||[];
+      const item=items.find(i=>i.slug===islug);
+      out.push({
+        gid:g.id, groupName:g.name,
+        item_name:item?item.name:islug,
+        amount:rowUnit||rowActual,
+        supplier_name:d.actual_supplier||'',
+        note:' (mesmo valor já lançado)',
+      });
+    });
+  });
+  return out;
 }
 
 /**
