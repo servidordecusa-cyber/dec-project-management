@@ -683,7 +683,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Commission ($) <span style="font-size:10px;color:var(--gray3)">— broker/agent commission</span></label><input id="pi-commission" type="number" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onAcqInput()"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Purchase date</label><input id="pi-purch-date" type="date" onchange="savePI()"></div>
+            <div class="fg"><label>Purchase date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-purch-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" onchange="savePI()"></div>
             <div class="fg"></div>
           </div>
         </div>
@@ -696,7 +696,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Final sale price ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Sale date</label><input id="pi-sale-date" type="date" onchange="savePI()"></div>
+            <div class="fg"><label>Sale date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-sale-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" onchange="savePI()"></div>
             <div class="fg"><label>Selling costs ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
@@ -2937,6 +2937,20 @@ function _renderInvestorError(msg){
 
 function _fmtMoney(v){return '$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _fmtDate(d){if(!d) return '—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR');}
+// Conversão de data digitada dd/mm/aaaa ↔ ISO (YYYY-MM-DD) para os campos do Property & Finance
+function _brToIso(s){
+  s=(s||'').trim(); if(!s) return null;
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);           // já em ISO
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); // dd/mm/aaaa (ou - ou .)
+  if(m){ let y=m[3]; if(y.length===2) y='20'+y; return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+  return null; // formato não reconhecido → não salva (evita data inválida)
+}
+function _isoToBR(iso){
+  if(!iso) return '';
+  const m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso);
+}
 function _invStatusBadge(status){
   const map={
     paid:{label:'✅ Pago',bg:'#E8F2E8',color:'#2D6A2D'},
@@ -6717,9 +6731,12 @@ function loadPropertyForm(){
     ['pi-lender-sale','lender_costs_sale'],
     ['pi-dec-invoice','dec_invoice_number'],
   ];
+  const _dateFields={purchase_date:1,sale_date:1};
   pairs.forEach(([elId,k])=>{
     const el=document.getElementById(elId);
-    if(el) el.value=(p[k]==null||p[k]===0&&el.type==='number'&&!p[k])?'':p[k];
+    if(!el) return;
+    if(_dateFields[k]){ el.value=_isoToBR(p[k]); return; } // datas → dd/mm/aaaa
+    el.value=(p[k]==null||p[k]===0&&el.type==='number'&&!p[k])?'':p[k];
   });
   // Percentages: default 50/50 if never set
   document.getElementById('pi-pct-client').value=(p.pct_client==null?50:p.pct_client);
@@ -6820,11 +6837,11 @@ async function savePI(){
     hard_money:num('pi-hard-money'),
     other_costs:num('pi-other-costs'),
     commission:num('pi-commission'),
-    purchase_date:v('pi-purch-date')||null,
+    purchase_date:_brToIso(v('pi-purch-date')),
     // Sale
     arv:num('pi-arv'),
     final_sale_price:num('pi-sale'),
-    sale_date:v('pi-sale-date')||null,
+    sale_date:_brToIso(v('pi-sale-date')),
     selling_costs:num('pi-selling'),
     holding_costs:num('pi-holding'),
     lender_costs_sale:num('pi-lender-sale'),
