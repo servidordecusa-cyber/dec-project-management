@@ -4524,6 +4524,32 @@ function buildBudgetRooms(){
   });
 }
 
+// ═══ ACTUAL COSTS — agrupamento por categoria (resumo + expandir) ═════
+let _catExpanded = {}; // `${gid}|${catKey}` -> true quando expandido
+const CAT_DEFS=[['material','Material'],['labor','Labor'],['material_labor','Material + Labor'],['equipment','Equipment'],['other','Other'],['','Sem categoria']];
+
+function toggleCat(gid, catKey){
+  const key=gid+'|'+catKey;
+  const on=!_catExpanded[key];
+  _catExpanded[key]=on;
+  document.querySelectorAll('.catgrp-'+gid+'-'+catKey).forEach(tr=>{ tr.style.display=on?'':'none'; });
+  const car=document.getElementById('cat-caret-'+gid+'-'+catKey);
+  if(car) car.textContent=on?'▾':'▸';
+  const hint=document.getElementById('cat-hint-'+gid+'-'+catKey);
+  if(hint) hint.textContent=on?'clique p/ recolher':'clique p/ ver itens';
+}
+
+function _updateCatSummaries(gid){
+  const bm=(budgetMap[CID]||{})[gid]||{};
+  const items=(itemsMap[CID]||{})[gid]||[];
+  const byCat={};
+  items.forEach(it=>{ const c=((bm[it.slug]||{}).category)||''; (byCat[c]=byCat[c]||[]).push(it); });
+  Object.keys(byCat).forEach(cv=>{
+    const el=document.getElementById('catsum-'+gid+'-'+(cv||'none'));
+    if(el) el.textContent=fmt(byCat[cv].reduce((s,it)=>s+(+((bm[it.slug]||{}).actual)||0),0));
+  });
+}
+
 function renderItems(type,gid){
   const tb=document.getElementById('tb-'+type+'-'+gid);
   if(!tb) return;
@@ -4533,13 +4559,41 @@ function renderItems(type,gid){
     tb.innerHTML=`<tr><td colspan="${colspan}" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
     return;
   }
-  tb.innerHTML=items.map(it=>rowHTML(type,gid,it.name,it.slug)).join('');
-  // Hydrate values
-  items.forEach(it=>hydrateRow(type,gid,it.slug));
-  // Re-apply vendor filter if active (only on Actual rows)
-  if(type==='act' && _actVendorFilter){
-    _applyActVendorFilter();
+  // Actual Costs: resumo por categoria (colapsado) → clique expande os itens
+  if(type==='act'){
+    const bm=(budgetMap[CID]||{})[gid]||{};
+    const byCat={};
+    items.forEach(it=>{ const c=((bm[it.slug]||{}).category)||''; (byCat[c]=byCat[c]||[]).push(it); });
+    const orderedKeys=CAT_DEFS.map(d=>d[0]).filter(k=>byCat[k]&&byCat[k].length);
+    Object.keys(byCat).forEach(k=>{ if(!CAT_DEFS.some(d=>d[0]===k)) orderedKeys.push(k); });
+    let html='';
+    orderedKeys.forEach(cv=>{
+      const list=byCat[cv]; if(!list||!list.length) return;
+      const label=((CAT_DEFS.find(d=>d[0]===cv)||[])[1]) || (cv||'Sem categoria');
+      const catKey=cv||'none';
+      const total=list.reduce((s,it)=>s+(+((bm[it.slug]||{}).actual)||0),0);
+      const expanded=!!_catExpanded[gid+'|'+catKey];
+      html+=`<tr class="cat-sum" onclick="toggleCat('${gid}','${catKey}')" style="cursor:pointer;background:#F3EDE3;border-top:2px solid #E8DDC9">
+        <td style="padding:11px 12px;font-weight:800;color:#3D271A;font-size:13px"><span id="cat-caret-${gid}-${catKey}" style="display:inline-block;width:14px;color:#9B7535">${expanded?'▾':'▸'}</span>${label} <span style="color:#999;font-weight:500;font-size:11px">· ${list.length} ${list.length===1?'item':'itens'}</span></td>
+        <td colspan="4"></td>
+        <td style="padding:11px 10px;text-align:right;font-weight:800;color:#9B7535;font-size:13px" id="catsum-${gid}-${catKey}">${fmt(total)}</td>
+        <td colspan="4" style="text-align:right;padding-right:12px"><span id="cat-hint-${gid}-${catKey}" style="color:#bbb;font-size:10px">${expanded?'clique p/ recolher':'clique p/ ver itens'}</span></td>
+      </tr>`;
+      list.forEach(it=>{
+        let rh=rowHTML('act',gid,it.name,it.slug);
+        rh=rh.replace('<tr id="row-act-'+gid+'-'+it.slug+'">',
+          '<tr id="row-act-'+gid+'-'+it.slug+'" class="cat-item catgrp-'+gid+'-'+catKey+'" style="display:'+(expanded?'':'none')+'">');
+        html+=rh;
+      });
+    });
+    tb.innerHTML=html;
+    items.forEach(it=>hydrateRow('act',gid,it.slug));
+    if(_actVendorFilter) _applyActVendorFilter();
+    return;
   }
+  // Estimate: lista simples (sem agrupar)
+  tb.innerHTML=items.map(it=>rowHTML(type,gid,it.name,it.slug)).join('');
+  items.forEach(it=>hydrateRow(type,gid,it.slug));
 }
 
 // ═══ ACTUAL COSTS VENDOR FILTER ═══════════════════════════════════════
@@ -12777,6 +12831,7 @@ async function onBI(type,roomId,islug,el){
   const tot=calcRoomItemTotal(CID,roomId,type==='est'?'est':'actual');
   const el2=document.getElementById('brt-'+type+'-'+roomId);
   if(el2) el2.textContent=fmt(tot);
+  if(type==='act') _updateCatSummaries(roomId);
   const k=type+roomId+islug;
   clearTimeout(_debBI[k]);
   _debBI[k]=setTimeout(()=>_saveBI(roomId,islug),500);
@@ -12866,6 +12921,9 @@ async function onBCat(type,roomId,islug,el){
   const otherEl=document.getElementById('bcat-'+other+'-'+roomId+'-'+islug);
   if(otherEl) otherEl.value=el.value||'';
   _saveBI(roomId,islug);
+  // Regrupa a tabela de Actual Costs (o item mudou de categoria)
+  renderItems('act', roomId);
+  updateGroupTotals(roomId);
 }
 
 // Working Capital flag — only on Actual rows
