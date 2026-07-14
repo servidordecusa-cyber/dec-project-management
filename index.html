@@ -3593,7 +3593,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
           // Linha-título da empresa (somente na visão de grupo, uma vez por empresa)
           const _coRow=(_companyOrder && _firstOfCompany.has(p.id))
-            ? `<tr><td colspan="8" style="padding:16px 14px 8px;background:#FAF7F3;border-bottom:2px solid #E8DDC9">
+            ? `<tr><td colspan="10" style="padding:16px 14px 8px;background:#FAF7F3;border-bottom:2px solid #E8DDC9">
                  <span style="font-size:12px;font-weight:800;color:#9B7535;letter-spacing:1px;text-transform:uppercase">🏢 ${((_companyNames&&_companyNames[p.customer])||'Empresa').replace(/</g,'&lt;')}</span>
                </td></tr>`
             : '';
@@ -3603,12 +3603,13 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
               </div>
-              ${(pr.purchase_date||pr.sale_date)?`<div style="font-size:10px;color:#999;margin-top:4px">${pr.purchase_date?'📅 '+_fmtDate(pr.purchase_date):''}${(pr.purchase_date&&pr.sale_date)?' → ':''}${pr.sale_date?'🏁 '+_fmtDate(pr.sale_date):''}</div>`:''}
             </td>
             <td style="padding:14px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
             <td style="padding:14px 10px">
               <span style="display:inline-block;padding:3px 9px;background:${statusBadge.bg};color:${statusBadge.color};border-radius:10px;font-size:10px;font-weight:700">${statusBadge.icon} ${statusBadge.label}</span>
             </td>
+            <td style="padding:14px 10px;text-align:center;font-size:12px;color:#3D271A;white-space:nowrap">${pr.purchase_date?_fmtDate(pr.purchase_date):'—'}</td>
+            <td style="padding:14px 10px;text-align:center;font-size:12px;color:#3D271A;white-space:nowrap">${pr.sale_date?_fmtDate(pr.sale_date):'—'}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${invoicesHTML}</td>
@@ -3619,12 +3620,14 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         return `
         <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05)">
           <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;min-width:840px">
+            <table style="width:100%;border-collapse:collapse;min-width:1000px">
               <thead>
                 <tr style="background:#FAF7F3;border-bottom:2px solid #E8DDC9">
                   <th style="padding:12px 14px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Endereço</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Tipo</th>
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
+                  <th style="padding:12px 10px;text-align:center;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Compra</th>
+                  <th style="padding:12px 10px;text-align:center;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Costs</th>
