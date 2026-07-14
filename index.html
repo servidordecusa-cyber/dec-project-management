@@ -2037,31 +2037,44 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <label>Total ($) *</label>
         <input id="vn-total" type="number" min="0" step="0.01" placeholder="0.00">
       </div>
-      <div class="fg">
-        <label>Category</label>
-        <select id="vn-category">
-          <option value="">— select —</option>
-          <option value="material">Material</option>
-          <option value="labor">Labor</option>
-          <option value="material_labor">Material + Labor</option>
-          <option value="equipment">Equipment</option>
-          <option value="other">Other</option>
-        </select>
+      <div class="fg" style="display:flex;align-items:flex-end">
+        <div id="vn-lines-sum" style="font-size:11px;color:#655A4E"></div>
       </div>
     </div>
 
-    <div class="fgrid">
-      <div class="fg">
-        <label>Phase</label>
-        <select id="vn-group" onchange="onVendorNoteGroupChange()">
-          <option value="">— select —</option>
-        </select>
+    <!-- Modo antigo (1 categoria pra nota toda) — usado só se a IA não itemizar -->
+    <div id="vn-single-fields">
+      <div class="fgrid">
+        <div class="fg">
+          <label>Category</label>
+          <select id="vn-category">
+            <option value="">— select —</option>
+            <option value="material">Material</option>
+            <option value="labor">Labor</option>
+            <option value="material_labor">Material + Labor</option>
+            <option value="equipment">Equipment</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Phase</label>
+          <select id="vn-group" onchange="onVendorNoteGroupChange()">
+            <option value="">— select —</option>
+          </select>
+        </div>
       </div>
       <div class="fg">
         <label>Item</label>
         <input id="vn-item-name" list="vn-item-suggestions" placeholder="e.g. Drywall" autocomplete="off">
         <datalist id="vn-item-suggestions"></datalist>
       </div>
+    </div>
+
+    <!-- Modo itemizado (IA classifica item a item por fase + categoria) -->
+    <div id="vn-lines-section" style="display:none">
+      <label style="font-size:12px;font-weight:700;color:#3D271A;display:block;margin-bottom:6px">🧾 Itens classificados <span style="font-weight:400;color:#999">— fase · categoria · valor</span></label>
+      <div id="vn-lines"></div>
+      <button type="button" onclick="vnAddLine()" style="margin-top:8px;padding:6px 12px;font-size:12px;background:transparent;border:1px dashed var(--gray2);border-radius:6px;cursor:pointer;color:#655A4E;font-family:inherit">+ adicionar linha</button>
     </div>
 
     <div class="fg"><label>Notes (short summary)</label>
@@ -5150,7 +5163,73 @@ function openVendorNoteModal() {
   const wcEl = document.getElementById('vn-paid-from-wc');
   if (wcEl) wcEl.checked = false;
 
+  // Itemização: se a IA classificou item a item, mostra a lista de linhas
+  _vnSetupLines(ex);
+
   document.getElementById('modal-vendor-note').classList.add('open');
+}
+
+// ═══ ITEMIZAÇÃO — linhas classificadas por fase + categoria ═══════════
+let _vnLines = []; // [{group_id, category, item_name, amount, notes}]
+
+function _vnGroupOptions(sel){
+  return '<option value="">—</option>' + GROUPS.map(g=>`<option value="${g.id}"${g.id===sel?' selected':''}>${(g.name||'').replace(/</g,'&lt;')}</option>`).join('');
+}
+function _vnCatOptions(sel){
+  const cats=[['material','Material'],['labor','Labor'],['material_labor','Material + Labor'],['equipment','Equipment'],['other','Other']];
+  return '<option value="">—</option>' + cats.map(([v,l])=>`<option value="${v}"${v===sel?' selected':''}>${l}</option>`).join('');
+}
+function _vnSetupLines(ex){
+  const lines = Array.isArray(ex && ex.line_items) ? ex.line_items : [];
+  const single = document.getElementById('vn-single-fields');
+  const sec = document.getElementById('vn-lines-section');
+  if(lines.length > 0){
+    _vnLines = lines.map(l=>({
+      group_id: (l.group_id||l.suggested_group_id||'')+'',
+      category: (l.category||'material')+'',
+      item_name: (l.item_name||l.name||'')+'',
+      amount: +l.amount||0,
+      notes: (l.notes||'')+'',
+    }));
+    if(single) single.style.display='none';
+    if(sec) sec.style.display='block';
+    renderVnLines();
+  } else {
+    _vnLines = [];
+    if(single) single.style.display='';
+    if(sec) sec.style.display='none';
+    const sum=document.getElementById('vn-lines-sum'); if(sum) sum.textContent='';
+  }
+}
+function renderVnLines(){
+  const wrap=document.getElementById('vn-lines');
+  if(!wrap) return;
+  wrap.innerHTML = _vnLines.map((l,i)=>`
+    <div style="display:grid;grid-template-columns:1.1fr 1fr 1.3fr 0.9fr auto;gap:6px;align-items:center;margin-bottom:6px">
+      <select onchange="vnLineSet(${i},'group_id',this.value)" style="padding:7px;border:1px solid var(--gray2);border-radius:6px;font-size:12px;font-family:inherit">${_vnGroupOptions(l.group_id)}</select>
+      <select onchange="vnLineSet(${i},'category',this.value)" style="padding:7px;border:1px solid var(--gray2);border-radius:6px;font-size:12px;font-family:inherit">${_vnCatOptions(l.category)}</select>
+      <input value="${(l.item_name||'').replace(/"/g,'&quot;')}" oninput="vnLineSet(${i},'item_name',this.value)" placeholder="Item" style="padding:7px;border:1px solid var(--gray2);border-radius:6px;font-size:12px;font-family:inherit">
+      <input type="number" min="0" step="0.01" value="${l.amount||0}" oninput="vnLineSet(${i},'amount',this.value)" style="padding:7px;border:1px solid var(--gray2);border-radius:6px;font-size:12px;font-family:inherit;text-align:right">
+      <button type="button" onclick="vnRemoveLine(${i})" title="Remover" style="border:0;background:transparent;color:#B85450;cursor:pointer;font-size:16px;padding:0 4px">×</button>
+    </div>`).join('');
+  _vnUpdateLinesSum();
+}
+function vnLineSet(i, field, val){
+  if(!_vnLines[i]) return;
+  _vnLines[i][field] = field==='amount' ? (parseFloat(val)||0) : val;
+  if(field==='amount') _vnUpdateLinesSum();
+}
+function vnAddLine(){ _vnLines.push({group_id:'',category:'material',item_name:'',amount:0,notes:''}); renderVnLines(); }
+function vnRemoveLine(i){ _vnLines.splice(i,1); renderVnLines(); }
+function _vnUpdateLinesSum(){
+  const el=document.getElementById('vn-lines-sum');
+  if(!el) return;
+  const sum=_vnLines.reduce((s,l)=>s+(+l.amount||0),0);
+  const total=parseFloat(document.getElementById('vn-total').value)||0;
+  const ok=Math.abs(sum-total)<0.02;
+  const f=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  el.innerHTML = `Soma das linhas: <strong>${f(sum)}</strong>` +
+    (total>0 ? (ok?' <span style="color:#5C7A3F">✓ bate</span>':` <span style="color:#B85450">≠ total (${f(total)})</span>`) : '');
 }
 
 function _vnPopulateVendors() {
@@ -5263,6 +5342,12 @@ async function viewVendorNoteFile() {
 
 async function approveVendorNote() {
   if (!_vnCurrent || !CID || !isCEO()) return;
+
+  // Modo itemizado: se a IA classificou item a item, usa o fluxo multi-linha
+  const _linesSec = document.getElementById('vn-lines-section');
+  if (_linesSec && _linesSec.style.display !== 'none' && _vnLines.length > 0) {
+    return approveVendorNoteItemized();
+  }
 
   const vendorId = document.getElementById('vn-vendor-select').value;
   const vendorName = vendorId ? (vendors.find(v => v.id === vendorId) || {}).name || '' : '';
@@ -5435,6 +5520,125 @@ async function approveVendorNote() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = ' Aprovar e Lançar'; }
   }
+}
+
+// ─── Lançamento ITEMIZADO: várias linhas, 1 arquivo de nota (sem duplicar) ───
+async function approveVendorNoteItemized(){
+  if (!_vnCurrent || !CID || !isCEO()) return;
+  const vendorId = document.getElementById('vn-vendor-select').value;
+  const vendorName = vendorId ? (vendors.find(v => v.id === vendorId) || {}).name || '' : '';
+  const paidFromWC = !!document.getElementById('vn-paid-from-wc').checked;
+
+  const lines = _vnLines
+    .map(l => ({ gid:(l.group_id||'').trim(), category:(l.category||'').trim(), itemName:(l.item_name||'').trim(), amount:+l.amount||0, notes:(l.notes||'').trim() }))
+    .filter(l => l.amount > 0);
+  if (lines.length === 0) { toast('Nenhuma linha com valor', false); return; }
+  if (lines.find(l => !l.gid)) { toast('Escolha a fase de todas as linhas', false); return; }
+  if (lines.find(l => !l.itemName)) { toast('Informe o item de todas as linhas', false); return; }
+
+  // Duplicidade: nota (arquivo/tamanho) + valor de cada linha
+  let dups = [];
+  (findNotaDuplicatesByFile(CID, _vnCurrent.original_filename, null, _vnCurrent.file_size_bytes) || [])
+    .forEach(fd => { if (!dups.some(d => d.gid===fd.gid && d.item_name===fd.item_name)) dups.push(fd); });
+  lines.forEach(l => (findActualDuplicatesByAmount(CID, l.amount) || [])
+    .forEach(ad => { if (!dups.some(d => d.gid===ad.gid && d.item_name===ad.item_name)) dups.push(ad); }));
+  if (dups.length > 0 && !confirm(formatDuplicateMessage('actual', dups))) return;
+
+  const btn = document.getElementById('vn-approve-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Lançando...'; }
+
+  try {
+    // 1) Sobe a nota UMA vez (mesmo arquivo referenciado por todos os itens)
+    let attPath = null;
+    try {
+      const safe = (_vnCurrent.original_filename||'nota').replace(/[^a-zA-Z0-9._-]/g,'_');
+      attPath = `${CID}/nota/${_vnCurrent.note_id}_${safe}`;
+      const up = await sb.storage.from('budget-attachments').upload(attPath, _vnCurrent.file, { contentType:_vnCurrent.file_type, upsert:true });
+      if (up.error) { console.warn('nota upload', up.error); attPath = null; }
+    } catch(e){ console.warn('nota upload err', e); attPath = null; }
+
+    const affected = new Set();
+    for (const l of lines) {
+      const islug = await _vnUpsertLineItem(l.gid, l.category, l.itemName, l.amount, l.notes, vendorName, paidFromWC);
+      affected.add(l.gid);
+      if (attPath && islug) {
+        const attIns = await sb.from('budget_attachments').insert({
+          project_id: CID, room_id: l.gid, item_slug: islug, item_name: l.itemName,
+          name: _vnCurrent.original_filename || 'nota',
+          size: _vnCurrent.file_size_bytes || null,
+          mime: _vnCurrent.file_type || '',
+          storage_path: attPath,
+        }).select().single();
+        if (!attIns.error && attIns.data) {
+          if (!attachMap[CID]) attachMap[CID] = {};
+          if (!attachMap[CID][l.gid]) attachMap[CID][l.gid] = {};
+          if (!attachMap[CID][l.gid][islug]) attachMap[CID][l.gid][islug] = [];
+          attachMap[CID][l.gid][islug].push(attIns.data);
+        }
+      }
+    }
+
+    await sb.from('vendor_notes').update({ status:'approved', approved_at:new Date().toISOString() }).eq('id', _vnCurrent.note_id);
+
+    affected.forEach(gid => { renderItems('est', gid); renderItems('act', gid); updateGroupTotals(gid); });
+    closeVendorNoteModal();
+    toast(lines.length + ' item(ns) lançados!', true);
+
+    if (_vnCurrentIndex >= 0 && _vnQueue.length > 0) _vnQueue.splice(_vnCurrentIndex, 1);
+    _vnCurrent = null; _vnCurrentIndex = -1;
+    _renderActualQueueBanner();
+    if (_vnQueue.length > 0) setTimeout(() => _vnShowQueueIndex(0), 250);
+    else if (_vnQueueErrors.length === 0) _vnSetStatus(' Fila concluída');
+  } catch (err) {
+    console.error('approve itemized', err);
+    toast('Erro ao lançar: ' + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = ' Aprovar e Lançar'; }
+  }
+}
+
+// Cria ou soma um item no grupo; retorna o slug do item
+async function _vnUpsertLineItem(gid, category, itemName, amount, notes, vendorName, paidFromWC){
+  const islug = slug(itemName);
+  if (!itemsMap[CID]) itemsMap[CID] = {};
+  if (!itemsMap[CID][gid]) itemsMap[CID][gid] = [];
+  if (!budgetMap[CID]) budgetMap[CID] = {};
+  if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
+  const existingItem = itemsMap[CID][gid].find(x => x.slug === islug);
+  if (!existingItem) {
+    itemsMap[CID][gid].push({ slug: islug, name: itemName });
+    budgetMap[CID][gid][islug] = {
+      est: 0, actual: amount, est_note: '', actual_note: notes,
+      est_supplier: '', actual_supplier: vendorName,
+      est_qty: 0, actual_qty: 1, est_unit_cost: 0, actual_unit_cost: amount,
+      category: category || '', paid_from_wc: paidFromWC,
+    };
+    const up = await sb.from('budget_items').upsert({
+      project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+      est: 0, actual: amount, est_note: '', actual_note: notes,
+      est_supplier: '', actual_supplier: vendorName,
+      est_qty: 0, actual_qty: 1, est_unit_cost: 0, actual_unit_cost: amount,
+      category: category || '', paid_from_wc: paidFromWC,
+    }, { onConflict: 'project_id,room_id,item_slug' });
+    if (up.error) throw new Error('Falha ao salvar item: ' + up.error.message);
+  } else {
+    const cur = budgetMap[CID][gid][islug] || { actual:0, actual_note:'', actual_supplier:'', category:'' };
+    const newActual = (+cur.actual||0) + amount;
+    const newNote = cur.actual_note ? (cur.actual_note + ' · ' + notes) : notes;
+    const newSupplier = cur.actual_supplier && vendorName && !cur.actual_supplier.includes(vendorName)
+      ? (cur.actual_supplier + ', ' + vendorName) : (cur.actual_supplier || vendorName);
+    cur.actual = newActual; cur.actual_note = newNote; cur.actual_supplier = newSupplier;
+    if (!cur.category && category) cur.category = category;
+    if (paidFromWC) cur.paid_from_wc = true;
+    budgetMap[CID][gid][islug] = cur;
+    const up = await sb.from('budget_items').upsert({
+      project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+      actual: newActual, actual_note: newNote, actual_supplier: newSupplier,
+      category: cur.category || category || '', paid_from_wc: !!cur.paid_from_wc,
+    }, { onConflict: 'project_id,room_id,item_slug' });
+    if (up.error) throw new Error('Falha ao atualizar item: ' + up.error.message);
+  }
+  return islug;
 }
 // ═══ END VENDOR NOTES ASSISTANT ═══════════════════════════════════════
 
