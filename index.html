@@ -3520,6 +3520,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           ${(pr.purchase_date||pr.sale_date)?`<div style="font-size:12px;opacity:.82;margin-top:6px">${pr.purchase_date?'📅 Compra: '+_fmtDate(pr.purchase_date):''}${(pr.purchase_date&&pr.sale_date)?'&nbsp;&nbsp;·&nbsp;&nbsp;':''}${pr.sale_date?'🏁 Venda: '+_fmtDate(pr.sale_date):''}</div>`:''}
           ${status==='cancelled' && p.cancelled_reason?`<div style="margin-top:10px;padding:8px 12px;background:rgba(160,32,33,0.25);border-left:3px solid #FFB5B5;border-radius:6px;font-size:12px">❌ Motivo: ${p.cancelled_reason.replace(/</g,'&lt;')}</div>`:''}
           ${soldHeaderHTML}
+          ${p.drive_folder_url?`<a href="${(p.drive_folder_url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:9px 16px;background:rgba(232,197,127,.18);border:1px solid rgba(232,197,127,.5);color:#E8C57F;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">📁 Documentos no Drive</a>`:''}
         </div>
 
         ${projSummaryHTML}
@@ -3530,10 +3531,22 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>
         <div style="padding:0 20px 16px">${timelineHTML}</div>
 
-        <div style="padding:18px 20px 18px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff;border-top:1px solid #F0EAE2">
-          📸 Fotos do projeto
-          <div style="margin-top:8px;padding:18px;background:#FAF7F3;border-radius:8px;text-align:center;color:#999;font-style:italic;font-weight:400;font-size:13px;text-transform:none;letter-spacing:0">Em breve — galeria de fotos por fase (Antes / Durante / Depois).</div>
-        </div>
+        ${(()=>{
+          const _photos=[];
+          (dailyLogsByProj[p.id]||[]).forEach(log=>{
+            (dlPhotosByLog[log.id]||[]).forEach(ph=>{ _photos.push(ph); });
+          });
+          const _inner = _photos.length>0
+            ? `<div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px">${
+                _photos.map(ph=>{
+                  let _u='';
+                  try{ _u=sb.storage.from('daily-log-photos').getPublicUrl(ph.storage_path).data.publicUrl; }catch(e){}
+                  return `<a href="${_u}" target="_blank" rel="noopener" style="display:block;aspect-ratio:1;background:#F0EAE2 url('${_u}') center/cover no-repeat;border-radius:8px;border:1px solid #E8DDC9;transition:transform .15s" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'"></a>`;
+                }).join('')
+              }</div>`
+            : `<div style="margin-top:8px;padding:18px;background:#FAF7F3;border-radius:8px;text-align:center;color:#999;font-style:italic;font-weight:400;font-size:13px;text-transform:none;letter-spacing:0">Nenhuma foto adicionada ao diário de obra ainda.</div>`;
+          return `<div style="padding:18px 20px 18px;font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;background:#fff;border-top:1px solid #F0EAE2">📸 Fotos do projeto${_photos.length>0?` <span style="color:#999;font-weight:600;text-transform:none">(${_photos.length})</span>`:''}${_inner}</div>`;
+        })()}
       </div>`;
   }).join('');
 
@@ -3846,8 +3859,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         <div style="font-size:11px;color:#999;font-weight:600">${projects.length} ${projects.length===1?'projeto':'projetos'}</div>
       </div>
       ${_isDetail
-        ? `${(projects[0]&&projects[0].drive_folder_url)?`<a href="${(projects[0].drive_folder_url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;margin-bottom:16px;padding:12px 20px;background:linear-gradient(135deg,#9B7535,#7A5A28);color:#fff;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(122,90,40,.25)">📁 Acessar documentos no Google Drive</a>`:''}
-           <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>`
+        ? `<div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>`
         : `<div style="font-size:12px;color:#9B7535;margin-bottom:12px">👆 Clique no endereço de um projeto para abrir o card completo, com diário de obra e documentos.</div>
            ${projectsTableHTML}`}
 
