@@ -2996,6 +2996,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   dailyLogsByProj=dailyLogsByProj||{};
   dlPhotosByLog=dlPhotosByLog||{};
 
+  // ─── Casamento de endereços (proposta "A Realizar" ↔ projeto) ───
+  const _normAddr = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const _addrEq = (na,nb) => !!na && !!nb && (na===nb || na.startsWith(nb) || nb.startsWith(na));
+  // Endereços de TODOS os projetos do portfólio (antes de qualquer filtro)
+  const _allProjAddrArr = (projects||[]).map(p=>_normAddr(p.address||p.name)).filter(Boolean);
+
   // Group invoices by project
   const invByProj={};
   invoices.forEach(inv=>{
@@ -3082,6 +3088,13 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   const _detailPid = new URLSearchParams(location.search).get('project') || null;
   const _isDetail = !!_detailPid;
   if(_isDetail){ projects = projects.filter(p=>String(p.id)===String(_detailPid)); }
+  // Propostas "A Realizar": no detalhe mostra as do MESMO endereço; na lista só as órfãs (sem projeto)
+  const _detailAddr = (_isDetail && projects[0]) ? _normAddr(projects[0].address||projects[0].name) : null;
+  if(_isDetail){
+    budgetsData = budgetsData.filter(b => _addrEq(_normAddr(b.address||b.name), _detailAddr));
+  } else {
+    budgetsData = budgetsData.filter(b => { const bk=_normAddr(b.address||b.name); return !_allProjAddrArr.some(pa=>_addrEq(pa,bk)); });
+  }
 
   // ─── DASHBOARD AGGREGATES ─────────────────────────────────────────
   const PROJECT_TYPE_LABELS={
@@ -3873,8 +3886,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       <div id="portal-daily-logs">${dailyLogsHTML}</div>
       `:''}
 
-      ${!_isDetail?`
-      <!-- SEÇÃO 2: A REALIZAR -->
+      ${budgetsData.length>0?`
+      <!-- SEÇÃO 2: A REALIZAR (detalhe: mesmo endereço · lista: propostas sem projeto) -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>A Realizar</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
