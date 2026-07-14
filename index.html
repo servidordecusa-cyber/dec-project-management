@@ -3078,6 +3078,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   const _filterBarHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px">${_filterChips}</div>`;
   // Aplica o filtro: daqui pra baixo tudo (dashboard + lista) usa `projects` filtrado
   if(_pFilter!=='all'){ projects=projects.filter(p=>statusFor(p)===_pFilter); }
+  // ─── MODO DETALHE: ?...&project=<id> mostra só um projeto (card + diário + drive) ───
+  const _detailPid = new URLSearchParams(location.search).get('project') || null;
+  const _isDetail = !!_detailPid;
+  if(_isDetail){ projects = projects.filter(p=>String(p.id)===String(_detailPid)); }
 
   // ─── DASHBOARD AGGREGATES ─────────────────────────────────────────
   const PROJECT_TYPE_LABELS={
@@ -3671,8 +3675,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap">
                 ${p.cover_photo?`<span data-cover-path="${p.cover_photo.replace(/"/g,'&quot;')}" style="width:48px;height:48px;border-radius:8px;background:#F0EAE2 center/cover no-repeat;flex-shrink:0;border:1px solid #E8DDC9;display:inline-block"></span>`:''}
                 <div>
-                  <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
-                  ${p.drive_folder_url?`<a href="${(p.drive_folder_url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 9px;background:#FAF3E0;border:1px solid #E8DDC9;border-radius:8px;font-size:11px;font-weight:700;color:#9B7535;text-decoration:none;white-space:nowrap">📁 Documentos</a>`:''}
+                  <a href="${_portalProjUrl(p.id)}" target="_blank" rel="noopener" style="color:#3D271A;font-weight:700;text-decoration:none;border-bottom:1px solid #E8DDC9">${(p.address||p.name||'?').replace(/</g,'&lt;')}</a>
+                  <div style="font-size:10.5px;color:#9B7535;font-weight:700;margin-top:3px">↗ ver projeto</div>
                 </div>
               </div>
             </td>
@@ -3830,33 +3834,34 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>
       </div>
 
-      ${_filterBarHTML}
+      ${_isDetail?'':_filterBarHTML}
 
-      ${projects.length>0?dashboardHTML:''}
+      ${(!_isDetail && projects.length>0)?dashboardHTML:''}
 
-      <!-- SEÇÃO 1: REALIZADO -->
-      <div style="margin-top:30px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <!-- SEÇÃO 1: REALIZADO / DETALHE -->
+      ${_isDetail?`<div style="margin:6px 0 16px"><a href="${_portalBackUrl()}" style="font-size:13px;color:#9B7535;font-weight:700;text-decoration:none">← Voltar ao portfólio</a></div>`:''}
+      <div style="margin-top:30px;margin-bottom:14px;display:${_isDetail?'none':'flex'};align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#3D271A;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Realizado</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#D5C9BC,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${projects.length} ${projects.length===1?'projeto':'projetos'}</div>
-        ${projects.length>0?`
-        <!-- Toggle Cards / Tabela (Realizado) -->
-        <div style="display:inline-flex;background:#FAF7F3;border:1px solid #D5C9BC;border-radius:7px;padding:2px;font-size:11px">
-          <button id="portal-proj-cards" onclick="portalSwitchProjView('cards')" style="padding:5px 11px;background:#fff;color:#3D271A;border:0;border-radius:5px;cursor:pointer;font-weight:700;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.05)"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>Cards</button>
-          <button id="portal-proj-table" onclick="portalSwitchProjView('table')" style="padding:5px 11px;background:transparent;color:#655A4E;border:0;border-radius:5px;cursor:pointer;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="12" x2="12" y1="3" y2="21"/></svg>Tabela</button>
-        </div>`:''}
       </div>
-      <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>
-      <div id="portal-projects-table" style="display:none">${projectsTableHTML}</div>
+      ${_isDetail
+        ? `${(projects[0]&&projects[0].drive_folder_url)?`<a href="${(projects[0].drive_folder_url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;margin-bottom:16px;padding:12px 20px;background:linear-gradient(135deg,#9B7535,#7A5A28);color:#fff;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(122,90,40,.25)">📁 Acessar documentos no Google Drive</a>`:''}
+           <div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>`
+        : `<div style="font-size:12px;color:#9B7535;margin-bottom:12px">👆 Clique no endereço de um projeto para abrir o card completo, com diário de obra e documentos.</div>
+           ${projectsTableHTML}`}
 
-      <!-- SEÇÃO: DIÁRIO DE OBRA -->
+      ${_isDetail?`
+      <!-- SEÇÃO: DIÁRIO DE OBRA (detalhe) -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Diário de Obra</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${totalDailyEntries} ${totalDailyEntries===1?'entrada':'entradas'}</div>
       </div>
       <div id="portal-daily-logs">${dailyLogsHTML}</div>
+      `:''}
 
+      ${!_isDetail?`
       <!-- SEÇÃO 2: A REALIZAR -->
       <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>A Realizar</div>
@@ -3871,6 +3876,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       </div>
       <div id="portal-budgets-cards">${budgetsHTML}</div>
       <div id="portal-budgets-table" style="display:none">${renderBudgetClientTable(budgetsData)}</div>
+      `:''}
 
       <div style="text-align:center;margin-top:40px;padding:20px;color:#999;font-size:11px">
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
@@ -3880,6 +3886,19 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   hydrateCoverPhotos(portalEl);
 }
 
+// Monta a URL de detalhe de um projeto, preservando o token/portal atual
+function _portalProjUrl(pid){
+  const q=new URLSearchParams(location.search);
+  q.set('project', pid);
+  return location.pathname+'?'+q.toString();
+}
+// URL de volta ao portfólio (remove o project)
+function _portalBackUrl(){
+  const q=new URLSearchParams(location.search);
+  q.delete('project');
+  const s=q.toString();
+  return location.pathname+(s?'?'+s:'');
+}
 // Filtro do portal do investidor: troca o status e re-renderiza (lista + dashboard)
 function setPortalFilter(f){
   window._portalFilter=f;
