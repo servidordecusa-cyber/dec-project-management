@@ -2308,9 +2308,14 @@ function applyCEOVisibility(){
 }
 
 // ═══ AUTH ════════════════════════════════════════════════════════════
+// E-mails do TIME (CEO/supervisores) — só eles entram no admin.
+// Qualquer outro e-mail logado é tratado como INVESTIDOR (portal por login).
+const TEAM_EMAILS=['fabiana@decgroupusa.com','andre@decgroupusa.com','ope@decgroupusa.com'];
+function isTeamEmail(email){ return TEAM_EMAILS.includes((email||'').toLowerCase()); }
+
 async function init(){
   setLoading(true,'Connecting...');
-  // ─── INVESTOR PORTAL — detect ?investor=TOKEN in URL ───
+  // ─── INVESTOR PORTAL — link por token (legado, continua funcionando) ───
   const urlParams=new URLSearchParams(window.location.search);
   const investorToken=urlParams.get('investor');
   if(investorToken){
@@ -2318,14 +2323,26 @@ async function init(){
   }
   const {data:{session}}=await sb.auth.getSession();
   if(session){
-    CURRENT_USER=session.user;
-    document.getElementById('user-email-lbl').textContent=session.user.email;
-    applyCEOVisibility();
-    setLoading(true,'Loading projects...');
-    await loadAllData();
-    showApp();
+    const _email=(session.user.email||'').toLowerCase();
+    if(isTeamEmail(_email)){
+      // Time → admin
+      CURRENT_USER=session.user;
+      document.getElementById('user-email-lbl').textContent=session.user.email;
+      applyCEOVisibility();
+      setLoading(true,'Loading projects...');
+      await loadAllData();
+      showApp();
+    } else {
+      // Investidor autenticado (magic link) → portal por login
+      return showInvestorPortalForEmail(_email);
+    }
   } else {
-    showLogin();
+    // Sem sessão: ?portal → login do investidor; senão → login do time
+    if(urlParams.has('portal') || urlParams.get('login')==='investor'){
+      showInvestorLogin();
+    } else {
+      showLogin();
+    }
   }
 }
 
@@ -2370,6 +2387,79 @@ function showApp(){
   document.getElementById('app').style.display='block';
   // CEO starts in Home, others in Portfolio
   goView(isCEO()?'home':'portfolio');
+}
+
+// ═══ LOGIN DO INVESTIDOR (magic link / passwordless) ═══════════════════
+function showInvestorLogin(){
+  setLoading(false);
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='none';
+  let el=document.getElementById('investor-login');
+  if(!el){
+    el=document.createElement('div');
+    el.id='investor-login';
+    el.style.cssText='min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FAF7F3;font-family:inherit';
+    el.innerHTML=`
+      <div style="background:#fff;max-width:420px;width:92%;padding:38px 34px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.08);text-align:center">
+        <div style="font-size:12px;font-weight:800;color:#9B7535;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Portal do Investidor</div>
+        <h1 style="font-size:22px;color:#3D271A;font-weight:800;margin-bottom:6px">DEC Group USA</h1>
+        <p style="color:#655A4E;font-size:13px;margin-bottom:22px">Entre com seu e-mail. Enviaremos um link de acesso — sem senha.</p>
+        <input id="inv-email" type="email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')sendInvestorMagicLink()" style="width:100%;padding:12px 14px;font-size:14px;border:1.5px solid #E8DDC9;border-radius:9px;outline:none;margin-bottom:12px;font-family:inherit">
+        <button id="inv-send-btn" onclick="sendInvestorMagicLink()" style="width:100%;padding:13px;background:#9B7535;color:#fff;border:0;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Enviar link de acesso</button>
+        <div id="inv-login-msg" style="font-size:12.5px;margin-top:14px;min-height:18px"></div>
+      </div>`;
+    document.body.appendChild(el);
+  }
+  el.style.display='flex';
+}
+
+async function sendInvestorMagicLink(){
+  const email=(document.getElementById('inv-email').value||'').trim().toLowerCase();
+  const msg=document.getElementById('inv-login-msg');
+  const btn=document.getElementById('inv-send-btn');
+  if(!email || !email.includes('@')){ msg.style.color='#A02021'; msg.textContent='Digite um e-mail válido.'; return; }
+  btn.disabled=true; msg.style.color='#655A4E'; msg.textContent='Enviando...';
+  const redirect=window.location.origin+window.location.pathname+'?portal=1';
+  const {error}=await sb.auth.signInWithOtp({email, options:{emailRedirectTo:redirect}});
+  btn.disabled=false;
+  if(error){ msg.style.color='#A02021'; msg.textContent='Erro: '+error.message; return; }
+  msg.style.color='#5C7A3F'; msg.textContent='✅ Link enviado! Confira seu e-mail e clique no link para entrar.';
+}
+
+// Carrega o portal do investidor a partir do e-mail logado (via investor_access)
+async function showInvestorPortalForEmail(email){
+  document.getElementById('login-screen').style.display='none';
+  const invLogin=document.getElementById('investor-login'); if(invLogin) invLogin.style.display='none';
+  document.getElementById('app').style.display='none';
+  setLoading(true,'Carregando seu portal...');
+  let portalEl=document.getElementById('investor-portal');
+  if(!portalEl){ portalEl=document.createElement('div'); portalEl.id='investor-portal'; portalEl.style.cssText='min-height:100vh;background:#FAF7F3;font-family:inherit'; document.body.appendChild(portalEl); }
+  portalEl.style.display='block';
+  try{
+    const {data:access,error:aErr}=await sb.from('investor_access').select('client_id').eq('email',email);
+    if(aErr) throw aErr;
+    const ids=(access||[]).map(a=>a.client_id);
+    if(ids.length===0){ setLoading(false); _renderInvestorError('Seu acesso ainda não está configurado. Entre em contato com a DEC Group USA.'); return; }
+    const {data:members,error:cErr}=await sb.from('clients').select('*').in('id',ids);
+    if(cErr) throw cErr;
+    if(!members || !members.length){ setLoading(false); _renderInvestorError('Nenhuma empresa vinculada ao seu acesso.'); return; }
+    // fetch + merge (mesma lógica do portal de grupo por token)
+    const bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
+    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
+    const companyOrder=[]; const nameById={};
+    members.forEach((m,i)=>{ const b=bundles[i]; companyOrder.push(m.id); nameById[m.id]=m.name||'Empresa';
+      merged.projData=merged.projData.concat(b.projData); merged.invData=merged.invData.concat(b.invData); merged.budgetsData=merged.budgetsData.concat(b.budgetsData);
+      Object.assign(merged.itemsByInvoice,b.itemsByInvoice); Object.assign(merged.propertyByProj,b.propertyByProj); Object.assign(merged.scheduleByProj,b.scheduleByProj);
+      Object.assign(merged.dailyLogsByProj,b.dailyLogsByProj); Object.assign(merged.dlPhotosByLog,b.dlPhotosByLog); Object.assign(merged.recurringByProj,b.recurringByProj);
+      Object.assign(merged.extraCostsByProj,b.extraCostsByProj); Object.assign(merged.extraCostsItemsByProj,b.extraCostsItemsByProj); Object.assign(merged.listingByProj,b.listingByProj);
+    });
+    window._recurringByProj=merged.recurringByProj; window._extraCostsByProj=merged.extraCostsByProj;
+    window._extraCostsItemsByProj=merged.extraCostsItemsByProj; window._listingByProj=merged.listingByProj;
+    window._portalCompanyOrder=companyOrder; window._portalClientNameById=nameById;
+    const groupClient={id:'login:'+email, name: members.length>1 ? 'Investidor' : (members[0].name||'Investidor')};
+    setLoading(false);
+    _renderInvestorPortal(groupClient,merged.projData,merged.invData,merged.itemsByInvoice,merged.propertyByProj,merged.scheduleByProj,merged.budgetsData,merged.dailyLogsByProj,merged.dlPhotosByLog);
+  }catch(e){ console.error('investor portal (login) error:',e); setLoading(false); _renderInvestorError('Erro ao carregar o portal. Tente novamente em alguns instantes.'); }
 }
 function setLoading(show,msg='Loading...'){
   const el=document.getElementById('app-loading');
@@ -3369,6 +3459,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <div style="font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.8;text-transform:uppercase">🏠 Projeto ${typeBadge} ${statusBadge}</div>
           <div style="font-size:20px;font-weight:700;margin-top:4px${status==='cancelled'?';text-decoration:line-through;opacity:.85':''}">${(p.name||'').replace(/</g,'&lt;')}</div>
           ${p.address && p.address!==p.name?`<div style="font-size:13px;opacity:.85;margin-top:2px">${p.address.replace(/</g,'&lt;')}</div>`:''}
+          ${(pr.purchase_date||pr.sale_date)?`<div style="font-size:12px;opacity:.82;margin-top:6px">${pr.purchase_date?'📅 Compra: '+_fmtDate(pr.purchase_date):''}${(pr.purchase_date&&pr.sale_date)?'&nbsp;&nbsp;·&nbsp;&nbsp;':''}${pr.sale_date?'🏁 Venda: '+_fmtDate(pr.sale_date):''}</div>`:''}
           ${status==='cancelled' && p.cancelled_reason?`<div style="margin-top:10px;padding:8px 12px;background:rgba(160,32,33,0.25);border-left:3px solid #FFB5B5;border-radius:6px;font-size:12px">❌ Motivo: ${p.cancelled_reason.replace(/</g,'&lt;')}</div>`:''}
           ${soldHeaderHTML}
         </div>
@@ -3512,6 +3603,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <strong style="color:#3D271A">${(p.address||p.name||'?').replace(/</g,'&lt;')}</strong>
               </div>
+              ${(pr.purchase_date||pr.sale_date)?`<div style="font-size:10px;color:#999;margin-top:4px">${pr.purchase_date?'📅 '+_fmtDate(pr.purchase_date):''}${(pr.purchase_date&&pr.sale_date)?' → ':''}${pr.sale_date?'🏁 '+_fmtDate(pr.sale_date):''}</div>`:''}
             </td>
             <td style="padding:14px 10px;font-size:12px;color:#655A4E">${typeLabel}</td>
             <td style="padding:14px 10px">
@@ -11199,7 +11291,7 @@ async function cdApproveBudget(budgetId){
   if(!b.client_id){toast('Orçamento sem cliente vinculado',false);return;}
   const addr=(b.address||b.name||'').trim();
   if(!addr){toast('Orçamento precisa de endereço ou nome',false);return;}
-  if(!confirm(`Criar projeto a partir do orçamento "${b.name||addr}"?\n\nO projeto vai usar:\n• Endereço: ${addr}\n• Cliente: vinculado\n• Status: Em andamento`)) return;
+  if(!confirm(`Criar projeto a partir do orçamento "${b.name||addr}"?\n\nO projeto vai usar:\n• Endereço: ${addr}\n• Cliente: vinculado\n• Status: Em andamento\n\nE vai levar pro Property & Finance:\n• Compra: $${(+b.purchase_price||0).toLocaleString('en-US')} (Cash${(+b.hm_pct||0)>0?' + Hard Money':''})\n• Venda (ARV): $${(+b.arv||0).toLocaleString('en-US')}\n• Closing costs: $${(+b.closing_costs||0).toLocaleString('en-US')}`)) return;
   // Build project payload from budget
   const projectPayload={
     name:addr,
@@ -11211,6 +11303,22 @@ async function cdApproveBudget(budgetId){
   };
   const {data:newProj,error:projErr}=await sb.from('projects').insert(projectPayload).select().single();
   if(projErr){toast('Erro criar projeto: '+projErr.message,false);return;}
+  // Leva os valores do orçamento para o Property & Finance do novo projeto
+  // Preço de compra → Cash (+ Hard Money se houver % HM Loan) · Preço de venda → ARV · Closing → Other costs
+  const _bPurchase=+b.purchase_price||0;
+  const _bHmPct=+b.hm_pct||0;
+  const _bHm=Math.round(_bPurchase*_bHmPct*100)/100;
+  const _bCash=Math.round((_bPurchase-_bHm)*100)/100;
+  const propFromBudget={
+    project_id:newProj.id,
+    cash:_bCash>0?_bCash:null,
+    hard_money:_bHm>0?_bHm:null,
+    arv:(+b.arv||0)>0?+b.arv:null,
+    other_costs:(+b.closing_costs||0)>0?+b.closing_costs:null,
+  };
+  const {error:propErr}=await sb.from('property_info').upsert(propFromBudget,{onConflict:'project_id'});
+  if(propErr){console.warn('property_info from budget:',propErr.message);}
+  else { if(typeof propertyMap!=='undefined') propertyMap[newProj.id]={...(propertyMap[newProj.id]||{}),...propFromBudget}; }
   // Link budget to new project
   const {error:linkErr}=await sb.from('budgets').update({
     converted_to_project_id:newProj.id,
