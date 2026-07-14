@@ -683,7 +683,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Commission ($) <span style="font-size:10px;color:var(--gray3)">— broker/agent commission</span></label><input id="pi-commission" type="number" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onAcqInput()"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Purchase date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-purch-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" onchange="savePI()"></div>
+            <div class="fg"><label>Purchase date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-purch-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="_maskDate(this)" onchange="savePI()"></div>
             <div class="fg"></div>
           </div>
         </div>
@@ -696,7 +696,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Final sale price ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Sale date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-sale-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" onchange="savePI()"></div>
+            <div class="fg"><label>Sale date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-sale-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="_maskDate(this)" onchange="savePI()"></div>
             <div class="fg"><label>Selling costs ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
@@ -2950,6 +2950,14 @@ function _isoToBR(iso){
   if(!iso) return '';
   const m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso);
+}
+// Máscara: insere as barras automaticamente enquanto digita (dd/mm/aaaa)
+function _maskDate(el){
+  let d=(el.value||'').replace(/\D/g,'').slice(0,8); // só dígitos, máx 8 (ddmmaaaa)
+  let out=d;
+  if(d.length>4) out=d.slice(0,2)+'/'+d.slice(2,4)+'/'+d.slice(4);
+  else if(d.length>2) out=d.slice(0,2)+'/'+d.slice(2);
+  el.value=out;
 }
 function _invStatusBadge(status){
   const map={
