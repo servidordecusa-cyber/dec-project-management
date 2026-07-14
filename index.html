@@ -3508,6 +3508,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Status</th>
           <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Compra</th>
           <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Venda</th>
+          <th style="padding:9px 10px;text-align:center;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Dias</th>
           <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Cash</th>
           <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Hard Money</th>
           <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Costs</th>
@@ -3620,7 +3621,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
           // Linha-título da empresa (somente na visão de grupo, uma vez por empresa)
           const _coRow=(_companyOrder && _firstOfCompany.has(p.id))
-            ? `<tr><td colspan="10" style="padding:16px 14px 8px;background:#FAF7F3;border-bottom:2px solid #E8DDC9">
+            ? `<tr><td colspan="11" style="padding:16px 14px 8px;background:#FAF7F3;border-bottom:2px solid #E8DDC9">
                  <span style="font-size:12px;font-weight:800;color:#9B7535;letter-spacing:1px;text-transform:uppercase">🏢 ${((_companyNames&&_companyNames[p.customer])||'Empresa').replace(/</g,'&lt;')}</span>
                </td></tr>${_grpHdr}`
             : '';
@@ -3637,6 +3638,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
             </td>
             <td style="padding:14px 10px;text-align:center;font-size:12px;color:#3D271A;white-space:nowrap">${pr.purchase_date?_fmtDate(pr.purchase_date):'—'}</td>
             <td style="padding:14px 10px;text-align:center;font-size:12px;color:#3D271A;white-space:nowrap">${pr.sale_date?_fmtDate(pr.sale_date):'—'}</td>
+            <td style="padding:14px 10px;text-align:center;font-size:12px;color:#655A4E;white-space:nowrap">${(pr.purchase_date&&pr.sale_date)?(Math.max(0,Math.round((new Date(pr.sale_date+'T00:00:00')-new Date(pr.purchase_date+'T00:00:00'))/86400000))+' dias'):'—'}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${cashHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${hmHTML}</td>
             <td style="padding:14px 10px;text-align:right;font-size:13px;white-space:nowrap">${invoicesHTML}</td>
@@ -3647,7 +3649,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         return `
         <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.05)">
           <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;min-width:1000px">
+            <table style="width:100%;border-collapse:collapse;min-width:1090px">
               <thead>
                 <tr style="background:#FAF7F3;border-bottom:2px solid #E8DDC9">
                   <th style="padding:12px 14px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Endereço</th>
@@ -3655,6 +3657,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:left;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Status</th>
                   <th style="padding:12px 10px;text-align:center;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Compra</th>
                   <th style="padding:12px 10px;text-align:center;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Venda</th>
+                  <th style="padding:12px 10px;text-align:center;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Dias</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Costs</th>
@@ -3768,7 +3771,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     : `<div style="background:#fff;padding:30px;border-radius:14px;text-align:center;color:#999;font-style:italic;font-size:13px">📋 Nenhum orçamento disponível ainda.<br><span style="font-size:11px;color:#bbb">A DEC Group vai compartilhar com você assim que tiver propostas prontas para análise.</span></div>`;
 
   portalEl.innerHTML=`
-    <div style="max-width:1180px;margin:0 auto;padding:32px 20px">
+    <div style="max-width:1240px;margin:0 auto;padding:32px 20px">
       <!-- Top banner: Logo + Welcome text -->
       <div style="background:#fff;border-radius:14px;padding:22px 28px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:flex;align-items:center;gap:24px;flex-wrap:wrap">
         <!-- DEC Logo (left) — same logo used in PDF reports -->
