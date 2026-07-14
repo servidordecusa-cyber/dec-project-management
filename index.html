@@ -3047,6 +3047,19 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     cancelled:       {label:'Cancelado',        icon:'❌', bg:'#F5E8E8', color:'#A02021'},
   };
 
+  // ─── FILTRO DO PORTAL (por status) — atualiza lista E dashboard ─────
+  // Guarda os dados completos p/ re-render ao trocar o filtro (sem re-buscar)
+  window._portalRenderArgs={client,projects,invoices,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog};
+  const _pFilter=window._portalFilter||'all';
+  const _statusCount={}; projects.forEach(p=>{ const s=statusFor(p); _statusCount[s]=(_statusCount[s]||0)+1; });
+  const _statusOrder=['in_progress','for_sale','completed','rehab_completed','sold','cancelled'];
+  const _filterChips=[`<button onclick="setPortalFilter('all')" style="padding:6px 13px;border-radius:16px;border:1px solid ${_pFilter==='all'?'#3D271A':'#E8DDC9'};background:${_pFilter==='all'?'#3D271A':'#fff'};color:${_pFilter==='all'?'#fff':'#655A4E'};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Todos (${projects.length})</button>`]
+    .concat(_statusOrder.filter(s=>_statusCount[s]).map(s=>{ const b=STATUS_BADGES[s]; const on=_pFilter===s;
+      return `<button onclick="setPortalFilter('${s}')" style="padding:6px 13px;border-radius:16px;border:1px solid ${on?b.color:'#E8DDC9'};background:${on?b.color:'#fff'};color:${on?'#fff':'#655A4E'};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${b.icon} ${b.label} (${_statusCount[s]})</button>`; })).join('');
+  const _filterBarHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px">${_filterChips}</div>`;
+  // Aplica o filtro: daqui pra baixo tudo (dashboard + lista) usa `projects` filtrado
+  if(_pFilter!=='all'){ projects=projects.filter(p=>statusFor(p)===_pFilter); }
+
   // ─── DASHBOARD AGGREGATES ─────────────────────────────────────────
   const PROJECT_TYPE_LABELS={
     single_family:{label:'Single Family',icon:'🏠'},
@@ -3794,6 +3807,8 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>
       </div>
 
+      ${_filterBarHTML}
+
       ${projects.length>0?dashboardHTML:''}
 
       <!-- SEÇÃO 1: REALIZADO -->
@@ -3838,6 +3853,17 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         DEC Group USA · Portal do Investidor · Acesso seguro via link único
       </div>
     </div>`;
+}
+
+// Filtro do portal do investidor: troca o status e re-renderiza (lista + dashboard)
+function setPortalFilter(f){
+  window._portalFilter=f;
+  _reRenderInvestorPortal();
+  try{ document.getElementById('investor-portal').scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+}
+function _reRenderInvestorPortal(){
+  const a=window._portalRenderArgs; if(!a) return;
+  _renderInvestorPortal(a.client,a.projects,a.invoices,a.itemsByInvoice,a.propertyByProj,a.scheduleByProj,a.budgetsData,a.dailyLogsByProj,a.dlPhotosByLog);
 }
 
 // Toggle helper for portal view (projects/Realizado)
