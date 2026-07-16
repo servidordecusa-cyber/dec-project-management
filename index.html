@@ -547,10 +547,10 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <div class="card" style="padding:0;overflow:hidden"><table class="cmp-tbl" id="cmp-tbl"></table></div>
       </div>
 
-      <div class="page" id="page-ph1"><div class="pb1"><h3 style="color:var(--p1)">Phase 1 — Demolition</h3><span style="font-size:12px;color:var(--p1);opacity:.7"> Site preparation</span> <span style="float:right;font-weight:700;color:var(--p1)" id="pb-1">0%</span></div><div id="tasks-ph1"></div></div>
-      <div class="page" id="page-ph2"><div class="pb2"><h3 style="color:var(--p2)">Phase 2 — Preparation</h3><span style="font-size:12px;color:var(--p2);opacity:.7"> Structural work</span><span style="float:right;font-weight:700;color:var(--p2)" id="pb-2">0%</span></div><div id="tasks-ph2"></div></div>
-      <div class="page" id="page-ph3"><div class="pb3"><h3 style="color:var(--p3)">Phase 3 — Installation</h3><span style="font-size:12px;color:var(--p3);opacity:.7"> Major installations</span><span style="float:right;font-weight:700;color:var(--p3)" id="pb-3">0%</span></div><div id="tasks-ph3"></div></div>
-      <div class="page" id="page-ph4"><div class="pb4"><h3 style="color:var(--p4)">Phase 4 — Finishing</h3><span style="font-size:12px;color:var(--p4);opacity:.7"> Final touches</span><span style="float:right;font-weight:700;color:var(--p4)" id="pb-4">0%</span></div><div id="tasks-ph4"></div></div>
+      <div class="page" id="page-ph1"><div class="pb1"><h3 style="color:var(--p1)">Phase 1 — Demolition</h3><span style="font-size:12px;color:var(--p1);opacity:.7"> Site preparation</span> <span style="float:right;font-weight:700;color:var(--p1)" id="pb-1">0%</span></div><div id="tasks-ph1"></div><div id="dlphase-ph1" style="margin-top:20px"></div></div>
+      <div class="page" id="page-ph2"><div class="pb2"><h3 style="color:var(--p2)">Phase 2 — Preparation</h3><span style="font-size:12px;color:var(--p2);opacity:.7"> Structural work</span><span style="float:right;font-weight:700;color:var(--p2)" id="pb-2">0%</span></div><div id="tasks-ph2"></div><div id="dlphase-ph2" style="margin-top:20px"></div></div>
+      <div class="page" id="page-ph3"><div class="pb3"><h3 style="color:var(--p3)">Phase 3 — Installation</h3><span style="font-size:12px;color:var(--p3);opacity:.7"> Major installations</span><span style="float:right;font-weight:700;color:var(--p3)" id="pb-3">0%</span></div><div id="tasks-ph3"></div><div id="dlphase-ph3" style="margin-top:20px"></div></div>
+      <div class="page" id="page-ph4"><div class="pb4"><h3 style="color:var(--p4)">Phase 4 — Finishing</h3><span style="font-size:12px;color:var(--p4);opacity:.7"> Final touches</span><span style="float:right;font-weight:700;color:var(--p4)" id="pb-4">0%</span></div><div id="tasks-ph4"></div><div id="dlphase-ph4" style="margin-top:20px"></div></div>
 
       <div class="page" id="page-info">
         <div class="page-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;color:var(--dec-gold)"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Project Info</div><div class="page-sub">Edit project details · Changes save automatically</div>
@@ -13253,6 +13253,7 @@ function sp(id,el,cls){
   if(id==='supply' && isCEO()) _scLoadProjectsDropdown();
   if(id==='act' && isCEO()) _populateActVendorFilter();
   if(id==='daily') dlOpen();
+  if(id==='ph1'||id==='ph2'||id==='ph3'||id==='ph4') renderPhaseDailyLog(id);
   // (clients/vendors/invoices moved to global views — see goView)
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -14732,6 +14733,7 @@ async function dlLoadEntries(){
     .select('*').eq('project_id',CID).order('log_date',{ascending:false}).order('created_at',{ascending:false});
   if(error){console.error('daily_logs load',error);toast('Erro ao carregar diário',false);return;}
   _dlEntries=data||[];
+  _dlLoadedCID=CID;
   // Load photos for these entries
   _dlPhotosByLog={};
   if(_dlEntries.length>0){
@@ -14782,7 +14784,7 @@ function dlRenderList(){
 
 function _dlFmtDate(d){if(!d)return'—';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});}
 
-function _dlEntryCard(e, ph){
+function _dlEntryCard(e, ph, readOnly){
   const canEdit=_dlCanEdit(e);
   const photos=_dlPhotosByLog[e.id]||[];
   const tasks=Array.isArray(e.tasks_done)?e.tasks_done:[];
@@ -14804,10 +14806,10 @@ function _dlEntryCard(e, ph){
         <div style="font-size:13px;font-weight:800;color:#3D271A">📅 ${_dlFmtDate(e.log_date)} ${phaseBadge} ${lockBadge}</div>
         <div style="font-size:11px;color:#999;margin-top:2px">por <strong>${(e.author_email||'').replace(/</g,'&lt;')}</strong> · criado ${new Date(e.created_at).toLocaleString('pt-BR')}</div>
       </div>
-      <div style="display:flex;gap:6px">
+      ${readOnly?'':`<div style="display:flex;gap:6px">
         ${canEdit?`<button onclick="dlEditEntry('${e.id}')" style="padding:5px 12px;background:#fff;color:#3D271A;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Editar</button>`:''}
         ${isCEO()?`<button onclick="dlDeleteEntry('${e.id}')" style="padding:5px 12px;background:transparent;color:#A02021;border:1.5px solid #FFB5B5;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">🗑</button>`:''}
-      </div>
+      </div>`}
     </div>
     <div style="margin-top:10px;font-size:13px;color:#3D271A;white-space:pre-wrap;line-height:1.5">${(e.content||'').replace(/</g,'&lt;')||'<em style="color:#999">(sem texto)</em>'}</div>
     ${tasksHTML}
@@ -14818,6 +14820,33 @@ function _dlEntryCard(e, ph){
 function dlPhotoUrl(storagePath){
   const {data}=sb.storage.from('daily-log-photos').getPublicUrl(storagePath);
   return data.publicUrl;
+}
+
+// ─── Diário DENTRO da página de cada fase ─────────────────────────────
+let _dlLoadedCID=null;
+async function renderPhaseDailyLog(phaseId){
+  const el=document.getElementById('dlphase-'+phaseId);
+  if(!el||!CID) return;
+  const ph=PHASES.find(p=>p.id===phaseId);
+  el.innerHTML=`<div style="text-align:center;color:#999;font-size:12px;padding:12px">Carregando diário…</div>`;
+  if(_dlLoadedCID!==CID){ try{ await dlLoadEntries(); }catch(e){} }
+  const entries=(_dlEntries||[]).filter(e=>e.phase_id===phaseId);
+  const header=`<div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <span>📔 Diário desta fase <span style="font-size:11px;color:#999;font-weight:500">· ${entries.length} entrada${entries.length!==1?'s':''}</span></span>
+      <button onclick="dlNewForPhase('${phaseId}')" style="padding:6px 13px;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">＋ Nova entrada nesta fase</button>
+    </div>`;
+  const body=entries.length>0
+    ? entries.map(e=>_dlEntryCard(e,ph,true)).join('')
+    : `<div style="padding:20px;text-align:center;color:#999;font-style:italic;font-size:13px">Nenhuma entrada de diário nesta fase ainda.</div>`;
+  el.innerHTML=`<div class="card">${header}<div style="margin-top:12px">${body}</div></div>`;
+}
+function dlNewForPhase(phaseId){
+  sp('daily', document.getElementById('snav-daily'), '');
+  setTimeout(()=>{
+    _dlPopulatePhases();
+    const s=document.getElementById('dl-phase'); if(s) s.value=phaseId;
+    const c=document.getElementById('dl-content'); if(c) c.focus();
+  }, 180);
 }
 
 async function dlOpenPhoto(storagePath){
