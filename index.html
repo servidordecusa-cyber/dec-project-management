@@ -11250,11 +11250,12 @@ function insuranceExpiringList(withinDays){
     if(!_vendorIsActive(v)) return; // não cobra vendor inativo
     const docs=(vendorDocs[v.id]||[]).filter(d=>d.doc_type==='insurance' && d.expiration_date);
     if(docs.length===0) return;
+    // Usa a apólice MAIS RECENTE (cobertura atual) — evita falso alarme quando já renovou
     let best=null;
     docs.forEach(d=>{
       const exp=new Date(d.expiration_date+'T00:00:00');
       const days=Math.round((exp-today)/86400000);
-      if(!best || days<best.days) best={doc:d, days:days};
+      if(!best || days>best.days) best={doc:d, days:days};
     });
     if(best && best.days<=limit) out.push({vendor:v, doc:best.doc, days:best.days});
   });
@@ -11287,7 +11288,11 @@ function renderInsuranceAlerts(){
   el.innerHTML=`<div class="card" style="border-left:4px solid #9B7535">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <span>🛡️ Seguros vencendo <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3)">— próximos ${INS_ALERT_DAYS} dias (e vencidos)</span></span>
-      <span style="font-size:13px;font-weight:800;color:#9B7535">${list.length}</span>
+      <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button onclick="runInsuranceAlerts(true)" style="padding:5px 12px;font-size:11px;font-weight:700;background:#fff;border:1.5px solid var(--gray2);border-radius:5px;cursor:pointer;color:#655A4E;font-family:inherit">👁️ Simular</button>
+        <button onclick="runInsuranceAlerts(false)" style="padding:5px 12px;font-size:11px;font-weight:700;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-family:inherit">🔔 Enviar cobranças</button>
+        <span style="font-size:13px;font-weight:800;color:#9B7535">${list.length}</span>
+      </span>
     </div>
     <div style="overflow-x:auto;margin-top:10px">
       <table style="width:100%;border-collapse:collapse;min-width:660px">
@@ -11296,6 +11301,39 @@ function renderInsuranceAlerts(){
       </table>
     </div>
   </div>`;
+}
+
+// Dispara a Edge Function que envia os e-mails de cobrança (dryRun = só simula)
+const INS_EDGE_URL = `${SURL}/functions/v1/insurance-alerts`;
+async function runInsuranceAlerts(dryRun){
+  if(!isCEO()){toast('Apenas CEO pode disparar cobranças',false);return;}
+  const list=insuranceExpiringList(INS_ALERT_DAYS);
+  if(list.length===0){toast('Nenhum seguro vencendo na janela',false);return;}
+  if(!dryRun && !confirm(`Enviar e-mail de cobrança de seguro?\n\nSerão notificados apenas vendors ATIVOS, com e-mail cadastrado, cuja apólice mais recente vence em até ${INS_ALERT_DAYS} dias (ou já venceu).\n\nQuem já foi avisado nos últimos 7 dias é ignorado.`)) return;
+  toast(dryRun?'Simulando…':'Enviando…',true);
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const token=session&&session.access_token;
+    const resp=await fetch(INS_EDGE_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},
+      body:JSON.stringify({dry_run:!!dryRun, window_days:INS_ALERT_DAYS}),
+    });
+    const out=await resp.json().catch(()=>({}));
+    if(!resp.ok||out.error){toast('Erro: '+(out.error||('HTTP '+resp.status)),false);console.error('insurance-alerts',out);return;}
+    const L=[];
+    L.push((dryRun?'SIMULAÇÃO — seriam enviados: ':'✅ E-mails enviados: ')+(out.sent_count||0));
+    (out.sent||[]).slice(0,12).forEach(s=>L.push('• '+s.vendor+' ('+s.email+') — '+(s.days<0?'vencido':'vence em '+s.days+'d')));
+    if((out.skipped||[]).length){
+      L.push('');
+      L.push('Ignorados: '+out.skipped.length);
+      out.skipped.slice(0,5).forEach(s=>L.push('· '+s.vendor+': '+s.reason));
+    }
+    if((out.errors||[]).length){ L.push(''); L.push('⚠️ Erros: '+out.errors.length+' (veja o console)'); }
+    alert(L.join('\n'));
+    console.log('insurance-alerts', out);
+    if(!dryRun) renderVendors();
+  }catch(e){ console.error(e); toast('Falha ao chamar a função: '+e.message,false); }
 }
 
 // Abre o e-mail já escrito para o vendor pedindo a renovação do seguro
