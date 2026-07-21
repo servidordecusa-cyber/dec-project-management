@@ -11266,7 +11266,6 @@ function renderInsuranceAlerts(){
   const el=document.getElementById('ins-alert-panel');
   if(!el) return;
   const list=insuranceExpiringList(INS_ALERT_DAYS);
-  if(list.length===0){ el.innerHTML=''; return; }
   const fmtD=d=>{const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});};
   const th=t=>`<th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#655A4E">${t}</th>`;
   const rows=list.map(x=>{
@@ -11294,12 +11293,17 @@ function renderInsuranceAlerts(){
         <span style="font-size:13px;font-weight:800;color:#9B7535">${list.length}</span>
       </span>
     </div>
-    <div style="overflow-x:auto;margin-top:10px">
+    ${list.length===0
+      ? `<div style="margin-top:10px;padding:18px;background:#FAF7F3;border:1px dashed var(--gray2);border-radius:8px;text-align:center;color:#655A4E;font-size:13px">
+           ✅ Nenhum seguro vencendo nos próximos ${INS_ALERT_DAYS} dias.
+           <div style="font-size:11px;color:#999;margin-top:6px;font-style:italic">O alerta só considera vendors <strong>ativos</strong> com apólice de seguro anexada e <strong>data de validade preenchida</strong> (botão 🛡️ na linha do vendor).</div>
+         </div>`
+      : `<div style="overflow-x:auto;margin-top:10px">
       <table style="width:100%;border-collapse:collapse;min-width:660px">
         <thead><tr style="background:#FAF7F3">${th('Vendor')}${th('E-mail')}${th('Validade')}${th('Status')}<th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#655A4E">Ação</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>
+    </div>`}
   </div>`;
 }
 
