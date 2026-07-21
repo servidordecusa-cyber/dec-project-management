@@ -1530,6 +1530,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- FORNECEDORES (global) -->
 <div id="view-vendors">
   <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Vendors</h2><p style="color:var(--gray3);margin-top:4px">Vendor base · contracts and insurance</p></div></div>
+  <div id="ins-alert-panel"></div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
       <div class="card-title" style="margin:0;border:0;padding:0">📋 Vendor Registry
@@ -1548,6 +1549,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Specialty</th>
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Phone</th>
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:12px">Email</th>
+            <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">Status</th>
             <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">📄 Contracts</th>
             <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px">🛡️ Insurance</th>
             <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:12px;width:140px">Actions</th>
@@ -1813,7 +1815,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <div class="fgrid"><div class="fg"><label>Name / Legal name *</label><input id="vm-name" placeholder="e.g. JR Duran Painting"></div><div class="fg"><label>Specialty</label><input id="vm-specialty" placeholder="e.g. Pintor, Encanador, Elétrico..."></div></div>
     <div class="fgrid"><div class="fg"><label>Address</label><input id="vm-address" placeholder="Address completo"></div></div>
     <div class="fgrid"><div class="fg"><label>Phone</label><input id="vm-phone" placeholder="(407) 000-0000"></div><div class="fg"><label>Email</label><input id="vm-email" type="email" placeholder="email@example.com"></div></div>
-    <div class="fgrid"><div class="fg"><label>EIN / Tax ID</label><input id="vm-tax" placeholder="00-0000000"></div><div class="fg"></div></div>
+    <div class="fgrid"><div class="fg"><label>EIN / Tax ID</label><input id="vm-tax" placeholder="00-0000000"></div><div class="fg"><label>Status</label>
+      <select id="vm-status">
+        <option value="active">✅ Ativo</option>
+        <option value="inactive">⛔ Inativo</option>
+      </select>
+    </div></div>
     <div class="fg"><label>Notes</label><textarea id="vm-notes" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Additional notes..."></textarea></div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeVendorModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendor()">Save →</button></div>
   </div>
@@ -11209,7 +11216,108 @@ function _expiringInsurance(vid){
   return closestDays<=60?{doc:closest,days:closestDays}:null;
 }
 
+// ═══ STATUS DO VENDOR (ativo / inativo) ═══════════════════════════════
+function _vendorIsActive(v){ return (v && v.status ? v.status : 'active') !== 'inactive'; }
+
+function _vendorStatusBadge(v){
+  const active=_vendorIsActive(v);
+  const bg=active?'#ECEFE3':'#F0EAE2';
+  const col=active?'#5C7A3F':'#8A7B68';
+  const txt=active?'✅ Ativo':'⛔ Inativo';
+  return `<button onclick="toggleVendorStatus('${v.id}')" title="Clique para alternar" style="padding:3px 11px;border-radius:11px;border:1px solid ${active?'#CBD8B8':'#E0D6C8'};background:${bg};color:${col};font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">${txt}</button>`;
+}
+
+async function toggleVendorStatus(id){
+  const v=(vendors||[]).find(x=>x.id===id);
+  if(!v) return;
+  const next=_vendorIsActive(v)?'inactive':'active';
+  const {error}=await sb.from('vendors').update({status:next}).eq('id',id);
+  if(error){console.error('vendor status',error);toast('Erro ao mudar status: '+error.message,false);return;}
+  v.status=next;
+  renderVendors();
+  toast(v.name+' → '+(next==='active'?'Ativo':'Inativo'),true);
+}
+
+// ═══ ALERTA: SEGUROS VENCENDO ═════════════════════════════════════════
+const INS_ALERT_DAYS = 15; // janela de aviso (dias antes do vencimento)
+
+// Lista os vendors cuja apólice mais próxima vence dentro de X dias (ou já venceu)
+function insuranceExpiringList(withinDays){
+  const limit = (withinDays==null) ? INS_ALERT_DAYS : withinDays;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const out=[];
+  (vendors||[]).forEach(v=>{
+    if(!_vendorIsActive(v)) return; // não cobra vendor inativo
+    const docs=(vendorDocs[v.id]||[]).filter(d=>d.doc_type==='insurance' && d.expiration_date);
+    if(docs.length===0) return;
+    let best=null;
+    docs.forEach(d=>{
+      const exp=new Date(d.expiration_date+'T00:00:00');
+      const days=Math.round((exp-today)/86400000);
+      if(!best || days<best.days) best={doc:d, days:days};
+    });
+    if(best && best.days<=limit) out.push({vendor:v, doc:best.doc, days:best.days});
+  });
+  return out.sort((a,b)=>a.days-b.days);
+}
+
+function renderInsuranceAlerts(){
+  const el=document.getElementById('ins-alert-panel');
+  if(!el) return;
+  const list=insuranceExpiringList(INS_ALERT_DAYS);
+  if(list.length===0){ el.innerHTML=''; return; }
+  const fmtD=d=>{const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});};
+  const th=t=>`<th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#655A4E">${t}</th>`;
+  const rows=list.map(x=>{
+    const expired=x.days<0;
+    const color=expired?'#A02021':'#9B7535';
+    const badge=expired?`vencido há ${Math.abs(x.days)}d`:(x.days===0?'vence hoje':`vence em ${x.days}d`);
+    const mail=(x.vendor.email||'').trim();
+    const btn=mail
+      ? `<button onclick="emailInsuranceRenewal('${x.vendor.id}')" style="padding:5px 12px;font-size:11px;font-weight:700;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:5px;cursor:pointer;font-family:inherit">✉️ Cobrar renovação</button>`
+      : `<span style="font-size:10px;color:#A02021;font-style:italic">sem e-mail cadastrado</span>`;
+    return `<tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:9px 12px;font-weight:700;color:#3D271A;font-size:12px">${(x.vendor.name||'').replace(/</g,'&lt;')}</td>
+      <td style="padding:9px 12px;font-size:12px;color:#655A4E">${mail?mail.replace(/</g,'&lt;'):'—'}</td>
+      <td style="padding:9px 12px;font-size:12px;color:#655A4E;white-space:nowrap">${fmtD(x.doc.expiration_date)}</td>
+      <td style="padding:9px 12px"><span style="display:inline-block;padding:3px 10px;border-radius:10px;background:${expired?'#FDF2F0':'#FAF3E0'};color:${color};font-size:11px;font-weight:800;white-space:nowrap">${badge}</span></td>
+      <td style="padding:9px 12px;text-align:right">${btn}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`<div class="card" style="border-left:4px solid #9B7535">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <span>🛡️ Seguros vencendo <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3)">— próximos ${INS_ALERT_DAYS} dias (e vencidos)</span></span>
+      <span style="font-size:13px;font-weight:800;color:#9B7535">${list.length}</span>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table style="width:100%;border-collapse:collapse;min-width:660px">
+        <thead><tr style="background:#FAF7F3">${th('Vendor')}${th('E-mail')}${th('Validade')}${th('Status')}<th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#655A4E">Ação</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// Abre o e-mail já escrito para o vendor pedindo a renovação do seguro
+function emailInsuranceRenewal(vendorId){
+  const v=(vendors||[]).find(x=>x.id===vendorId);
+  if(!v){toast('Vendor não encontrado',false);return;}
+  const mail=(v.email||'').trim();
+  if(!mail){toast('Este vendor não tem e-mail cadastrado',false);return;}
+  const item=insuranceExpiringList(99999).find(x=>x.vendor.id===vendorId);
+  const expTxt=item?new Date(item.doc.expiration_date+'T00:00:00').toLocaleDateString('en-US'):'';
+  const past=item && item.days<0;
+  const subject=`Insurance renewal required — ${v.name||''}`;
+  const body='Hello '+(v.name||'')+',\n\n'+
+    'Our records show that your insurance certificate on file with DEC Group USA '+(past?'expired on ':'expires on ')+expTxt+'.\n\n'+
+    'To keep working with us, please send an updated Certificate of Insurance (COI) as soon as possible.\n\n'+
+    'You can simply reply to this email with the updated document attached.\n\n'+
+    'Thank you,\nDEC Group USA';
+  window.location.href='mailto:'+encodeURIComponent(mail)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
+
 function renderVendors(){
+  renderInsuranceAlerts();
   const tbody=document.getElementById('vn-tbody');
   if(!tbody) return;
   const q=(document.getElementById('vn-search')?.value||'').toLowerCase().trim();
@@ -11245,6 +11353,7 @@ function renderVendors(){
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.specialty||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.phone||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.email||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">${_vendorStatusBadge(v)}</td>
       <td style="padding:10px 12px;text-align:center">
         <button onclick="openVendorDocsModal('${v.id}','contract')" style="padding:4px 10px;font-size:11px;background:#FAF7F3;border:1px solid var(--gray2);border-radius:5px;cursor:pointer">${cnt.contracts} 📄</button>
       </td>
@@ -11273,11 +11382,13 @@ function openVendorModal(id){
     document.getElementById('vm-email').value=v.email||'';
     document.getElementById('vm-tax').value=v.tax_id||'';
     document.getElementById('vm-notes').value=v.notes||'';
+    const st=document.getElementById('vm-status'); if(st) st.value=(v.status==='inactive')?'inactive':'active';
   } else {
     title.textContent='➕ New Vendor';
     ['vm-name','vm-specialty','vm-address','vm-phone','vm-email','vm-tax','vm-notes'].forEach(k=>{
       const el=document.getElementById(k);if(el) el.value='';
     });
+    const st=document.getElementById('vm-status'); if(st) st.value='active';
   }
   document.getElementById('modal-vendor').classList.add('open');
   setTimeout(()=>document.getElementById('vm-name').focus(),50);
@@ -11323,6 +11434,7 @@ async function saveVendor(){
     email:document.getElementById('vm-email').value||'',
     tax_id:document.getElementById('vm-tax').value||'',
     notes:document.getElementById('vm-notes').value||'',
+    status:(document.getElementById('vm-status')||{}).value||'active',
   };
   let result;
   if(id){
