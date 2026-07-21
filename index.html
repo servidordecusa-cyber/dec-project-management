@@ -2536,15 +2536,15 @@ async function showInvestorPortalForEmail(email){
     if(!members || !members.length){ setLoading(false); _renderInvestorError('Nenhuma empresa vinculada ao seu acesso.'); return; }
     // fetch + merge (mesma lógica do portal de grupo por token)
     const bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
-    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
+    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},recurringDetailByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
     const companyOrder=[]; const nameById={};
     members.forEach((m,i)=>{ const b=bundles[i]; companyOrder.push(m.id); nameById[m.id]=m.name||'Empresa';
       merged.projData=merged.projData.concat(b.projData); merged.invData=merged.invData.concat(b.invData); merged.budgetsData=merged.budgetsData.concat(b.budgetsData);
       Object.assign(merged.itemsByInvoice,b.itemsByInvoice); Object.assign(merged.propertyByProj,b.propertyByProj); Object.assign(merged.scheduleByProj,b.scheduleByProj);
-      Object.assign(merged.dailyLogsByProj,b.dailyLogsByProj); Object.assign(merged.dlPhotosByLog,b.dlPhotosByLog); Object.assign(merged.recurringByProj,b.recurringByProj);
+      Object.assign(merged.dailyLogsByProj,b.dailyLogsByProj); Object.assign(merged.dlPhotosByLog,b.dlPhotosByLog); Object.assign(merged.recurringByProj,b.recurringByProj); Object.assign(merged.recurringDetailByProj,b.recurringDetailByProj||{});
       Object.assign(merged.extraCostsByProj,b.extraCostsByProj); Object.assign(merged.extraCostsItemsByProj,b.extraCostsItemsByProj); Object.assign(merged.listingByProj,b.listingByProj);
     });
-    window._recurringByProj=merged.recurringByProj; window._extraCostsByProj=merged.extraCostsByProj;
+    window._recurringByProj=merged.recurringByProj; window._recurringDetailByProj=merged.recurringDetailByProj; window._extraCostsByProj=merged.extraCostsByProj;
     window._extraCostsItemsByProj=merged.extraCostsItemsByProj; window._listingByProj=merged.listingByProj;
     window._portalCompanyOrder=companyOrder; window._portalClientNameById=nameById;
     const groupClient={id:'login:'+email, name: members.length>1 ? 'Investidor' : (members[0].name||'Investidor')};
@@ -2706,6 +2706,7 @@ async function _fetchInvestorBundle(clientData){
   let dailyLogsByProj={};
   let dlPhotosByLog={};
   let recurringByProj={};
+  let recurringDetailByProj={}; // lista das parcelas por projeto
   let extraCostsByProj={}; // Property & Finance "Costs" (categoria dec_invoice = card "Costs" do P&F)
   let extraCostsItemsByProj={}; // itens dec_invoice (só para tooltip de auditoria)
   let listingByProj={}; // listing_checklist por projeto (status "For Sale")
@@ -2725,6 +2726,7 @@ async function _fetchInvestorBundle(clientData){
     if(recurringRes && !recurringRes.error){
       (recurringRes.data||[]).forEach(r=>{
         recurringByProj[r.project_id]=(recurringByProj[r.project_id]||0)+(+r.amount||0);
+        if((+r.amount||0)>0){ (recurringDetailByProj[r.project_id]=recurringDetailByProj[r.project_id]||[]).push(r); }
       });
     }
     // Costs do Property & Finance: soma categoria dec_invoice = card "Costs" do P&F por projeto
@@ -2782,7 +2784,7 @@ async function _fetchInvestorBundle(clientData){
       console.warn('daily_logs fetch failed (non-blocking):',dlRes.error.message);
     }
   }
-  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj,extraCostsByProj,extraCostsItemsByProj,listingByProj};
+  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj,recurringDetailByProj,extraCostsByProj,extraCostsItemsByProj,listingByProj};
 }
 
 // Grouped portal: load all member companies and render them together under one
@@ -2821,7 +2823,7 @@ async function _showInvestorGroupPortal(group){
     }
     // 3) Fetch + merge every member bundle
     const bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
-    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
+    const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},recurringDetailByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
     const companyOrder=[]; const nameById={};
     members.forEach((m,i)=>{
       const b=bundles[i];
@@ -2835,13 +2837,13 @@ async function _showInvestorGroupPortal(group){
       Object.assign(merged.scheduleByProj,b.scheduleByProj);
       Object.assign(merged.dailyLogsByProj,b.dailyLogsByProj);
       Object.assign(merged.dlPhotosByLog,b.dlPhotosByLog);
-      Object.assign(merged.recurringByProj,b.recurringByProj);
+      Object.assign(merged.recurringByProj,b.recurringByProj); Object.assign(merged.recurringDetailByProj,b.recurringDetailByProj||{});
       Object.assign(merged.extraCostsByProj,b.extraCostsByProj);
       Object.assign(merged.extraCostsItemsByProj,b.extraCostsItemsByProj);
       Object.assign(merged.listingByProj,b.listingByProj);
     });
     // 4) Expose grouping context for the renderer (combined dashboard + company headers)
-    window._recurringByProj=merged.recurringByProj;
+    window._recurringByProj=merged.recurringByProj; window._recurringDetailByProj=merged.recurringDetailByProj;
     window._extraCostsByProj=merged.extraCostsByProj;
     window._extraCostsItemsByProj=merged.extraCostsItemsByProj;
     window._listingByProj=merged.listingByProj;
@@ -2936,12 +2938,15 @@ async function showInvestorPortal(token){
       window._listingByProj = listingByProj;
       // Index recurring_detail_months by project (sum amounts)
       const recurringByProj={};
+      const recurringDetailByProj={};
       if(recurringRes && !recurringRes.error){
         (recurringRes.data||[]).forEach(r=>{
           if(!recurringByProj[r.project_id]) recurringByProj[r.project_id]=0;
           recurringByProj[r.project_id] += +r.amount || 0;
+          if((+r.amount||0)>0){ (recurringDetailByProj[r.project_id]=recurringDetailByProj[r.project_id]||[]).push(r); }
         });
         window._recurringByProj = recurringByProj;
+        window._recurringDetailByProj = recurringDetailByProj;
       }
       // Costs do Property & Finance: soma categoria dec_invoice = card "Costs" do P&F por projeto
       const extraCostsByProj={};
@@ -3615,6 +3620,42 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#A02021" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>Timeline do projeto
         </div>
         <div style="padding:0 20px 16px">${timelineHTML}</div>
+
+        ${(()=>{
+          const rows=(window._recurringDetailByProj||{})[p.id]||[];
+          if(rows.length===0) return '';
+          const baseYear=(+p.rcd_year1)|| new Date().getFullYear();
+          const RCM=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+          // Agrupa por item
+          const byItem={};
+          rows.forEach(r=>{ (byItem[r.item_name]=byItem[r.item_name]||[]).push(r); });
+          let total=0;
+          const blocks=Object.keys(byItem).sort().map(item=>{
+            const list=byItem[item].slice().sort((a,b)=>((a.year_offset*12+a.month)-(b.year_offset*12+b.month)));
+            const sub=list.reduce((s,r)=>s+(+r.amount||0),0); total+=sub;
+            const parcelas=list.map(r=>{
+              const yr=baseYear+(+r.year_offset||0);
+              const mn=RCM[(+r.month||1)-1]||'?';
+              return `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid #F7F3EC">
+                <span style="color:#655A4E">${mn}/${yr}</span>
+                <span style="font-weight:600;color:#3D271A">${_fmtMoney(+r.amount||0)}</span>
+              </div>`;
+            }).join('');
+            return `<div style="margin-bottom:12px;background:#FAF7F3;border-radius:8px;padding:10px 12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span style="font-size:12px;font-weight:800;color:#3D271A">${(item||'').replace(/</g,'&lt;')}</span>
+                <span style="font-size:12px;font-weight:800;color:#9B7535">${_fmtMoney(sub)}</span>
+              </div>${parcelas}</div>`;
+          }).join('');
+          return `<div style="padding:6px 20px 18px;background:#fff;border-top:1px solid #F0EAE2">
+            <div style="font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">🔁 Custos recorrentes <span style="color:#999;font-weight:600;text-transform:none">— água, luz, financiamento, etc.</span></div>
+            ${blocks}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:2px solid #E8DDC9">
+              <span style="font-size:12px;font-weight:800;color:#3D271A;text-transform:uppercase;letter-spacing:.4px">Total recorrente</span>
+              <span style="font-size:15px;font-weight:800;color:#9B7535">${_fmtMoney(total)}</span>
+            </div>
+          </div>`;
+        })()}
 
         ${(()=>{
           const _photos=[];
