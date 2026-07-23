@@ -3471,6 +3471,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   </div>
                   <div style="font-size:12px;color:#655A4E;margin-top:3px">📅 ${_fmtDate(inv.date)}${inv.description?' · '+inv.description.replace(/</g,'&lt;'):''}</div>
                   ${itemsHTML}
+                  <button onclick="portalViewInvoice('${inv.id}')" style="margin-top:8px;padding:5px 12px;font-size:11px;font-weight:700;background:#FAF3E0;border:1px solid #E8DDC9;border-radius:8px;color:#9B7535;cursor:pointer;font-family:inherit">📄 Ver ${isRefund?'recibo':'fatura'}</button>
                 </div>
                 <div style="font-size:18px;font-weight:800;color:${amtColor};text-align:right;min-width:120px">${amtPrefix}${_fmtMoney(inv.amount)}</div>
               </div>
@@ -4040,6 +4041,17 @@ function _portalProjUrl(pid){
   q.set('project', pid);
   return location.pathname+'?'+q.toString();
 }
+// Abre o documento da fatura para o cliente no portal
+function portalViewInvoice(invId){
+  const a=window._portalRenderArgs; if(!a){ toast&&toast('Recarregue a página',false); return; }
+  const inv=(a.invoices||[]).find(x=>String(x.id)===String(invId));
+  if(!inv){ alert('Fatura não encontrada.'); return; }
+  const items=(a.itemsByInvoice||{})[inv.id]||[];
+  const nameById=window._portalClientNameById||{};
+  const cname=nameById[inv.client_id] || (a.client&&a.client.name) || 'Cliente';
+  _showInvoiceDoc(inv, {name:cname, address:''}, items);
+}
+
 // URL de volta ao portfólio (remove o project)
 function _portalBackUrl(){
   const q=new URLSearchParams(location.search);
@@ -10835,9 +10847,14 @@ function generateInvoicePDF(id){
   if(!inv){toast('Invoice not found',false);return;}
   const client=_clientById(inv.client_id);
   if(!client){toast('Invoice client not found',false);return;}
+  _showInvoiceDoc(inv, client, invoiceItems[id]||[]);
+}
+
+// Abre o documento da invoice num modal (reutilizável: admin E portal do investidor)
+function _showInvoiceDoc(inv, client, items){
+  client=client||{name:'',address:''};
+  items=items||[];
   const $$=n=>'$ '+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  // Get items for this invoice (fallback to single legacy item if no items table entry)
-  const items=invoiceItems[id]||[];
   let itemsList;
   if(items.length>0){
     itemsList=items.slice().sort((a,b)=>(a.position||0)-(b.position||0));
