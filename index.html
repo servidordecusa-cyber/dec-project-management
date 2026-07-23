@@ -1607,6 +1607,16 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- INVOICES (global) -->
 <div id="view-invoices">
   <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>Invoices</h2><p style="color:var(--gray3);margin-top:4px">Invoice generation and management</p></div></div>
+  <div class="card" style="border-left:4px solid #9B7535;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-size:13px;font-weight:800;color:#3D271A">🔔 Lembrete de invoices em aberto</div>
+      <div style="font-size:11px;color:var(--gray3);margin-top:2px">Envia por e-mail, a cada cliente, as invoices que ele ainda não pagou. Roda automático toda segunda (quando o agendamento estiver ativo).</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="runInvoiceReminders(true)" style="padding:7px 14px;font-size:12px;font-weight:700;background:#fff;border:1.5px solid var(--gray2);border-radius:6px;cursor:pointer;color:#655A4E;font-family:inherit">👁️ Simular</button>
+      <button onclick="runInvoiceReminders(false)" style="padding:7px 14px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit">🔔 Enviar agora</button>
+    </div>
+  </div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
       <div class="card-title" style="margin:0;border:0;padding:0">📋 Invoice Registry
@@ -11625,6 +11635,32 @@ async function runInsuranceAlerts(dryRun){
     alert(L.join('\n'));
     console.log('insurance-alerts', out);
     if(!dryRun) renderVendors();
+  }catch(e){ console.error(e); toast('Falha ao chamar a função: '+e.message,false); }
+}
+
+// Dispara a Edge Function de lembrete de invoices em aberto (dryRun = só simula)
+const INVREM_EDGE_URL = `${SURL}/functions/v1/invoice-reminders`;
+async function runInvoiceReminders(dryRun){
+  if(!isCEO()){toast('Apenas CEO pode disparar lembretes',false);return;}
+  if(!dryRun && !confirm('Enviar lembrete de invoices em aberto?\n\nCada cliente com e-mail cadastrado recebe a lista das invoices dele que ainda estão em aberto (não pagas).')) return;
+  toast(dryRun?'Simulando…':'Enviando…',true);
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const token=session&&session.access_token;
+    const resp=await fetch(INVREM_EDGE_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},
+      body:JSON.stringify({dry_run:!!dryRun}),
+    });
+    const out=await resp.json().catch(()=>({}));
+    if(!resp.ok||out.error){toast('Erro: '+(out.error||('HTTP '+resp.status)),false);console.error('invoice-reminders',out);return;}
+    const L=[];
+    L.push((dryRun?'SIMULAÇÃO — seriam enviados: ':'✅ E-mails enviados: ')+(out.sent_count||0));
+    (out.sent||[]).slice(0,15).forEach(s=>L.push('• '+s.client+' ('+s.email+') — '+s.invoices+' invoice(s), '+fmt(s.total)));
+    if((out.skipped||[]).length){ L.push(''); L.push('Ignorados: '+out.skipped.length); out.skipped.slice(0,6).forEach(s=>L.push('· '+s.client+': '+s.reason)); }
+    if((out.errors||[]).length){ L.push(''); L.push('⚠️ Erros: '+out.errors.length+' (veja o console)'); }
+    alert(L.join('\n'));
+    console.log('invoice-reminders', out);
   }catch(e){ console.error(e); toast('Falha ao chamar a função: '+e.message,false); }
 }
 
