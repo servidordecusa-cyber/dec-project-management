@@ -12689,6 +12689,8 @@ function _rebuildRecurringMapFromArrays(metaRows,monthRows){
     obj.company=r.company||'';
     obj.supplier=r.supplier||'';
     obj.account=r.account||'';
+    obj.payment_method=r.payment_method||'';
+    obj.pay_last4=r.pay_last4||'';
     obj.notes=r.notes||'';
     obj.months=obj.months||{};
   });
@@ -12714,7 +12716,7 @@ async function loadRecurringDetailData(){
   recurringMap[CID]={};
   (metaRes.data||[]).forEach(r=>{
     recurringMap[CID][r.item_name]={
-      company:r.company||'',supplier:r.supplier||'',account:r.account||'',notes:r.notes||'',months:{},wc_flags:{}
+      company:r.company||'',supplier:r.supplier||'',account:r.account||'',payment_method:r.payment_method||'',pay_last4:r.pay_last4||'',notes:r.notes||'',months:{},wc_flags:{}
     };
   });
   (monthsRes.data||[]).forEach(r=>{
@@ -12818,7 +12820,8 @@ function renderRecurringDetailHeader(){
   let html=`<tr style="background:#FAF7F3">
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#FAF7F3;z-index:1;min-width:140px">Item</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Empresa</th>
-    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:110px">Account #</th>`;
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Forma pgto</th>
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:90px">Últ. 4</th>`;
   RC_MONTH_LABELS.forEach(lbl=>{
     html+=`<th style="padding:8px 6px;text-align:right;border-bottom:2px solid var(--gray2);min-width:75px;font-size:11px">${lbl}/${yShort}</th>`;
   });
@@ -12872,9 +12875,15 @@ function renderRecurringDetail(){
         ${_supplierSelectHTML(row.supplier||row.company, `setRecurringSupplier('${itemName.replace(/'/g,"\\'")}',this.value)`,'font-size:11px;padding:5px 4px')}
       </td>
       <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
-        <input type="text" value="${(row.account||'').replace(/"/g,'&quot;')}" placeholder="Acc#"
-          oninput="updateRCDMeta('${itemName.replace(/'/g,"\\'")}','account',this.value)"
-          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+        <select onchange="setRCDPayMethod('${itemName.replace(/'/g,"\\'")}',this.value)" style="padding:5px 4px;font-size:11px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;font-family:inherit">
+          <option value="">—</option>
+          ${RCD_PAYMETHODS.map(([v,l])=>`<option value="${v}"${v===(row.payment_method||'')?' selected':''}>${l}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
+        ${(row.payment_method==='card'||row.payment_method==='account')
+          ? `<input type="text" inputmode="numeric" maxlength="4" value="${(row.pay_last4||'').replace(/"/g,'&quot;')}" placeholder="0000" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4);updateRCDMeta('${itemName.replace(/'/g,"\\'")}','pay_last4',this.value)" style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%;text-align:center;letter-spacing:1px">`
+          : `<span style="color:#bbb;font-size:11px;padding-left:6px">—</span>`}
       </td>
       ${monthCells.join('')}
       <td style="padding:6px 6px;font-weight:700;color:var(--p3);border-bottom:1px solid #F0EAE2;text-align:right;background:#F2F4EC;font-size:12px" id="rcd-yearsub-${_slugRC(itemName)}">$${yearSubtotal.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
@@ -12896,6 +12905,15 @@ function renderRecurringDetail(){
 function _slugRC(name){return name.toLowerCase().replace(/[^a-z0-9]+/g,'-');}
 
 // ───── Update a META field (company / account / notes) ─────
+const RCD_PAYMETHODS=[['card','💳 Cartão'],['account','🏦 Conta / débito'],['check','🧾 Cheque'],['zelle','Zelle'],['wire','Transferência'],['cash','💵 Dinheiro']];
+
+// Troca a forma de pagamento e re-renderiza (pra mostrar/esconder o campo dos últimos 4)
+function setRCDPayMethod(itemName, val){
+  updateRCDMeta(itemName,'payment_method',val);
+  if(val!=='card' && val!=='account'){ updateRCDMeta(itemName,'pay_last4',''); }
+  renderRecurringDetail();
+}
+
 function updateRCDMeta(itemName,field,value){
   if(!CID||!isCEO()) return;
   if(!recurringMap[CID]) recurringMap[CID]={};
@@ -12913,7 +12931,10 @@ async function saveRCDMeta(itemName){
     project_id:CID,
     item_name:itemName,
     company:row.company||'',
+    supplier:row.supplier||'',
     account:row.account||'',
+    payment_method:row.payment_method||'',
+    pay_last4:row.pay_last4||'',
     notes:row.notes||'',
     updated_at:new Date().toISOString(),
   };
