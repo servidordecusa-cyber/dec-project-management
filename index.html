@@ -12905,7 +12905,7 @@ function renderRecurringDetail(){
 function _slugRC(name){return name.toLowerCase().replace(/[^a-z0-9]+/g,'-');}
 
 // ───── Update a META field (company / account / notes) ─────
-const RCD_PAYMETHODS=[['card','💳 Cartão'],['account','🏦 Conta / débito'],['check','🧾 Cheque'],['zelle','Zelle'],['wire','Transferência'],['cash','💵 Dinheiro']];
+const RCD_PAYMETHODS=[['card','Cartão'],['account','Conta / débito'],['check','Cheque'],['zelle','Zelle'],['wire','Transferência'],['cash','Dinheiro']];
 
 // Troca a forma de pagamento e re-renderiza (pra mostrar/esconder o campo dos últimos 4)
 function setRCDPayMethod(itemName, val){
