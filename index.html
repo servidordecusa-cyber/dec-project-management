@@ -3632,6 +3632,11 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
         </div>
         <div style="padding:0 20px 16px">${timelineHTML}</div>
 
+        <div style="padding:6px 20px 4px;background:#fff;border-top:1px solid #F0EAE2">
+          <div style="font-size:12px;font-weight:700;color:#3D271A;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">📄 Faturas <span style="color:#999;font-weight:600;text-transform:none">— clique em "Ver fatura" para abrir o documento</span></div>
+        </div>
+        <div>${invoicesHTML}</div>
+
         ${(()=>{
           const rows=(window._recurringDetailByProj||{})[p.id]||[];
           if(rows.length===0) return '';
