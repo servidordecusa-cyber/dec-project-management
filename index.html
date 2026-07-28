@@ -1965,7 +1965,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     </div>
     <div class="fgrid">
       <div class="fg"><label>Type *</label>
-        <select id="im-kind">
+        <select id="im-kind" onchange="onInvoiceKindChange()">
           <option value="operational">Operational (during construction)</option>
           <option value="final_roi">Final ROI (after sale)</option>
           <option value="refund">Refund (reimbursement of advance)</option>
@@ -1984,6 +1984,13 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addInvoiceItem()">+ Add item</button>
       </div>
       <div id="im-items"></div>
+      <div id="im-op-overhead-wrap" style="display:none;justify-content:flex-end;align-items:center;gap:10px;padding-top:8px;margin-top:6px;border-top:1px dashed var(--gray2)">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#655A4E;cursor:pointer">
+          <input type="checkbox" id="im-op-overhead" checked onchange="recalcInvoiceItemsTotal()" style="width:15px;height:15px;accent-color:#9B7535">
+          Embutir custos operacionais (2,3%)
+        </label>
+        <span id="im-op-overhead-val" style="font-size:13px;font-weight:700;color:#9B7535;min-width:100px;text-align:right">$0.00</span>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:14px;align-items:center;padding-top:10px;margin-top:8px;border-top:2px solid var(--gray2)">
         <div style="font-size:12px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.4px">Total</div>
         <div id="im-items-total" style="font-size:18px;font-weight:800;color:var(--gold);min-width:130px;text-align:right">$0.00</div>
@@ -10270,7 +10277,7 @@ function onPartialChange(idx,field,value){
 }
 
 function _updatePartialTotals(){
-  const invoiceTotal=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
+  const invoiceTotal=_imItems.reduce((s,i)=>s+(+i.amount||0),0)+_opOverheadAmount();
   const paidTotal=_imPartials.reduce((s,p)=>s+(+p.amount||0),0);
   const balance=invoiceTotal-paidTotal;
   const fmt=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -10292,6 +10299,28 @@ function _updatePartialTotals(){
 
 // In-memory items being edited in the modal
 let _imItems=[];
+// ═══ CUSTOS OPERACIONAIS AUTO (invoices Operational) ═════════════════════
+// Em invoices do tipo Operational, embute automaticamente uma linha de
+// "Custos operacionais" = OP_OVERHEAD_PCT% do subtotal dos itens, somando ao
+// total (o cliente paga a mais). O checkbox im-op-overhead permite desativar.
+const OP_OVERHEAD_PCT=2.3;
+const OP_OVERHEAD_LABEL='Custos operacionais ('+String(OP_OVERHEAD_PCT).replace('.',',')+'%)';
+function _isOpOverheadItem(it){return (it&&(it.description||'')).indexOf('Custos operacionais')===0;}
+function _opOverheadActive(){
+  const kind=document.getElementById('im-kind')?.value||'operational';
+  const cb=document.getElementById('im-op-overhead');
+  return kind==='operational' && !!(cb&&cb.checked);
+}
+function _opOverheadAmount(){
+  if(!_opOverheadActive()) return 0;
+  const sub=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
+  return Math.round(sub*(OP_OVERHEAD_PCT/100)*100)/100;
+}
+function onInvoiceKindChange(){
+  const wrap=document.getElementById('im-op-overhead-wrap');
+  if(wrap) wrap.style.display=((document.getElementById('im-kind')?.value||'operational')==='operational')?'flex':'none';
+  recalcInvoiceItemsTotal();
+}
 
 function renderInvoiceItemsEditor(){
   const wrap=document.getElementById('im-items');
@@ -10330,9 +10359,12 @@ function onInvoiceItemChange(idx,field,value){
 }
 
 function recalcInvoiceItemsTotal(){
-  const tot=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
+  const sub=_imItems.reduce((s,i)=>s+(+i.amount||0),0);
+  const oh=_opOverheadAmount();
   const el=document.getElementById('im-items-total');
-  if(el) el.textContent=fmt(tot);
+  if(el) el.textContent=fmt(sub+oh);
+  const ohEl=document.getElementById('im-op-overhead-val');
+  if(ohEl) ohEl.textContent=fmt(oh);
   // Also update partial payments totals if visible
   if(document.getElementById('im-partial-wrap')?.style.display!=='none'){
     _updatePartialTotals();
@@ -10385,6 +10417,11 @@ function openInvoiceModal(id){
         ? [{description:inv.description||'',amount:+inv.amount||0}]
         : [];
     }
+    // Remove a linha automática de custos operacionais (será recalculada) e
+    // marca o checkbox conforme a invoice já a tinha ou não.
+    const _hadOh=_imItems.some(_isOpOverheadItem);
+    _imItems=_imItems.filter(it=>!_isOpOverheadItem(it));
+    const _ohCbEl=document.getElementById('im-op-overhead'); if(_ohCbEl) _ohCbEl.checked=_hadOh;
     // Load partial payments if status is partial_paid
     if(inv.status==='partial_paid' && invoicePayments[id]){
       _imPartials=invoicePayments[id].map(p=>({
@@ -10409,9 +10446,11 @@ function openInvoiceModal(id){
     document.getElementById('im-parent').value='';
     _applyParentLock(false);
     _imItems=[{description:'',amount:0}];
+    const _ohCbNew=document.getElementById('im-op-overhead'); if(_ohCbNew) _ohCbNew.checked=true;
   }
   onInvoiceStatusChange();
   renderInvoiceItemsEditor();
+  onInvoiceKindChange();
   // Listen to date changes to re-suggest number for new invoices
   const dateEl=document.getElementById('im-date');
   const numEl=document.getElementById('im-number');
@@ -10531,6 +10570,17 @@ async function saveInvoice(){
   if(validItems.length===0){toast('Add at least one item',false);return;}
   if(validItems.some(it=>!it.description)){toast('All items need a description',false);return;}
   if(validItems.some(it=>it.amount<0)){toast('Amount cannot be negative',false);return;}
+  // Auto: em invoices Operational com o checkbox ligado, embute a linha de
+  // custos operacionais (2,3% do subtotal). Soma ao total (cliente paga a mais).
+  {
+    const _kindNow=document.getElementById('im-kind').value||'operational';
+    const _ohCb=document.getElementById('im-op-overhead');
+    if(_kindNow==='operational' && _ohCb && _ohCb.checked){
+      const _sub=validItems.reduce((s,i)=>s+i.amount,0);
+      const _ohAmt=Math.round(_sub*(OP_OVERHEAD_PCT/100)*100)/100;
+      if(_ohAmt>0) validItems.push({description:OP_OVERHEAD_LABEL,amount:_ohAmt});
+    }
+  }
   const totalAmount=validItems.reduce((s,i)=>s+i.amount,0);
   const id=document.getElementById('im-id').value;
   // Check duplicate invoice_number (unless editing the same)
