@@ -9643,17 +9643,47 @@ function renderHomeAlerts(){
 }
 
 // ═══ FIXED COSTS (CEO ONLY) ════════════════════════════════════════════
+const _FC_PALETTE=['#3D271A','#5C7A3F','#9B7535','#B85450','#7B5C8C','#2D6A8B','#655A4E','#B98A2E','#7A5A28','#2D6A2D'];
 const FIXED_COST_CATEGORIES=[
-  {key:'office',      label:'Office',                color:'#3D271A'},
-  {key:'salaries',    label:'Salaries',              color:'#5C7A3F'},
-  {key:'operational', label:'Operational costs',     color:'#2D6A8B'},
-  {key:'professional',label:'Professional services', color:'#B85450'},
-  {key:'software',    label:'Software & Tools',      color:'#7B5C8C'},
-  {key:'marketing',   label:'Marketing',             color:'#9B7535'},
-  {key:'insurance',   label:'Insurance',             color:'#655A4E'},
-  {key:'travel',      label:'Travel',                color:'#7A5A28'},
-  {key:'other',       label:'Other',                 color:'#15120E'},
-];
+  ['aluguel_financiamento_imovel','Aluguel | Financiamento (imóvel)'],
+  ['aportes','Aportes'],
+  ['assinaturas_inscricoes','Assinaturas | Inscrições'],
+  ['celulares','Celulares'],
+  ['combustivel','Combustível'],
+  ['comissoes','Comissões'],
+  ['compra_imoveis','Compra de imóveis'],
+  ['computadores_software','Computadores | Software | Sistemas'],
+  ['contador','Contador'],
+  ['correio_frete','Correio | Frete'],
+  ['dinheiro_cliente_transito','Dinheiro cliente trânsito'],
+  ['emprestimo','Empréstimo'],
+  ['equipamentos_alugados','Equipamentos alugados'],
+  ['equipamentos_comprados','Equipamentos comprados'],
+  ['internet','Internet'],
+  ['investimento_imobiliario','Investimento imobiliário'],
+  ['juros','Juros'],
+  ['limpeza','Limpeza'],
+  ['mao_de_obra_terceirizado','Mão de obra (terceirizado)'],
+  ['materiais','Materiais'],
+  ['materiais_escritorio','Materiais de escritório'],
+  ['pedagio_estacionamento','Pedágio | Estacionamento'],
+  ['publicidade_marketing','Publicidade e marketing'],
+  ['refeicoes_restaurantes','Refeições em restaurantes'],
+  ['refund','Refund'],
+  ['saque_socio','Saque sócio'],
+  ['seguro_veiculos','Seguro de veículos'],
+  ['seguro_imovel','Seguro do imóvel'],
+  ['seguro_vida','Seguro vida'],
+  ['servicos','Serviços'],
+  ['servicos_autonomos','Serviços autônomos'],
+  ['taxas_bancarias','Taxas bancárias'],
+  ['taxas_licencas_imoveis','Taxas e Licenças (imóveis)'],
+  ['utilities','Utilities'],
+  ['utilities_gerais_clientes','Utilities | serviços 3os | gerais (clientes)'],
+  ['veiculos_fin_aluguel','Veículos (financiamentos | aluguéis)'],
+  ['viagens_trabalho','Viagens à trabalho'],
+  ['other','Other'],
+].map((c,i)=>({key:c[0],label:c[1],color:_FC_PALETTE[i%_FC_PALETTE.length]}));
 
 function _fcCategoryMeta(key){
   return FIXED_COST_CATEGORIES.find(c=>c.key===key)||{label:key,color:'#655A4E'};
