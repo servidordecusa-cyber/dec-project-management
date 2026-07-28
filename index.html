@@ -5592,8 +5592,9 @@ async function approveVendorNote() {
   if (!gid) { toast('Selecione a phase', false); return; }
   if (!itemName) { toast('Informe o nome do item', false); return; }
   if (isNaN(total) || total <= 0) { toast('Total inválido', false); return; }
-  if (!vendorId && _vnCurrent.extracted.vendor_is_new) {
-    if (!confirm('Você não selecionou nem criou vendor. Continuar mesmo assim?')) return;
+  if (!vendorId) {
+    toast('Selecione um fornecedor cadastrado antes de lançar a nota', false);
+    return;
   }
 
   // ─── DUPLICATE DETECTION ───────────────────────────────────────────
@@ -5643,7 +5644,7 @@ async function approveVendorNote() {
       budgetMap[CID][gid][islug] = {
         est: 0, actual: total,
         est_note: '', actual_note: notes,
-        est_supplier: '', actual_supplier: vendorName,
+        est_supplier: '', actual_supplier: vendorId,
         est_qty: 0, actual_qty: 1,
         est_unit_cost: 0, actual_unit_cost: total,
         category: category || '',
@@ -5653,7 +5654,7 @@ async function approveVendorNote() {
         project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
         est: 0, actual: total,
         est_note: '', actual_note: notes,
-        est_supplier: '', actual_supplier: vendorName,
+        est_supplier: '', actual_supplier: vendorId,
         est_qty: 0, actual_qty: 1,
         est_unit_cost: 0, actual_unit_cost: total,
         category: category || '',
@@ -5672,9 +5673,7 @@ async function approveVendorNote() {
       const cur = budgetMap[CID][gid][islug];
       const newActual = (+cur.actual || 0) + total;
       const newNote = cur.actual_note ? (cur.actual_note + ' · ' + notes) : notes;
-      const newSupplier = cur.actual_supplier && vendorName && !cur.actual_supplier.includes(vendorName)
-        ? (cur.actual_supplier + ', ' + vendorName)
-        : (cur.actual_supplier || vendorName);
+      const newSupplier = cur.actual_supplier || vendorId;   // mantém o primeiro fornecedor
       cur.actual = newActual;
       cur.actual_note = newNote;
       cur.actual_supplier = newSupplier;
@@ -5757,6 +5756,7 @@ async function approveVendorNoteItemized(){
   const vendorId = document.getElementById('vn-vendor-select').value;
   const vendorName = vendorId ? (vendors.find(v => v.id === vendorId) || {}).name || '' : '';
   const paidFromWC = !!document.getElementById('vn-paid-from-wc').checked;
+  if (!vendorId) { toast('Selecione um fornecedor cadastrado antes de lançar a nota', false); return; }
 
   const lines = _vnLines
     .map(l => ({ gid:(l.group_id||'').trim(), category:(l.category||'').trim(), itemName:(l.item_name||'').trim(), amount:+l.amount||0, notes:(l.notes||'').trim() }))
@@ -5788,7 +5788,7 @@ async function approveVendorNoteItemized(){
 
     const affected = new Set();
     for (const l of lines) {
-      const islug = await _vnUpsertLineItem(l.gid, l.category, l.itemName, l.amount, l.notes, vendorName, paidFromWC);
+      const islug = await _vnUpsertLineItem(l.gid, l.category, l.itemName, l.amount, l.notes, vendorId, paidFromWC);
       affected.add(l.gid);
       if (attPath && islug) {
         const attIns = await sb.from('budget_attachments').insert({
@@ -5854,8 +5854,7 @@ async function _vnUpsertLineItem(gid, category, itemName, amount, notes, vendorN
     const cur = budgetMap[CID][gid][islug] || { actual:0, actual_note:'', actual_supplier:'', category:'' };
     const newActual = (+cur.actual||0) + amount;
     const newNote = cur.actual_note ? (cur.actual_note + ' · ' + notes) : notes;
-    const newSupplier = cur.actual_supplier && vendorName && !cur.actual_supplier.includes(vendorName)
-      ? (cur.actual_supplier + ', ' + vendorName) : (cur.actual_supplier || vendorName);
+    const newSupplier = cur.actual_supplier || vendorName;   // vendorName aqui já é o id; mantém o primeiro
     cur.actual = newActual; cur.actual_note = newNote; cur.actual_supplier = newSupplier;
     if (!cur.category && category) cur.category = category;
     if (paidFromWC) cur.paid_from_wc = true;
@@ -8767,7 +8766,7 @@ async function renderWorkingCapitalCashFlow(){
         amount:+it.actual||0,
         project:proj?(proj.name||proj.address||'?'):'?',
         project_id:it.project_id,
-        description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+it.actual_supplier:''),
+        description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+(vendorName(it.actual_supplier)||it.actual_supplier):''),
         category:it.category||'',
       });
     });
@@ -8944,7 +8943,7 @@ async function generateWorkingCapitalPDF(){
     const {data:bi}=await fetchAllRows('budget_items',{build:q=>q.eq('paid_from_wc',true).gt('actual',0)});
     (bi||[]).forEach(it=>{
       const proj=projects.find(p=>p.id===it.project_id);
-      outflows.push({source:'actual',date:null,amount:+it.actual||0,project:proj?(proj.name||proj.address||'?'):'?',description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+it.actual_supplier:''),category:it.category||''});
+      outflows.push({source:'actual',date:null,amount:+it.actual||0,project:proj?(proj.name||proj.address||'?'):'?',description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+(vendorName(it.actual_supplier)||it.actual_supplier):''),category:it.category||''});
     });
   }catch(e){console.warn(e);}
   try{
