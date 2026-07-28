@@ -9629,14 +9629,15 @@ function renderHomeAlerts(){
 
 // ═══ FIXED COSTS (CEO ONLY) ════════════════════════════════════════════
 const FIXED_COST_CATEGORIES=[
-  {key:'office',     label:'🏢 Office',                     color:'#3D271A'},
-  {key:'salaries',   label:'👥 Salaries',                   color:'#5C7A3F'},
-  {key:'professional',label:'💼 Professional services',   color:'#B85450'},
-  {key:'software',   label:'📱 Software & Tools',         color:'#7B5C8C'},
-  {key:'marketing',  label:'📢 Marketing',                color:'#9B7535'},
-  {key:'insurance',  label:'🛡️ Insurance',                color:'#655A4E'},
-  {key:'travel',     label:'✈️ Travel',                   color:'#7A5A28'},
-  {key:'other',      label:'📦 Other',                      color:'#15120E'},
+  {key:'office',      label:'Office',                color:'#3D271A'},
+  {key:'salaries',    label:'Salaries',              color:'#5C7A3F'},
+  {key:'operational', label:'Operational costs',     color:'#2D6A8B'},
+  {key:'professional',label:'Professional services', color:'#B85450'},
+  {key:'software',    label:'Software & Tools',      color:'#7B5C8C'},
+  {key:'marketing',   label:'Marketing',             color:'#9B7535'},
+  {key:'insurance',   label:'Insurance',             color:'#655A4E'},
+  {key:'travel',      label:'Travel',                color:'#7A5A28'},
+  {key:'other',       label:'Other',                 color:'#15120E'},
 ];
 
 function _fcCategoryMeta(key){
