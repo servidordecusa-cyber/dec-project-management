@@ -1702,6 +1702,24 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financial</h2><p style="color:var(--gray3);margin-top:4px">Receita e custo da DEC · todos os projetos</p></div></div>
   <div class="home-grid" id="fin-kpis"></div>
 
+  <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-weight:700;font-size:13px;color:#3D271A">🏢 Overhead rateado por projeto</div>
+      <label style="font-size:12px;color:var(--gray3)">Base:
+        <select id="fin-oh-base" style="margin-left:5px;padding:6px 9px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+          <option value="total_invested">Total Invested</option>
+          <option value="actual">Custo (Actual)</option>
+          <option value="faturamento">Faturamento DEC</option>
+        </select>
+      </label>
+      <label style="font-size:12px;color:var(--gray3)">Taxa:
+        <input id="fin-oh-rate" type="number" min="0" step="0.01" style="margin-left:5px;width:80px;padding:6px 9px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none"> %
+      </label>
+      <button class="btn btn-primary" style="padding:7px 14px;font-size:12px" onclick="saveOverheadConfig()">Salvar taxa</button>
+      <span style="font-size:11px;color:var(--gray3);font-style:italic">Overhead = taxa × base de cada projeto · entra no custo da DEC e abate o Lucro DEC.</span>
+    </div>
+  </div>
+
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
       <div class="card-title" style="margin:0;border:0;padding:0">📊 Summary by project
@@ -1729,6 +1747,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:100px">Final ROI</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Faturamento DEC</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Custo (Actual)</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Overhead</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Lucro DEC</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:80px">Margem %</th>
           </tr>
@@ -2348,6 +2367,7 @@ let invoices=[];     // [{id, invoice_number, client_id, date, amount, ...}]
 let invoiceItems={}; // {invoice_id: [{id, description, amount, position}]}
 let invoicePayments={}; // {invoice_id: [{id, amount, payment_method, payment_date}]} — for partial_paid status
 let fixedCosts=[];   // [{id, date, category, description, amount, notes}]
+let appConfig={overhead_rate_pct:0, overhead_base:'total_invested'}; // taxa de overhead rateada por projeto (método #4)
 let extraCostsMap={};// {project_id: {category: [{id, name, amount, frequency, is_extra, position}]}}
 let CID=null;
 
@@ -4246,6 +4266,8 @@ async function loadAllData(){
   await loadInvoices();
   // Load fixed costs (CEO-only)
   await loadFixedCosts();
+  // Load app config (overhead rate etc.)
+  await loadAppConfig();
   // Populate dropdowns (after both clients and projects loaded)
   populateClientDropdowns();
 }
@@ -9277,31 +9299,34 @@ function renderFinancial(){
   // Faturamento da DEC = invoices Operational + Final ROI (emitidas, não canceladas)
   // Custo da DEC       = Total Actual (soma dos Actual Costs lançados por projeto)
   // Lucro DEC          = Faturamento − Custo   ·   Margem = Lucro / Faturamento
-  let totOp=0,totRoi=0,totCost=0;
+  // Sincroniza os controles de overhead com a config salva
+  const ohBaseEl=document.getElementById('fin-oh-base'); if(ohBaseEl && ohBaseEl.value!==appConfig.overhead_base) ohBaseEl.value=appConfig.overhead_base||'total_invested';
+  const ohRateEl=document.getElementById('fin-oh-rate'); if(ohRateEl && document.activeElement!==ohRateEl) ohRateEl.value=(+appConfig.overhead_rate_pct||0);
+  let totOp=0,totRoi=0,totCost=0,totOh=0;
   list.forEach(p=>{
     totOp+=calcProjectInvoices(p.id,'operational');
     totRoi+=calcProjectInvoices(p.id,'final_roi');
     totCost+=calcRoomTotal(p.id,'actual');
+    totOh+=overheadForProject(p.id);
   });
   const totRev=totOp+totRoi;
-  const totProfit=totRev-totCost;
+  const totProfit=totRev-totCost-totOh;      // Lucro DEC = Faturamento − Custo Actual − Overhead
   const totMargin=totRev>0?(totProfit/totRev*100):0;
   // Render KPIs
   const kpisEl=document.getElementById('fin-kpis');
   if(kpisEl){
     kpisEl.innerHTML=`
       <div class="home-card"><div class="lbl">📁 Projects</div><div class="val">${list.length}</div></div>
-      <div class="home-card"><div class="lbl">🧾 Operational</div><div class="val">${fmt(totOp)}</div></div>
-      <div class="home-card gold"><div class="lbl">💎 Final ROI</div><div class="val">${fmt(totRoi)}</div></div>
-      <div class="home-card gold"><div class="lbl">💵 Faturamento DEC</div><div class="val">${fmt(totRev)}</div><div class="sub">Operational + Final ROI</div></div>
+      <div class="home-card gold"><div class="lbl">💵 Faturamento DEC</div><div class="val">${fmt(totRev)}</div><div class="sub">Op ${fmt(totOp)} · ROI ${fmt(totRoi)}</div></div>
       <div class="home-card"><div class="lbl">🔨 Custos (Actual)</div><div class="val">${fmt(totCost)}</div></div>
+      <div class="home-card"><div class="lbl">🏢 Overhead (${(+appConfig.overhead_rate_pct||0)}%)</div><div class="val">${fmt(totOh)}</div></div>
       <div class="home-card green"><div class="lbl">📈 Lucro DEC</div><div class="val" style="color:${totProfit>=0?'var(--p3)':'var(--p1)'}">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</div><div class="sub">Margem ${totMargin.toFixed(1)}%</div></div>`;
   }
   // Render table
   const tbody=document.getElementById('fin-tbody');
   document.getElementById('fin-count').textContent='— '+list.length+' project(s)';
   if(list.length===0){
-    tbody.innerHTML=`<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No projects.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No projects.</td></tr>`;
     document.getElementById('fin-tfoot').innerHTML='';
     return;
   }
@@ -9310,7 +9335,8 @@ function renderFinancial(){
     const roi=calcProjectInvoices(p.id,'final_roi');
     const rev=op+roi;
     const cost=calcRoomTotal(p.id,'actual');
-    const profit=rev-cost;
+    const oh=overheadForProject(p.id);
+    const profit=rev-cost-oh;
     const margin=rev>0?(profit/rev*100):0;
     const st=projectStatus(p.id);
     const meta=STATUS_META[st];
@@ -9323,7 +9349,8 @@ function renderFinancial(){
       <td style="padding:10px 12px;text-align:right;font-weight:600;color:var(--gold)">${roi>0?fmt(roi):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700">${rev>0?fmt(rev):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:600">${cost>0?fmt(cost):'—'}</td>
-      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${(rev>0||cost>0)?profitColor:'var(--gray3)'}">${(rev>0||cost>0)?(profit>=0?'':'-')+fmt(Math.abs(profit)):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600;color:#8A7B68">${oh>0?fmt(oh):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${(rev>0||cost>0||oh>0)?profitColor:'var(--gray3)'}">${(rev>0||cost>0||oh>0)?(profit>=0?'':'-')+fmt(Math.abs(profit)):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700;color:${rev>0?profitColor:'var(--gray3)'}">${rev>0?margin.toFixed(1)+'%':'—'}</td>
     </tr>`;
   }).join('');
@@ -9335,6 +9362,7 @@ function renderFinancial(){
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totRoi)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totRev)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totCost)}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totOh)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${totMargin.toFixed(1)}%</td>
     </tr>`;
@@ -9701,6 +9729,51 @@ async function loadFixedCosts(){
   const {data,error}=await fetchAllRows('fixed_costs',{order:[{col:'date',asc:false}]});
   if(error){console.error('fixed_costs load',error);return;}
   fixedCosts=data||[];
+}
+
+// ═══ APP CONFIG — taxa de overhead rateada por projeto (método #4) ═══════
+async function loadAppConfig(){
+  if(!isCEO()) return;
+  try{
+    const {data,error}=await sb.from('app_config').select('key,value');
+    if(error){console.warn('app_config load',error);return;}
+    (data||[]).forEach(r=>{
+      if(r.key==='overhead_rate_pct') appConfig.overhead_rate_pct=+r.value||0;
+      if(r.key==='overhead_base') appConfig.overhead_base=r.value||'total_invested';
+    });
+  }catch(e){console.warn('app_config load err',e);}
+}
+
+// Base ($) de cada projeto conforme a base escolhida
+function _overheadBaseValue(pid){
+  const base=appConfig.overhead_base||'total_invested';
+  if(base==='actual') return calcRoomTotal(pid,'actual');
+  if(base==='faturamento') return calcProjectInvoices(pid,'operational')+calcProjectInvoices(pid,'final_roi');
+  // default: total_invested
+  const f=calcProjectFinancials(pid);
+  return (f&&+f.totalInvested)||0;
+}
+// Overhead $ alocado a um projeto = taxa% × base do projeto
+function overheadForProject(pid){
+  const rate=(+appConfig.overhead_rate_pct||0)/100;
+  return _overheadBaseValue(pid)*rate;
+}
+
+async function saveOverheadConfig(){
+  if(!isCEO()){toast('CEO only',false);return;}
+  const rate=parseFloat(document.getElementById('fin-oh-rate')?.value);
+  const base=document.getElementById('fin-oh-base')?.value||'total_invested';
+  if(isNaN(rate)||rate<0){toast('Taxa inválida',false);return;}
+  const payload=[
+    {key:'overhead_rate_pct',value:String(rate)},
+    {key:'overhead_base',value:base},
+  ];
+  const {error}=await sb.from('app_config').upsert(payload,{onConflict:'key'});
+  if(error){console.error('overhead config save',error);toast('Erro ao salvar (rode o SQL da tabela app_config)',false);return;}
+  appConfig.overhead_rate_pct=rate;
+  appConfig.overhead_base=base;
+  toast('Taxa de overhead salva',true);
+  renderFinancial();
 }
 
 function _populateFixedCostCategoryDropdowns(){
