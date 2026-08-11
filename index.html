@@ -14710,15 +14710,15 @@ function renderBudgetEditorModal(){
   }).join('');
   // Summary block (gross profit + 2 scenarios side by side)
   const summaryHTML=`
-    <!-- Gross Profit reference (purchase - sale - rehab) -->
-    <div style="background:linear-gradient(135deg,#FAF7F3,#F0EAE2);border:1.5px solid #D5C9BC;border-radius:8px;padding:14px 18px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <!-- DESTAQUE: retorno real do cliente (após todos os custos + fatia da DEC) -->
+    <div style="background:linear-gradient(135deg,#F2F4EC,#E4EDD9);border:1.5px solid #B5D3A2;border-radius:8px;padding:14px 18px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div>
-        <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Gross Profit (referência)</div>
-        <div style="font-size:11px;color:#655A4E;margin-top:2px">Venda - Compra - Rehab · sem custos operacionais ou closing</div>
+        <div style="font-size:10px;font-weight:700;color:#5C7A3F;letter-spacing:1px;text-transform:uppercase">🎯 Retorno real do cliente</div>
+        <div style="font-size:11px;color:#655A4E;margin-top:2px">Após todos os custos e a parte da DEC (${(calc.dec_pct*100).toFixed(0)}%) · cenário ${(b.client_view_mode==='cash')?'Cash':'Hard Money'}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:24px;font-weight:800;color:${calc.gross_profit>=0?'#5C7A3F':'#A02021'}" id="bm-gross-profit">${$fmt(calc.gross_profit)}</div>
-        <div style="font-size:10px;color:#999;margin-top:2px">${$fmt(calc.arv)} − ${$fmt(calc.purchase)} − ${$fmt(calc.rehab)}</div>
+        <div style="font-size:24px;font-weight:800;color:${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)>=0?'#5C7A3F':'#A02021'}" id="bm-gross-profit">${$fmt((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)}</div>
+        <div style="font-size:10px;color:#999;margin-top:2px">Gross profit (ref): ${$fmt(calc.gross_profit)}</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:14px">
@@ -15023,8 +15023,9 @@ function refreshBudgetLiveCalcs(){
   const set=(id,val)=>{const e=document.getElementById(id);if(e) e.textContent=val;};
   set('bm-gross-profit',   $$(calc.gross_profit));
   // Color the gross profit
+  const _clRet=(b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit;
   const grossEl=document.getElementById('bm-gross-profit');
-  if(grossEl) grossEl.style.color=calc.gross_profit>=0?'#5C7A3F':'#A02021';
+  if(grossEl){ grossEl.textContent=$$(_clRet); grossEl.style.color=_clRet>=0?'#5C7A3F':'#A02021'; }
   set('bm-cash-invested',  $$(calc.cash.invested));
   set('bm-cash-descontos', $$(calc.cash.descontos_closing));
   set('bm-cash-sale',      $$(calc.cash.sale));
@@ -15259,11 +15260,11 @@ function generateBudgetPDF(){
 
   <h2>Análise dos Cenários</h2>
 
-  <!-- Gross Profit (referência) -->
+  <!-- DESTAQUE: retorno real do cliente -->
   <table style="margin-bottom:14px">
-    <tr style="background:#FAF7F3">
-      <td style="padding:10px;font-weight:700;color:#655A4E;width:60%"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D271A" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Gross Profit (referência)<br><span style="font-size:9px;color:#999;font-weight:500">Venda − Compra − Rehab · sem custos operacionais ou closing</span></td>
-      <td style="padding:10px;text-align:right;font-weight:800;font-size:18px;color:${calc.gross_profit>=0?'#5C7A3F':'#A02021'}">${$$(calc.gross_profit)}</td>
+    <tr style="background:#F2F4EC">
+      <td style="padding:12px;font-weight:700;color:#5C7A3F;width:60%">🎯 Retorno real do cliente<br><span style="font-size:9px;color:#999;font-weight:500">Após todos os custos e a parte da DEC (${(calc.dec_pct*100).toFixed(0)}%) · cenário ${(b.client_view_mode==='cash')?'Cash':'Hard Money'} · Gross profit (ref): ${$$(calc.gross_profit)}</span></td>
+      <td style="padding:12px;text-align:right;font-weight:800;font-size:20px;color:${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)>=0?'#5C7A3F':'#A02021'}">${$$((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)}</td>
     </tr>
   </table>
 
