@@ -472,6 +472,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <div class="proj-content">
       <div class="page active" id="page-dash">
         <div class="page-title">Project Dashboard</div><div class="page-sub" id="dash-sub"></div>
+        <div id="d-baseline"></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:16px">
           <div class="kpi"><label>Schedule</label><div class="val" id="d-sched">0%</div></div>
           <div class="kpi kp"><label><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Estimated</label><div class="val" id="d-est">$0</div></div>
@@ -12571,6 +12572,19 @@ async function cdApproveBudget(budgetId){
   const addr=(b.address||b.name||'').trim();
   if(!addr){toast('Orçamento precisa de endereço ou nome',false);return;}
   if(!confirm(`Criar projeto a partir do orçamento "${b.name||addr}"?\n\nO projeto vai usar:\n• Endereço: ${addr}\n• Cliente: vinculado\n• Status: Em andamento\n\nE vai levar pro Property & Finance:\n• Compra: $${(+b.purchase_price||0).toLocaleString('en-US')} (Cash${(+b.hm_pct||0)>0?' + Hard Money':''})\n• Venda (ARV): $${(+b.arv||0).toLocaleString('en-US')}\n• Closing costs: $${(+b.closing_costs||0).toLocaleString('en-US')}`)) return;
+  // ─── BASELINE: congela o retrato do orçamento (planejado) no projeto ───
+  const _bCalc=calcBudgetSummary(b);
+  const _bScenario=(b.client_view_mode==='cash')?'cash':'hm';
+  const baselineAnalysis={
+    frozen_at:new Date().toISOString(),
+    budget_id:b.id, budget_name:b.name||'', scenario:_bScenario,
+    hm_includes_rehab:!!b.hm_includes_rehab, dec_pct:_bCalc.dec_pct,
+    purchase:+b.purchase_price||0, arv:+b.arv||0, rehab:+b.rehab_estimate||0, closing_costs:+b.closing_costs||0,
+    hm_loan:_bCalc.hm_loan, hm_months:+b.hm_months||0, cash_months:+b.cash_months||0,
+    cash:{invested:_bCalc.cash.invested, profit:_bCalc.cash.profit, roi:_bCalc.cash.profit_pct, dec:_bCalc.cash.dec_profit, client:_bCalc.cash.client_profit},
+    hm:  {invested:_bCalc.hm.invested,  profit:_bCalc.hm.profit,  roi:_bCalc.hm.profit_pct,  dec:_bCalc.hm.dec_profit,  client:_bCalc.hm.client_profit},
+    lines:(_bCalc.lineValues||[]).map(l=>({name:(l.name||'').replace(/<[^>]*>/g,''), valCash:l.valCash, valHm:l.valHm})),
+  };
   // Build project payload from budget
   const projectPayload={
     name:addr,
@@ -12578,9 +12592,14 @@ async function cdApproveBudget(budgetId){
     customer:b.client_id,
     start_date:new Date().toISOString().slice(0,10),
     pm:'',
-    notes:b.name ? `Orçamento: ${b.name}` : ''
+    notes:b.name ? `Orçamento: ${b.name}` : '',
+    baseline_analysis:baselineAnalysis,
   };
-  const {data:newProj,error:projErr}=await sb.from('projects').insert(projectPayload).select().single();
+  let {data:newProj,error:projErr}=await sb.from('projects').insert(projectPayload).select().single();
+  if(projErr && /baseline_analysis|column .* does not exist/i.test(projErr.message||'')){
+    const {baseline_analysis:_ba, ...pp2}=projectPayload;
+    ({data:newProj,error:projErr}=await sb.from('projects').insert(pp2).select().single());
+  }
   if(projErr){toast('Erro criar projeto: '+projErr.message,false);return;}
   // Leva os valores do orçamento para o Property & Finance do novo projeto
   // Preço de compra → Cash (+ Hard Money se houver % HM Loan) · Preço de venda → ARV · Closing → Other costs
@@ -13819,10 +13838,63 @@ function showSaved(){
 }
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════════
+// ═══ ANÁLISE: PLANEJADO (baseline congelada) × REALIZADO ════════════════
+function renderBaselineAnalysis(p){
+  const el=document.getElementById('d-baseline'); if(!el) return;
+  let base=p&&p.baseline_analysis;
+  if(typeof base==='string'){ try{base=JSON.parse(base);}catch(e){base=null;} }
+  if(!base || !(base.cash||base.hm)){ el.innerHTML=''; return; }
+  const scen=(base.scenario==='cash')?'cash':'hm';
+  const bl=base[scen]||{};
+  const decPct=base.dec_pct||0.30;
+  const f=calcProjectFinancials(CID);
+  const realProfit=+f.netProfit||0, realInvested=+f.totalInvested||0, realRoi=+f.roi||0;
+  const realDec=realProfit*decPct, realClient=realProfit*(1-decPct);
+  const hasSale=(+((propertyMap[CID]||{}).final_sale_price)||0)>0;
+  const estT=calcRoomTotal(CID,'est'), actT=calcRoomTotal(CID,'actual');
+  const row=(label,plan,real,opt)=>{
+    opt=opt||{}; const money=opt.money!==false, higherBetter=opt.higherBetter!==false, needsSale=!!opt.needsSale;
+    const showReal = !needsSale || hasSale;
+    const fmtv=v=>money?fmt(v):(v.toFixed(1)+'%');
+    const diff=real-plan; const near=Math.abs(diff)<0.005;
+    const good=higherBetter?diff>=0:diff<=0;
+    const dc=near?'#655A4E':(good?'#5C7A3F':'#B85450');
+    return `<tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:8px 10px;color:#655A4E">${label}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600">${fmtv(plan)}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700">${showReal?fmtv(real):'—'}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${showReal?dc:'#ccc'}">${showReal?((diff>=0?'+':'')+fmtv(diff)):'—'}</td>
+    </tr>`;
+  };
+  el.innerHTML=`<div class="card" style="margin-bottom:16px;border-left:4px solid #9B7535">
+    <div class="card-title">📊 Análise: Planejado × Realizado
+      <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">baseline congelada em ${(base.frozen_at||'').slice(0,10)} · cenário ${scen==='cash'?'Cash':'Hard Money'}</span>
+    </div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#FAF7F3">
+        <th style="padding:8px 10px;text-align:left;font-size:11px;border-bottom:2px solid var(--gray2)">Indicador</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;border-bottom:2px solid var(--gray2)">Planejado</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;border-bottom:2px solid var(--gray2)">Realizado</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;border-bottom:2px solid var(--gray2)">Δ</th>
+      </tr></thead>
+      <tbody>
+        ${row('Custo de obra', estT, actT, {higherBetter:false})}
+        ${row('Investido', bl.invested||0, realInvested, {higherBetter:false})}
+        ${row('Lucro', bl.profit||0, realProfit, {needsSale:true})}
+        ${row('ROI', bl.roi||0, realRoi, {money:false, needsSale:true})}
+        ${row('DEC ('+(decPct*100).toFixed(0)+'%)', bl.dec||0, realDec, {needsSale:true})}
+        ${row('Cliente ('+(100-decPct*100).toFixed(0)+'%)', bl.client||0, realClient, {needsSale:true})}
+      </tbody>
+    </table></div>
+    ${hasSale?'':'<div style="font-size:11px;color:var(--gray3);font-style:italic;margin-top:8px">Lucro/ROI/split reais aparecem quando a venda final for lançada em Property &amp; Finance. Custo e investido já comparam em tempo real.</div>'}
+  </div>`;
+}
+
 function renderDashboard(){
   if(!CID) return;
   const p=projects.find(x=>x.id===CID); if(!p) return;
   document.getElementById('dash-sub').textContent=(customerName(p.customer)||'')+(p.address?' · '+p.address:'')+(p.pm?' · PM: '+p.pm:'');
+  renderBaselineAnalysis(p);
   const sched=calcSched(CID);
   const est=calcRoomTotal(CID,'est');
   const act=calcRoomTotal(CID,'actual');
@@ -15103,6 +15175,8 @@ function deleteBudgetLine(idx){
 async function saveBudget(){
   if(!isCEO()){toast('CEO only',false);return;}
   if(!_bdgCurrent) return;
+  const _sb=document.querySelector('[onclick="saveBudget()"]'); const _sbt=_sb?_sb.textContent:'';
+  if(_sb){_sb.disabled=true;_sb.textContent='⏳ Salvando...';}
   const payload={
     name:_bdgCurrent.name||'Sem nome',
     address:_bdgCurrent.address||'',
@@ -15128,14 +15202,18 @@ async function saveBudget(){
     client_view_mode:_bdgCurrent.client_view_mode||'hm',
     visible_to_client:_bdgCurrent.visible_to_client===true,
   };
-  let result;
-  if(_bdgCurrent.id){
-    result=await sb.from('budgets').update(payload).eq('id',_bdgCurrent.id).select().single();
-  } else {
-    payload.created_by=CURRENT_USER?.email||'';
-    result=await sb.from('budgets').insert(payload).select().single();
+  if(!_bdgCurrent.id) payload.created_by=CURRENT_USER?.email||'';
+  const _doSave=async(pl)=> _bdgCurrent.id
+    ? sb.from('budgets').update(pl).eq('id',_bdgCurrent.id).select().single()
+    : sb.from('budgets').insert(pl).select().single();
+  let result=await _doSave(payload);
+  // Resiliência: se alguma coluna nova ainda não existe no banco, salva sem ela
+  if(result.error && /column .* does not exist|hm_includes_rehab/i.test(result.error.message||'')){
+    const p2={...payload}; delete p2.hm_includes_rehab;
+    result=await _doSave(p2);
+    if(!result.error) toast('Salvo (rode o SQL da coluna hm_includes_rehab p/ guardar essa opção)',true);
   }
-  if(result.error){console.error('saveBudget',result.error);toast('Erro ao salvar: '+result.error.message,false);return;}
+  if(result.error){console.error('saveBudget',result.error);toast('Erro ao salvar: '+result.error.message,false);if(_sb){_sb.disabled=false;_sb.textContent=_sbt;}return;}
   // Update in-memory
   if(_bdgCurrent.id){
     const i=budgets.findIndex(b=>b.id===_bdgCurrent.id);
