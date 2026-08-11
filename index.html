@@ -14866,6 +14866,9 @@ function renderBudgetEditorModal(){
   }).join('');
   // Summary block (gross profit + 2 scenarios side by side)
   const summaryHTML=`
+    <div style="margin-top:16px;padding:9px 14px;background:#FFF8E7;border-left:3px solid #9B7535;border-radius:5px;font-size:11px;color:#655A4E;line-height:1.5">
+      <strong>Este orçamento é uma previsão de custos</strong> baseada nas informações disponíveis nesta data. Os valores são estimados e podem sofrer alterações ao longo do projeto (conforme escopo, mercado e imprevistos) — não representam um valor final garantido.
+    </div>
     <!-- DESTAQUE: retorno real do cliente (após todos os custos + fatia da DEC) -->
     <div style="background:linear-gradient(135deg,#F2F4EC,#E4EDD9);border:1.5px solid #B5D3A2;border-radius:8px;padding:14px 18px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div>
@@ -15385,6 +15388,9 @@ function generateBudgetPDF(){
     <div><strong>Projeto:</strong> <span>${(b.name||'').replace(/</g,'&lt;')}</span></div>
     ${b.address?`<div><strong>Endereço:</strong> <span>${b.address.replace(/</g,'&lt;')}</span></div>`:''}
     <div><strong>Gerado em:</strong> <span>${today}</span></div>
+  </div>
+  <div style="margin:0 0 16px;padding:9px 14px;background:#FFF8E7;border-left:3px solid #9B7535;border-radius:5px;font-size:10px;color:#655A4E;line-height:1.5">
+    <strong>Este orçamento é uma previsão de custos</strong> baseada nas informações disponíveis nesta data. Os valores são estimados e podem sofrer alterações ao longo do projeto (conforme escopo, mercado e imprevistos) — não representam um valor final garantido.
   </div>
 
   <h2>Dados do Imóvel</h2>
