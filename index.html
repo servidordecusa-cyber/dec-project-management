@@ -14078,6 +14078,17 @@ function renderGantt(){
 
 // ═══ PAGE NAV ════════════════════════════════════════════════════════
 // ═══ RESUMO DE FORNECEDORES DO PROJETO (fim do Actual Costs) ══════════════
+function _openNotaPath(path){
+  if(!path) return;
+  sb.storage.from('budget-attachments').createSignedUrl(path,60).then(({data,error})=>{
+    if(error||!data){toast('Erro ao abrir a nota',false);return;}
+    window.open(data.signedUrl,'_blank');
+  });
+}
+function _toggleSupNotas(i){
+  const r=document.getElementById('sup-notas-'+i); const c=document.getElementById('sup-caret-'+i);
+  if(!r) return; const open=r.style.display==='none'; r.style.display=open?'':'none'; if(c) c.textContent=open?'▾':'▸';
+}
 function renderProjectSupplierSummary(){
   const el=document.getElementById('act-supplier-summary');
   if(!el) return;
@@ -14095,24 +14106,35 @@ function renderProjectSupplierSummary(){
       if(!agg[key]){
         const known=!!(sup && (vendors||[]).some(v=>v.id===sup));
         const nm=sup?(vendorName(sup)||sup):'(sem fornecedor)';
-        agg[key]={name:nm,total:0,count:0,known};
+        agg[key]={name:nm,total:0,count:0,known,notas:[]};
       }
       agg[key].total+=amt;
       agg[key].count++;
+      const atts=(((attachMap[CID]||{})[rid]||{})[islug])||[];
+      atts.forEach(at=>agg[key].notas.push({name:at.name||'nota', item:at.item_name||islug, path:at.storage_path}));
     });
   });
   const list=Object.values(agg).filter(a=>a.total>0||a.count>0).sort((a,b)=>b.total-a.total);
   if(list.length===0){ el.innerHTML=''; return; }
   const grandTotal=list.reduce((s,a)=>s+a.total,0);
   const grandCount=list.reduce((s,a)=>s+a.count,0);
-  const rows=list.map(a=>`<tr style="border-bottom:1px solid #F0EAE2">
-      <td style="padding:8px 10px;font-weight:600;color:var(--navy)">${(a.name||'').replace(/</g,'&lt;')}${a.known?'':' <span style="font-size:10px;color:#B85450;font-weight:600">(não cadastrado)</span>'}</td>
+  const rows=list.map((a,i)=>{
+    const notasHtml=a.notas.length
+      ? a.notas.map(n=>`<div style="padding:5px 0;border-bottom:1px solid #EFE9DF;display:flex;justify-content:space-between;gap:12px;align-items:center">
+          <span style="color:#655A4E;font-size:12px">📎 ${(n.item||'').replace(/</g,'&lt;')} <span style="color:#bbb">· ${(n.name||'').replace(/</g,'&lt;')}</span></span>
+          <a href="javascript:void(0)" onclick="_openNotaPath('${(n.path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;font-weight:700;font-size:12px;text-decoration:underline;white-space:nowrap">abrir nota →</a>
+        </div>`).join('')
+      : '<div style="padding:6px 0;color:var(--gray3);font-size:12px;font-style:italic">Nenhuma nota anexada a este fornecedor.</div>';
+    return `<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer" onclick="_toggleSupNotas(${i})">
+      <td style="padding:8px 10px;font-weight:600;color:var(--navy)"><span id="sup-caret-${i}" style="display:inline-block;width:14px;color:#9B7535">▸</span>${(a.name||'').replace(/</g,'&lt;')}${a.known?'':' <span style="font-size:10px;color:#B85450;font-weight:600">(não cadastrado)</span>'} <span style="font-size:10px;color:#bbb">· ${a.notas.length} nota(s)</span></td>
       <td style="padding:8px 10px;text-align:center;color:var(--gray3);font-size:12px">${a.count}</td>
       <td style="padding:8px 10px;text-align:right;font-weight:700;color:#9B7535">${fmt(a.total)}</td>
-    </tr>`).join('');
+    </tr>
+    <tr id="sup-notas-${i}" style="display:none;background:#FBF8F3"><td colspan="3" style="padding:6px 16px 10px 34px">${notasHtml}</td></tr>`;
+  }).join('');
   el.innerHTML=`<div class="card" style="margin-top:18px">
     <div class="card-title">🧾 Fornecedores usados neste projeto
-      <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">${list.length} fornecedor(es) · Actual Costs</span>
+      <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">${list.length} fornecedor(es) · clique pra ver as notas</span>
     </div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#FAF7F3">
