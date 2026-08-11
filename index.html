@@ -14425,6 +14425,8 @@ function calcBudgetSummary(b){
   const arv=+b.arv||0;
   const rehab=+b.rehab_estimate||0;
   const closingCosts=+b.closing_costs||0;
+  // Split do lucro DEC/cliente — ajustável por orçamento (padrão BUDGET_DEC_PCT = 30%)
+  const decPct=(b.dec_pct!=null && !isNaN(+b.dec_pct)) ? Math.max(0,Math.min(1,+b.dec_pct)) : BUDGET_DEC_PCT;
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
@@ -14520,9 +14522,9 @@ function calcBudgetSummary(b){
   return {
     gross_profit:grossProfit,
     purchase, arv, rehab, hm_loan:hmLoan,
-    cash:{invested:cashInvested, profit:cashProfit, profit_pct:cashProfitPct, descontos_closing:cashDescontos, sale, dec_profit:cashProfit*BUDGET_DEC_PCT, client_profit:cashProfit*(1-BUDGET_DEC_PCT), client_pct:cashInvested>0?(cashProfit*(1-BUDGET_DEC_PCT)/cashInvested*100):0},
-    hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan, dec_profit:hmProfit*BUDGET_DEC_PCT, client_profit:hmProfit*(1-BUDGET_DEC_PCT), client_pct:hmInvested>0?(hmProfit*(1-BUDGET_DEC_PCT)/hmInvested*100):0},
-    dec_pct:BUDGET_DEC_PCT,
+    cash:{invested:cashInvested, profit:cashProfit, profit_pct:cashProfitPct, descontos_closing:cashDescontos, sale, dec_profit:cashProfit*decPct, client_profit:cashProfit*(1-decPct), client_pct:cashInvested>0?(cashProfit*(1-decPct)/cashInvested*100):0},
+    hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan, dec_profit:hmProfit*decPct, client_profit:hmProfit*(1-decPct), client_pct:hmInvested>0?(hmProfit*(1-decPct)/hmInvested*100):0},
+    dec_pct:decPct,
     lines, lineValues,
   };
 }
@@ -14924,6 +14926,14 @@ function renderBudgetEditorModal(){
         <div style="font-size:10px;color:#999;margin-top:2px">Gross profit (ref): ${$fmt(calc.gross_profit)}</div>
       </div>
     </div>
+    <!-- Divisão do lucro DEC × Cliente (ajustável por orçamento) -->
+    <div style="margin-top:14px;padding:11px 14px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:800;color:#3D271A;text-transform:uppercase;letter-spacing:.4px">Divisão do lucro</span>
+      <span style="font-size:12px;color:#655A4E">DEC</span>
+      <input type="number" min="0" max="100" step="1" value="${(calc.dec_pct*100).toFixed(0)}" onchange="updateBudgetSplit(this.value)" onkeydown="if(event.key==='Enter'){this.blur();}" style="width:70px;padding:5px 8px;border:1.5px solid #9B7535;border-radius:6px;font-size:14px;font-weight:800;color:#9B7535;text-align:center;font-family:inherit;outline:none">
+      <span style="font-size:12px;color:#655A4E">%&nbsp;·&nbsp;Cliente <strong style="color:#5C7A3F">${(100-calc.dec_pct*100).toFixed(0)}%</strong></span>
+      <span style="font-size:10px;color:#999;font-style:italic;margin-left:auto">padrão 30% — pode ajustar em cada orçamento</span>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:14px">
       <!-- Cash scenario -->
       <div style="background:#F2F4EC;border-left:4px solid #5C7A3F;border-radius:8px;padding:18px">
@@ -15132,6 +15142,16 @@ function updateBudgetField(field, value){
   refreshBudgetLiveCalcs();
 }
 
+// Ajuste manual do split DEC/cliente (0–100%). Re-renderiza para atualizar rótulos e valores.
+function updateBudgetSplit(v){
+  if(!_bdgCurrent) return;
+  let p=Math.round(+v);
+  if(isNaN(p)) p=Math.round(BUDGET_DEC_PCT*100);
+  p=Math.max(0,Math.min(100,p));
+  _bdgCurrent.dec_pct=p/100;
+  renderBudgetEditorModal();
+}
+
 function updateBudgetLine(idx, field, value){
   if(!_bdgCurrent || !_bdgCurrent.cost_lines[idx]) return;
   if(['base','months_cash','months_hm'].includes(field)){
@@ -15331,6 +15351,7 @@ async function saveBudget(){
     client_id:_bdgCurrent.client_id||null,
     client_view_mode:_bdgCurrent.client_view_mode||'hm',
     visible_to_client:_bdgCurrent.visible_to_client===true,
+    dec_pct:_bdgCurrent.dec_pct!=null?+_bdgCurrent.dec_pct:0.30,
   };
   if(!_bdgCurrent.id) payload.created_by=CURRENT_USER?.email||'';
   const _doSave=async(pl)=> _bdgCurrent.id
@@ -15338,10 +15359,10 @@ async function saveBudget(){
     : sb.from('budgets').insert(pl).select().single();
   let result=await _doSave(payload);
   // Resiliência: se alguma coluna nova ainda não existe no banco, salva sem ela
-  if(result.error && /column .* does not exist|hm_includes_rehab/i.test(result.error.message||'')){
-    const p2={...payload}; delete p2.hm_includes_rehab;
+  if(result.error && /column .* does not exist|hm_includes_rehab|dec_pct/i.test(result.error.message||'')){
+    const p2={...payload}; delete p2.hm_includes_rehab; delete p2.dec_pct;
     result=await _doSave(p2);
-    if(!result.error) toast('Salvo (rode o SQL da coluna hm_includes_rehab p/ guardar essa opção)',true);
+    if(!result.error) toast('Salvo (rode o SQL das colunas hm_includes_rehab / dec_pct p/ guardar essas opções)',true);
   }
   if(result.error){console.error('saveBudget',result.error);toast('Erro ao salvar: '+result.error.message,false);if(_sb){_sb.disabled=false;_sb.textContent=_sbt;}return;}
   // Update in-memory
