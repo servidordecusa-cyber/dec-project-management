@@ -12573,18 +12573,7 @@ async function cdApproveBudget(budgetId){
   if(!addr){toast('Orçamento precisa de endereço ou nome',false);return;}
   if(!confirm(`Criar projeto a partir do orçamento "${b.name||addr}"?\n\nO projeto vai usar:\n• Endereço: ${addr}\n• Cliente: vinculado\n• Status: Em andamento\n\nE vai levar pro Property & Finance:\n• Compra: $${(+b.purchase_price||0).toLocaleString('en-US')} (Cash${(+b.hm_pct||0)>0?' + Hard Money':''})\n• Venda (ARV): $${(+b.arv||0).toLocaleString('en-US')}\n• Closing costs: $${(+b.closing_costs||0).toLocaleString('en-US')}`)) return;
   // ─── BASELINE: congela o retrato do orçamento (planejado) no projeto ───
-  const _bCalc=calcBudgetSummary(b);
-  const _bScenario=(b.client_view_mode==='cash')?'cash':'hm';
-  const baselineAnalysis={
-    frozen_at:new Date().toISOString(),
-    budget_id:b.id, budget_name:b.name||'', scenario:_bScenario,
-    hm_includes_rehab:!!b.hm_includes_rehab, dec_pct:_bCalc.dec_pct,
-    purchase:+b.purchase_price||0, arv:+b.arv||0, rehab:+b.rehab_estimate||0, closing_costs:+b.closing_costs||0,
-    hm_loan:_bCalc.hm_loan, hm_months:+b.hm_months||0, cash_months:+b.cash_months||0,
-    cash:{invested:_bCalc.cash.invested, profit:_bCalc.cash.profit, roi:_bCalc.cash.profit_pct, dec:_bCalc.cash.dec_profit, client:_bCalc.cash.client_profit},
-    hm:  {invested:_bCalc.hm.invested,  profit:_bCalc.hm.profit,  roi:_bCalc.hm.profit_pct,  dec:_bCalc.hm.dec_profit,  client:_bCalc.hm.client_profit},
-    lines:(_bCalc.lineValues||[]).map(l=>({name:(l.name||'').replace(/<[^>]*>/g,''), valCash:l.valCash, valHm:l.valHm})),
-  };
+  const baselineAnalysis=_buildBaselineFromBudget(b);
   // Build project payload from budget
   const projectPayload={
     name:addr,
@@ -13839,11 +13828,41 @@ function showSaved(){
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════════
 // ═══ ANÁLISE: PLANEJADO (baseline congelada) × REALIZADO ════════════════
+// Monta o snapshot imutável do orçamento (planejado)
+function _buildBaselineFromBudget(b){
+  const c=calcBudgetSummary(b);
+  return {
+    frozen_at:new Date().toISOString(),
+    budget_id:b.id, budget_name:b.name||'', scenario:(b.client_view_mode==='cash')?'cash':'hm',
+    hm_includes_rehab:!!b.hm_includes_rehab, dec_pct:c.dec_pct,
+    purchase:+b.purchase_price||0, arv:+b.arv||0, rehab:+b.rehab_estimate||0, closing_costs:+b.closing_costs||0,
+    hm_loan:c.hm_loan, hm_months:+b.hm_months||0, cash_months:+b.cash_months||0,
+    cash:{invested:c.cash.invested, profit:c.cash.profit, roi:c.cash.profit_pct, dec:c.cash.dec_profit, client:c.cash.client_profit},
+    hm:  {invested:c.hm.invested,  profit:c.hm.profit,  roi:c.hm.profit_pct,  dec:c.hm.dec_profit,  client:c.hm.client_profit},
+    lines:(c.lineValues||[]).map(l=>({name:(l.name||'').replace(/<[^>]*>/g,''), valCash:l.valCash, valHm:l.valHm})),
+  };
+}
+
 function renderBaselineAnalysis(p){
   const el=document.getElementById('d-baseline'); if(!el) return;
   let base=p&&p.baseline_analysis;
   if(typeof base==='string'){ try{base=JSON.parse(base);}catch(e){base=null;} }
-  if(!base || !(base.cash||base.hm)){ el.innerHTML=''; return; }
+  if(!base || !(base.cash||base.hm)){
+    // Sem baseline: oferece definir a partir de um orçamento (CEO)
+    if(!isCEO()){ el.innerHTML=''; return; }
+    if(!_bdgLoaded){ loadBudgets().then(()=>{ const pp=projects.find(x=>x.id===CID); if(pp) renderBaselineAnalysis(pp); }); }
+    const opts=(budgets||[]).slice().sort((a,b2)=>(a.name||'').localeCompare(b2.name||'')).map(bb=>`<option value="${bb.id}">${((bb.name||bb.address||'orçamento')).replace(/</g,'&lt;')}${bb.address?' · '+bb.address.replace(/</g,'&lt;'):''}</option>`).join('');
+    el.innerHTML=`<div class="card" style="margin-bottom:16px;border-left:4px solid #D5C9BC;background:#FBF8F3">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13px;color:#655A4E">📊 Este projeto ainda não tem uma <strong>baseline</strong> pra comparar Planejado × Realizado.</span>
+        <select id="d-baseline-pick" style="padding:6px 9px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;max-width:280px">
+          <option value="">— escolher um orçamento —</option>${opts}
+        </select>
+        <button onclick="applyBudgetAsBaseline()" class="btn btn-primary" style="padding:6px 12px;font-size:12px">Definir como baseline</button>
+      </div>
+    </div>`;
+    return;
+  }
   const scen=(base.scenario==='cash')?'cash':'hm';
   const bl=base[scen]||{};
   const decPct=base.dec_pct||0.30;
@@ -13888,6 +13907,20 @@ function renderBaselineAnalysis(p){
     </table></div>
     ${hasSale?'':'<div style="font-size:11px;color:var(--gray3);font-style:italic;margin-top:8px">Lucro/ROI/split reais aparecem quando a venda final for lançada em Property &amp; Finance. Custo e investido já comparam em tempo real.</div>'}
   </div>`;
+}
+
+async function applyBudgetAsBaseline(){
+  if(!isCEO()||!CID) return;
+  const sel=document.getElementById('d-baseline-pick'); const bid=sel&&sel.value;
+  if(!bid){toast('Escolha um orçamento',false);return;}
+  const b=(budgets||[]).find(x=>x.id===bid);
+  if(!b){toast('Orçamento não encontrado',false);return;}
+  const baseline=_buildBaselineFromBudget(b);
+  const {error}=await sb.from('projects').update({baseline_analysis:baseline}).eq('id',CID);
+  if(error){console.error('baseline save',error);toast('Erro (rode o SQL da coluna baseline_analysis): '+error.message,false);return;}
+  const p=projects.find(x=>x.id===CID); if(p) p.baseline_analysis=baseline;
+  toast('Baseline definida!',true);
+  renderBaselineAnalysis(p);
 }
 
 function renderDashboard(){
