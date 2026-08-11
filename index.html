@@ -4638,10 +4638,20 @@ const PROJECT_TYPE_META={
   land:              {label:'Land',              icon:'🌳'},
   developer:         {label:'Developer',         icon:'🏗️'},
 };
+// Baseline (orçamento congelado) vinculado ao projeto — fonte do valor de REHAB
+function _getProjectBaseline(pid){
+  const p=(projects||[]).find(x=>x.id===pid); if(!p) return null;
+  let base=p.baseline_analysis;
+  if(typeof base==='string'){ try{base=JSON.parse(base);}catch(e){base=null;} }
+  return (base&&(base.cash||base.hm||base.rehab!=null))?base:null;
+}
+function _getProjectRehab(pid){ const b=_getProjectBaseline(pid); return b?(+b.rehab||0):0; }
+
 function calcRoomTotal(pid,type){
   const bm=budgetMap[pid]||{};
   let sum=0;
   ROOMS.forEach(r=>Object.values(bm[r.id]||{}).forEach(d=>sum+=(+d[type]||0)));
+  if(type==='est') sum+=_getProjectRehab(pid); // linha fixa REHAB puxada do orçamento vinculado
   return sum;
 }
 function calcRoomItemTotal(pid,roomId,type){
@@ -4712,13 +4722,37 @@ function buildBudgetRooms(){
   _updateEstGrandTotal();
 }
 // Estimate como lista única (junta os itens de todas as fases num só corpo)
+// A 1ª linha é sempre REHAB — valor puxado ao vivo do orçamento vinculado (baseline).
+function _rehabRowHTML(){
+  const base=_getProjectBaseline(CID);
+  const rehab=base?(+base.rehab||0):0;
+  if(base){
+    return `<tr style="background:#FBF6EC">
+      <td><span style="display:block;font-size:13px;font-weight:800;color:#3D271A">REHAB</span><span style="font-size:10px;color:#9B7535">puxado do orçamento vinculado</span></td>
+      <td><span style="display:inline-block;padding:3px 10px;background:#9B7535;color:#fff;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px">REHAB</span></td>
+      <td style="color:var(--gray3);font-size:12px;text-align:center">—</td>
+      <td style="color:var(--gray3);font-size:12px;text-align:center">—</td>
+      <td style="color:var(--gray3);font-size:12px;text-align:center">—</td>
+      <td style="font-weight:800;color:#9B7535;font-size:13px">${fmt(rehab)}</td>
+      <td style="color:var(--gray3);font-size:11px;font-style:italic">valor do orçamento</td>
+      <td style="text-align:center" title="Editável no orçamento vinculado — para alterar, ajuste o Rehab no orçamento (Definir baseline no Dashboard)">🔒</td>
+    </tr>`;
+  }
+  return `<tr style="background:#FBF6EC">
+    <td><span style="display:block;font-size:13px;font-weight:800;color:#3D271A">REHAB</span><span style="font-size:10px;color:#B85450">nenhum orçamento vinculado</span></td>
+    <td><span style="display:inline-block;padding:3px 10px;background:#C9B99B;color:#fff;border-radius:20px;font-size:11px;font-weight:700">REHAB</span></td>
+    <td colspan="3" style="color:var(--gray3);font-size:11px;font-style:italic">Vincule um orçamento em "Definir baseline" (Dashboard) para puxar o valor do Rehab</td>
+    <td style="font-weight:800;color:var(--gray3);font-size:13px">$0</td>
+    <td colspan="2"></td>
+  </tr>`;
+}
 function renderEstimateFlat(){
   const tb=document.getElementById('tb-est-all'); if(!tb) return;
-  let html=''; let n=0;
+  let html=_rehabRowHTML();
   GROUPS.forEach(g=>{
-    ((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ html+=rowHTML('est',g.id,it.name,it.slug); n++; });
+    ((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ html+=rowHTML('est',g.id,it.name,it.slug); });
   });
-  tb.innerHTML = n ? html : `<tr><td colspan="8" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum item ainda — clique "+ Add Item" abaixo</td></tr>`;
+  tb.innerHTML = html;
   GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>hydrateRow('est',g.id,it.slug)));
   _updateEstGrandTotal();
 }
