@@ -14204,12 +14204,18 @@ function isLineLocked(line){
 //   - Cash out of pocket = (purchase - HM loan) + HM interest + HM down + rehab + opex
 //   - At closing: must repay HM principal + commission + closing items
 // Returns: { cash: {invested, profit, profit_pct, descontos_closing, sale}, hm: {...}, lines: [...] }
-// Base do HM Loan — fonte única. Se b.hm_includes_rehab=true, o loan também
-// financia o rehab (base = compra + rehab); senão, só a compra.
+// Loan do Hard Money — fonte única.
+//  • A CASA entra a hmPct (ex 85%) → o cliente cobre os 15% de entrada.
+//  • O REHAB, quando financiado (hm_includes_rehab), entra a 100% (sem entrada).
+//  • Juro e origination incidem sobre o loan TOTAL (casa + rehab).
+function budgetHouseLoan(b){
+  const purchase=+b.purchase_price||0, hmPct=+b.hm_pct||0;
+  if(hmPct<=0) return Math.min(+b.hm_loan_amount||0, purchase);
+  return purchase*hmPct;
+}
 function budgetHmLoan(b){
-  const purchase=+b.purchase_price||0, rehab=+b.rehab_estimate||0, hmPct=+b.hm_pct||0;
-  const base = purchase + (b.hm_includes_rehab ? rehab : 0);
-  return hmPct>0 ? (base*hmPct) : (+b.hm_loan_amount||0);
+  const rehab=+b.rehab_estimate||0;
+  return budgetHouseLoan(b) + (b.hm_includes_rehab ? rehab : 0);
 }
 
 function calcBudgetSummary(b){
@@ -14245,11 +14251,10 @@ function calcBudgetSummary(b){
       valCash = purchase;
       valHm   = purchase;
     } else if(line.formula==='down_cash'){
-      // 💵 Cash do cliente (MANUAL — digite o valor real que o cliente colocou)
-      //   Default: se nada digitado, sugere (purchase - HM loan) só como guideline
-      //   Mas o esperado é o usuário digitar o valor real
+      // 💵 Entrada do cliente. No HM = compra − loan DA CASA (15% da casa).
+      //   O rehab financiado NÃO reduz a entrada (a entrada é só sobre a casa).
       valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
+      valHm   = hasOverride ? base : Math.max(0, purchase-budgetHouseLoan(b));
     } else if(line.formula==='hm_principal'){
       // <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>Hard Money (principal financiado):
       //   Cash scenario: zero (não usa HM)
@@ -14269,9 +14274,10 @@ function calcBudgetSummary(b){
       valCash = hasOverride ? base : (arv*commissionPct);
       valHm   = valCash;
     } else if(line.formula==='rehab'){
-      // 🔨 Rehab: igual nos dois
+      // 🔨 Rehab: cash sempre. No HM, se financiado (hm_includes_rehab), NÃO é
+      //   cash — vira parte do loan (financiado a 100%, sem entrada).
       valCash = hasOverride ? base : rehab;
-      valHm   = valCash;
+      valHm   = b.hm_includes_rehab ? 0 : valCash;
     } else {
       // Standard line: base × months
       valCash = base*mCash;
@@ -14355,7 +14361,7 @@ function calcBudgetClientView(b, scenario){
     isHM,
     purchase,
     hardMoney: isHM ? hmLoan : 0,
-    downPayment: isHM ? (purchase - hmLoan) : purchase,
+    downPayment: isHM ? Math.max(0, purchase - budgetHouseLoan(b)) : purchase,
     rehab,
     closingHM: isHM && hmLoan>0 ? 2250 : 0,
     clientInvested: invested,
@@ -14643,47 +14649,11 @@ function renderBudgetEditorModal(){
     const cleanName = line.name.replace(/<svg[^>]*>.*?<\/svg>/g, '').trim();
     // Auto-detect lock_to_hm_months para linhas antigas (que não têm salvo)
     const shouldLock = line.lock_to_hm_months || line.formula==='hm_interest' || cleanName.includes('Juros do Hard Money') || cleanName.includes('Água/Luz') || cleanName.includes('Corte de grama');
-    // Compute per-scenario values for display
-    const purchase=+b.purchase_price||0;
-    const arv=+b.arv||0;
-    const rehab=+b.rehab_estimate||0;
-    const hmDownPct=+b.hm_down_pct||0;
-    const hmInterestPct=+b.hm_interest_pct||0;
-    const hmPct=+b.hm_pct||0;
-    const hmLoan = budgetHmLoan(b);
-    const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
-    const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
-    const commPct = commAgentPct + commClosingPct;
+    // Valores por linha vêm da FONTE ÚNICA (calcBudgetSummary) — sem recalcular aqui
     const base=+line.base||0;
-    const mCash=shouldLock ? (+b.hm_months||6) : (+line.months_cash||1);
-    const mHm=shouldLock ? (+b.hm_months||6) : (+line.months_hm||1);
     const hasOverride = base > 0;
-    let valCash=0, valHm=0;
-    if(line.formula==='house_value'){
-      valCash = purchase;
-      valHm   = purchase;
-    } else if(line.formula==='down_cash'){
-      valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
-    } else if(line.formula==='hm_principal'){
-      valCash = 0;
-      valHm   = hasOverride ? base : hmLoan;
-    } else if(line.formula==='hm_interest'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
-    } else if(line.formula==='hm_down'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
-    } else if(line.formula==='commission_6'){
-      valCash = hasOverride ? base : (arv*commPct);
-      valHm   = valCash;
-    } else if(line.formula==='rehab'){
-      valCash = hasOverride ? base : rehab;
-      valHm   = valCash;
-    } else {
-      valCash = base*mCash;
-      valHm   = base*mHm;
-    }
+    const _lv = (calc.lineValues && calc.lineValues[idx]) || {valCash:0, valHm:0};
+    const valCash = _lv.valCash, valHm = _lv.valHm;
     const kindBadge=line.kind==='info'
       ?`<span style="display:inline-block;padding:2px 6px;background:#E8DDC9;color:#655A4E;border-radius:4px;font-size:9px;font-weight:700">INFO</span>`
       :line.kind==='closing'
@@ -14983,7 +14953,7 @@ function useFormulaValue(idx){
   const mHm=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_hm||1);
   let value=0;
   if(line.formula==='house_value')      value=purchase;
-  else if(line.formula==='down_cash')   value=hmLoan>0 ? Math.max(0, purchase-hmLoan) : purchase;
+  else if(line.formula==='down_cash')   value=hmLoan>0 ? Math.max(0, purchase-budgetHouseLoan(b)) : purchase;
   else if(line.formula==='hm_principal')value=hmLoan;
   else if(line.formula==='hm_interest') value=(hmLoan*hmInterestPct/12)*mHm;
   else if(line.formula==='hm_down')     value=hmLoan*hmDownPct;
@@ -15022,38 +14992,11 @@ function refreshBudgetLiveCalcs(){
       ? `= ${$$(hmLoan)} financiado${b.hm_includes_rehab?' (compra + rehab)':''}`
       : 'use 0 para 100% cash';
   }
-  // 2. Update per-line displayed values
+  // 2. Update per-line displayed values (FONTE ÚNICA — calcBudgetSummary)
+  const _sum=calcBudgetSummary(b);
   (b.cost_lines||[]).forEach((line,idx)=>{
-    const base=+line.base||0;
-    const mCash=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_cash||1);
-    const mHm=isLineLocked(line) ? (+b.hm_months||6) : (+line.months_hm||1);
-    const hasOverride = base > 0;
-    let valCash=0, valHm=0;
-    if(line.formula==='house_value'){
-      valCash = purchase;
-      valHm   = purchase;
-    } else if(line.formula==='down_cash'){
-      valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? base : Math.max(0, purchase-hmLoan);
-    } else if(line.formula==='hm_principal'){
-      valCash = 0;
-      valHm   = hasOverride ? base : hmLoan;
-    } else if(line.formula==='hm_interest'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
-    } else if(line.formula==='hm_down'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
-    } else if(line.formula==='commission_6'){
-      valCash = hasOverride ? base : (arv*commPct);
-      valHm   = valCash;
-    } else if(line.formula==='rehab'){
-      valCash = hasOverride ? base : rehab;
-      valHm   = valCash;
-    } else {
-      valCash = base*mCash;
-      valHm   = base*mHm;
-    }
+    const _lv=(_sum.lineValues && _sum.lineValues[idx]) || {valCash:0,valHm:0};
+    const valCash=_lv.valCash, valHm=_lv.valHm;
     const cashEl=document.getElementById('bm-line-cash-'+idx);
     const hmEl  =document.getElementById('bm-line-hm-'+idx);
     if(cashEl) cashEl.textContent=$$2(valCash);
@@ -15387,30 +15330,10 @@ function downloadBudgetExcel(){
   const commAgentPctX  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPctX= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commPctX = commAgentPctX + commClosingPctX;
-  b.cost_lines.forEach(line=>{
+  b.cost_lines.forEach((line,idx)=>{
     const base=+line.base||0, mCash=+line.months_cash||1, mHm=+line.months_hm||1;
-    const hasOverride = base > 0;
-    let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){
-      valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? Math.max(0, base-hmLoan) : Math.max(0, purchase-hmLoan);
-    } else if(line.formula==='hm_interest'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
-    } else if(line.formula==='hm_down'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
-    } else if(line.formula==='commission_6'){
-      valCash = hasOverride ? base : (arv*commPctX);
-      valHm   = valCash;
-    } else if(line.formula==='rehab'){
-      valCash = hasOverride ? base : rehab;
-      valHm   = valCash;
-    } else {
-      valCash = base*mCash;
-      valHm   = base*mHm;
-    }
-    r.push([line.name, line.kind==='closing'?'Closing':'Custo', base, mCash, valCash, mHm, valHm]);
+    const _lv=(calc.lineValues && calc.lineValues[idx]) || {valCash:0,valHm:0};
+    r.push([line.name, line.kind==='closing'?'Closing':(line.kind==='info'?'Info':'Custo'), base, mCash, _lv.valCash, mHm, _lv.valHm]);
   });
   r.push([]);
   r.push(['GROSS PROFIT (referência)','','','','','',calc.gross_profit]);
