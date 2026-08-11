@@ -14321,8 +14321,8 @@ function calcBudgetSummary(b){
   return {
     gross_profit:grossProfit,
     purchase, arv, rehab, hm_loan:hmLoan,
-    cash:{invested:cashInvested, profit:cashProfit, profit_pct:cashProfitPct, descontos_closing:cashDescontos, sale, dec_profit:cashProfit*BUDGET_DEC_PCT, client_profit:cashProfit*(1-BUDGET_DEC_PCT)},
-    hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan, dec_profit:hmProfit*BUDGET_DEC_PCT, client_profit:hmProfit*(1-BUDGET_DEC_PCT)},
+    cash:{invested:cashInvested, profit:cashProfit, profit_pct:cashProfitPct, descontos_closing:cashDescontos, sale, dec_profit:cashProfit*BUDGET_DEC_PCT, client_profit:cashProfit*(1-BUDGET_DEC_PCT), client_pct:cashInvested>0?(cashProfit*(1-BUDGET_DEC_PCT)/cashInvested*100):0},
+    hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan, dec_profit:hmProfit*BUDGET_DEC_PCT, client_profit:hmProfit*(1-BUDGET_DEC_PCT), client_pct:hmInvested>0?(hmProfit*(1-BUDGET_DEC_PCT)/hmInvested*100):0},
     dec_pct:BUDGET_DEC_PCT,
     lines, lineValues,
   };
@@ -14718,6 +14718,7 @@ function renderBudgetEditorModal(){
       </div>
       <div style="text-align:right">
         <div style="font-size:24px;font-weight:800;color:${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)>=0?'#5C7A3F':'#A02021'}" id="bm-gross-profit">${$fmt((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)}</div>
+        <div style="font-size:13px;font-weight:700;color:#5C7A3F;margin-top:1px" id="bm-client-pct">${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_pct).toFixed(1)}% sobre o que investiu</div>
         <div style="font-size:10px;color:#999;margin-top:2px">Gross profit (ref): ${$fmt(calc.gross_profit)}</div>
       </div>
     </div>
@@ -15023,9 +15024,10 @@ function refreshBudgetLiveCalcs(){
   const set=(id,val)=>{const e=document.getElementById(id);if(e) e.textContent=val;};
   set('bm-gross-profit',   $$(calc.gross_profit));
   // Color the gross profit
-  const _clRet=(b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit;
+  const _clScenX=(b.client_view_mode==='cash'?calc.cash:calc.hm);
   const grossEl=document.getElementById('bm-gross-profit');
-  if(grossEl){ grossEl.textContent=$$(_clRet); grossEl.style.color=_clRet>=0?'#5C7A3F':'#A02021'; }
+  if(grossEl){ grossEl.textContent=$$(_clScenX.client_profit); grossEl.style.color=_clScenX.client_profit>=0?'#5C7A3F':'#A02021'; }
+  set('bm-client-pct', `${_clScenX.client_pct.toFixed(1)}% sobre o que investiu`);
   set('bm-cash-invested',  $$(calc.cash.invested));
   set('bm-cash-descontos', $$(calc.cash.descontos_closing));
   set('bm-cash-sale',      $$(calc.cash.sale));
@@ -15264,7 +15266,7 @@ function generateBudgetPDF(){
   <table style="margin-bottom:14px">
     <tr style="background:#F2F4EC">
       <td style="padding:12px;font-weight:700;color:#5C7A3F;width:60%">🎯 Retorno real do cliente<br><span style="font-size:9px;color:#999;font-weight:500">Após todos os custos e a parte da DEC (${(calc.dec_pct*100).toFixed(0)}%) · cenário ${(b.client_view_mode==='cash')?'Cash':'Hard Money'} · Gross profit (ref): ${$$(calc.gross_profit)}</span></td>
-      <td style="padding:12px;text-align:right;font-weight:800;font-size:20px;color:${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)>=0?'#5C7A3F':'#A02021'}">${$$((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)}</td>
+      <td style="padding:12px;text-align:right"><div style="font-weight:800;font-size:20px;color:${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)>=0?'#5C7A3F':'#A02021'}">${$$((b.client_view_mode==='cash'?calc.cash:calc.hm).client_profit)}</div><div style="font-size:11px;font-weight:700;color:#5C7A3F;margin-top:2px">${((b.client_view_mode==='cash'?calc.cash:calc.hm).client_pct).toFixed(1)}% sobre o que investiu</div></td>
     </tr>
   </table>
 
