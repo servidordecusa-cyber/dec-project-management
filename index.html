@@ -14204,6 +14204,14 @@ function isLineLocked(line){
 //   - Cash out of pocket = (purchase - HM loan) + HM interest + HM down + rehab + opex
 //   - At closing: must repay HM principal + commission + closing items
 // Returns: { cash: {invested, profit, profit_pct, descontos_closing, sale}, hm: {...}, lines: [...] }
+// Base do HM Loan — fonte única. Se b.hm_includes_rehab=true, o loan também
+// financia o rehab (base = compra + rehab); senão, só a compra.
+function budgetHmLoan(b){
+  const purchase=+b.purchase_price||0, rehab=+b.rehab_estimate||0, hmPct=+b.hm_pct||0;
+  const base = purchase + (b.hm_includes_rehab ? rehab : 0);
+  return hmPct>0 ? (base*hmPct) : (+b.hm_loan_amount||0);
+}
+
 function calcBudgetSummary(b){
   const lines=b.cost_lines && b.cost_lines.length>0 ? b.cost_lines : BUDGET_DEFAULT_LINES;
   const purchase=+b.purchase_price||0;
@@ -14218,8 +14226,8 @@ function calcBudgetSummary(b){
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commissionPct = commAgentPct + commClosingPct;
-  // hm_loan_amount: prefer % when set; otherwise fall back to direct $ amount
-  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const hmLoan = budgetHmLoan(b);
+  const lineValues=[];   // valores por linha (fonte única p/ tela, PDF e Excel)
   // Accumulators
   let cashEmpresa=0;       // Cash scenario: total cash out of pocket
   let cashDescontos=0;     // Cash scenario: closing reductions
@@ -14269,6 +14277,8 @@ function calcBudgetSummary(b){
       valCash = base*mCash;
       valHm   = base*mHm;
     }
+    // Registra o valor da linha para exibição (tela/PDF/Excel usam isto)
+    lineValues.push({name:line.name, kind:line.kind, formula:line.formula||'', valCash, valHm});
     // INFO lines don't sum into totals (just informative)
     if(line.kind==='info') return;
     // hm_principal is shown as a "cost" line in the table for visibility but
@@ -14305,7 +14315,7 @@ function calcBudgetSummary(b){
     purchase, arv, rehab, hm_loan:hmLoan,
     cash:{invested:cashInvested, profit:cashProfit, profit_pct:cashProfitPct, descontos_closing:cashDescontos, sale},
     hm:  {invested:hmInvested, profit:hmProfit, profit_pct:hmProfitPct, descontos_closing:hmDescontos, sale, hm_loan:hmLoan},
-    lines,
+    lines, lineValues,
   };
 }
 
@@ -14328,7 +14338,7 @@ function calcBudgetClientView(b, scenario){
   const arv      = +b.arv || 0;
   const rehab    = +b.rehab_estimate || 0;
   const hmPct    = +b.hm_pct || 0;
-  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const hmLoan = budgetHmLoan(b);
   const commAgentPct   = b.commission_agent_pct   !=null ? +b.commission_agent_pct   : 0.05;
   const commClosingPct = b.commission_closing_pct !=null ? +b.commission_closing_pct : 0.01;
   const commissionPct  = commAgentPct + commClosingPct;
@@ -14640,7 +14650,7 @@ function renderBudgetEditorModal(){
     const hmDownPct=+b.hm_down_pct||0;
     const hmInterestPct=+b.hm_interest_pct||0;
     const hmPct=+b.hm_pct||0;
-    const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+    const hmLoan = budgetHmLoan(b);
     const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
     const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
     const commPct = commAgentPct + commClosingPct;
@@ -14835,7 +14845,11 @@ function renderBudgetEditorModal(){
             <div>
               <label style="font-size:10px;font-weight:700;color:#9B7535;display:block;margin-bottom:3px">% HM Loan</label>
               <input type="number" min="0" max="1" step="0.01" value="${b.hm_pct||''}" oninput="updateBudgetField('hm_pct',this.value)" placeholder="ex 0.70 = 70%" style="width:100%;padding:7px 10px;font-size:13px;border:1.5px solid #E6D599;border-radius:5px;outline:none;font-family:inherit;background:#FAF3E0">
-              <div id="bm-hm-hint" style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+(((+b.purchase_price||0)*(+b.hm_pct||0))).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
+              <div id="bm-hm-hint" style="font-size:10px;color:#999;margin-top:2px;font-style:italic">${(+b.hm_pct||0)>0?'= $'+budgetHmLoan(b).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+' financiado':'use 0 para 100% cash'}</div>
+              <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:#655A4E;margin-top:5px;cursor:pointer" title="Se marcado, o Hard Money financia também o rehab (base = compra + rehab), não só a compra.">
+                <input type="checkbox" ${b.hm_includes_rehab?'checked':''} onchange="updateBudgetField('hm_includes_rehab',this.checked)" style="width:14px;height:14px;accent-color:#9B7535">
+                Loan cobre o rehab também
+              </label>
             </div>
             <div>
               <label style="font-size:10px;font-weight:700;color:#9B7535;display:block;margin-bottom:3px">Meses HM</label>
@@ -14962,7 +14976,7 @@ function useFormulaValue(idx){
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
-  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const hmLoan = budgetHmLoan(b);
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commPct = commAgentPct + commClosingPct;
@@ -14995,7 +15009,7 @@ function refreshBudgetLiveCalcs(){
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
-  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const hmLoan = budgetHmLoan(b);
   const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
   const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
   const commPct = commAgentPct + commClosingPct;
@@ -15005,7 +15019,7 @@ function refreshBudgetLiveCalcs(){
   const hmHintEl=document.getElementById('bm-hm-hint');
   if(hmHintEl){
     hmHintEl.textContent = hmPct>0
-      ? `= ${$$(purchase*hmPct)} financiado`
+      ? `= ${$$(hmLoan)} financiado${b.hm_includes_rehab?' (compra + rehab)':''}`
       : 'use 0 para 100% cash';
   }
   // 2. Update per-line displayed values
@@ -15143,6 +15157,7 @@ async function saveBudget(){
     hm_interest_pct:+_bdgCurrent.hm_interest_pct||0,
     hm_loan_amount:+_bdgCurrent.hm_loan_amount||0,
     hm_pct:+_bdgCurrent.hm_pct||0,
+    hm_includes_rehab:_bdgCurrent.hm_includes_rehab===true,
     hm_closing_costs:+_bdgCurrent.hm_closing_costs||0,
     commission_agent_pct:_bdgCurrent.commission_agent_pct!=null?+_bdgCurrent.commission_agent_pct:0.05,
     commission_closing_pct:_bdgCurrent.commission_closing_pct!=null?+_bdgCurrent.commission_closing_pct:0.01,
@@ -15203,40 +15218,13 @@ function generateBudgetPDF(){
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
-  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
-  const commAgentPct  = b.commission_agent_pct  !=null ? +b.commission_agent_pct  : 0.05;
-  const commClosingPct= b.commission_closing_pct!=null ? +b.commission_closing_pct: 0.01;
-  const commPct = commAgentPct + commClosingPct;
-  const lineRows=b.cost_lines.map(line=>{
-    const base=+line.base||0, mCash=+line.months_cash||1, mHm=+line.months_hm||1;
-    const hasOverride = base > 0;
-    let valCash=0, valHm=0;
-    if(line.formula==='down_cash'){
-      valCash = hasOverride ? base : purchase;
-      valHm   = hasOverride ? Math.max(0, base-hmLoan) : Math.max(0, purchase-hmLoan);
-    } else if(line.formula==='hm_interest'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmInterestPct/12)*mHm;
-    } else if(line.formula==='hm_down'){
-      valCash = 0;
-      valHm   = hasOverride ? base : (hmLoan*hmDownPct);
-    } else if(line.formula==='commission_6'){
-      valCash = hasOverride ? base : (arv*commPct);
-      valHm   = valCash;
-    } else if(line.formula==='rehab'){
-      valCash = hasOverride ? base : rehab;
-      valHm   = valCash;
-    } else {
-      valCash = base*mCash;
-      valHm   = base*mHm;
-    }
-    return `<tr>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee">${line.name}</td>
-      <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999;font-size:10px">${line.kind==='closing'?'Closing':'Custo'}</td>
-      <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(valCash)}</td>
-      <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(valHm)}</td>
-    </tr>`;
-  }).join('');
+  const hmLoan = calc.hm_loan;   // fonte única (mesma da tela) — corrige divergência do PDF
+  const lineRows=calc.lineValues.map(lv=>`<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${lv.name}</td>
+      <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999;font-size:10px">${lv.kind==='closing'?'Closing':lv.kind==='info'?'Info':'Custo'}</td>
+      <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(lv.valCash)}</td>
+      <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(lv.valHm)}</td>
+    </tr>`).join('');
   const reportHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orçamento ${b.name}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
@@ -15370,7 +15358,7 @@ function downloadBudgetExcel(){
   const hmDownPct=+b.hm_down_pct||0;
   const hmInterestPct=+b.hm_interest_pct||0;
   const hmPct=+b.hm_pct||0;
-  const hmLoan = hmPct>0 ? (purchase*hmPct) : (+b.hm_loan_amount||0);
+  const hmLoan = budgetHmLoan(b);
   const r=[];
   r.push(['Orçamento de Viabilidade Pré-Projeto']);
   r.push([]);
