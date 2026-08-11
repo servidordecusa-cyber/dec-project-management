@@ -4677,29 +4677,49 @@ function openProject(id){
 
 // ═══ BUILD UI ═════════════════════════════════════════════════════════
 function buildBudgetRooms(){
-  ['est','act'].forEach(type=>{
-    const container=document.getElementById(type+'-rooms');
-    container.innerHTML='';
+  // ── ESTIMATE: lista única, sem fases ──────────────────────────────────
+  const estC=document.getElementById('est-rooms');
+  if(estC){
+    estC.innerHTML='';
+    const card=document.createElement('div');
+    card.className='broom-card';
+    card.innerHTML=`<table class="bitbl"><thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:110px">Supplier</th><th style="width:55px">Qty</th><th style="width:90px">Unit Cost ($)</th><th style="width:100px">Estimated Amount ($)</th><th style="width:110px">Notes</th><th style="width:40px"></th></tr></thead><tbody id="tb-est-all"></tbody></table>
+      <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('est')">+ Add Item</button>
+      </div>`;
+    estC.appendChild(card);
+    renderEstimateFlat();
+  }
+  // ── ACTUAL COSTS: mantém agrupado por fase ────────────────────────────
+  const actC=document.getElementById('act-rooms');
+  if(actC){
+    actC.innerHTML='';
     GROUPS.forEach(g=>{
-      const lbl=type==='est'?'Estimated Amount ($)':'Actual Spent ($)';
+      const lbl='Actual Spent ($)';
       const card=document.createElement('div');
       card.className='broom-card';
-      card.id='group-'+type+'-'+g.id;
-      // Header
-      const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-${type}-${g.id}">$0</span></div>`;
-      // Table header — Actual has extra 📎 column
-      const thead=type==='act'
-        ? `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:42px;text-align:center" title="Pago com Working Capital">💰 WC</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`
-        : `<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:110px">Supplier</th><th style="width:55px">Qty</th><th style="width:90px">Unit Cost ($)</th><th style="width:100px">${lbl}</th><th style="width:110px">Notes</th><th style="width:40px"></th></tr></thead>`;
-      card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-${type}-${g.id}"></tbody></table>
+      card.id='group-act-'+g.id;
+      const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-act-${g.id}">$0</span></div>`;
+      const thead=`<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:42px;text-align:center" title="Pago com Working Capital">💰 WC</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`;
+      card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-act-${g.id}"></tbody></table>
         <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('${type}','${g.id}')">+ Add Item</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('act','${g.id}')">+ Add Item</button>
         </div>`;
-      container.appendChild(card);
-      // Render current items
-      renderItems(type,g.id);
+      actC.appendChild(card);
+      renderItems('act',g.id);
     });
+  }
+  _updateEstGrandTotal();
+}
+// Estimate como lista única (junta os itens de todas as fases num só corpo)
+function renderEstimateFlat(){
+  const tb=document.getElementById('tb-est-all'); if(!tb) return;
+  let html=''; let n=0;
+  GROUPS.forEach(g=>{
+    ((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ html+=rowHTML('est',g.id,it.name,it.slug); n++; });
   });
+  tb.innerHTML = n ? html : `<tr><td colspan="8" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum item ainda — clique "+ Add Item" abaixo</td></tr>`;
+  GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>hydrateRow('est',g.id,it.slug)));
   _updateEstGrandTotal();
 }
 
@@ -4730,6 +4750,7 @@ function _updateCatSummaries(gid){
 }
 
 function renderItems(type,gid){
+  if(type==='est'){ renderEstimateFlat(); return; }
   const tb=document.getElementById('tb-'+type+'-'+gid);
   if(!tb) return;
   const items=(itemsMap[CID]||{})[gid]||[];
@@ -5007,8 +5028,9 @@ function hydrateRow(type,gid,islug){
 // ═══ DYNAMIC ITEMS — Add / Remove ═══════════════════════════════════════
 let _addItemCtx={gid:null};
 function addItem(type,gid){
-  _addItemCtx={gid};
-  document.getElementById('add-item-phase-label').textContent=GROUPS.find(g=>g.id===gid)?.name||'';
+  if(type==='est' && !gid) gid=(GROUPS[0]&&GROUPS[0].id)||'ph1';
+  _addItemCtx={gid,type};
+  document.getElementById('add-item-phase-label').textContent = type==='est' ? 'Estimate' : (GROUPS.find(g=>g.id===gid)?.name||'');
   const inp=document.getElementById('add-item-name');
   inp.value='';
   document.getElementById('modal-add-item').classList.add('open');
