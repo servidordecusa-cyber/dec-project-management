@@ -10233,6 +10233,9 @@ function renderInvoices(){
       </td>
     </tr>`;
   }).join('');
+  const _ivTotal=list.reduce((s,i)=>s+(+i.amount||0),0);
+  tbody.innerHTML += `<tr style="background:#3D271A;color:#D5C9BC"><td colspan="5" style="padding:11px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Total do filtro (${list.length} invoice${list.length===1?'':'s'})</td><td style="padding:11px 12px;text-align:right;font-weight:800;font-size:14px">${fmt(_ivTotal)}</td><td colspan="2"></td></tr>`;
+  document.getElementById('iv-count').textContent='— '+list.length+' invoice(s) · Total '+fmt(_ivTotal);
 }
 
 function _invoiceById(id){return invoices.find(i=>i.id===id);}
@@ -11104,6 +11107,11 @@ function _showInvoiceDoc(inv, client, items){
   const docLabel=kind==='refund'?`REFUND #${inv.invoice_number}`
     :kind==='final_roi'?`INVOICE #${inv.invoice_number} — FINAL ROI`
     :`INVOICE #${inv.invoice_number}`;
+  const kindLabel=kind==='refund'?'Refund (REF)'
+    :kind==='final_roi'?'Final ROI'
+    :kind==='third_party_asset_manager'?'Third Party Asset Manager (TPAM)'
+    :kind==='working_capital'?'Working Capital (WC)'
+    :'Operational (OP)';
   const html=`<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>${kind==='refund'?'Refund':'Invoice'} #${inv.invoice_number}</title>
 <style>
@@ -11171,6 +11179,7 @@ function _showInvoiceDoc(inv, client, items){
     </div>
     <div class="h-right">
       <div class="inv-num-lbl">${docLabel}</div>
+      <div style="font-size:11px;color:#655A4E;margin:4px 0 6px">Categoria: <strong style="color:#3D271A">${kindLabel}</strong></div>
       <div class="inv-date">${invDateStr}</div>
       <div class="total-box">
         <div class="lbl">TOTAL</div>
