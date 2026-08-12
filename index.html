@@ -1632,6 +1632,14 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="paid">Paid</option>
           <option value="cancelled">Cancelled</option>
         </select>
+        <select id="iv-flt-kind" onchange="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
+          <option value="">Todas as categorias</option>
+          <option value="operational">Operational (OP)</option>
+          <option value="final_roi">Final ROI</option>
+          <option value="refund">Refund (REF)</option>
+          <option value="third_party_asset_manager">Third Party (TPAM)</option>
+          <option value="working_capital">Working Capital (WC)</option>
+        </select>
         <input id="iv-search" type="text" placeholder="🔍 Search..." oninput="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
         <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openInvoiceModal()">+ New Invoice</button>
       </div>
@@ -1930,6 +1938,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <div class="fg" id="vdm-expiry-wrap" style="display:none"><label>Insurance expiration</label>
         <input id="vdm-expiry" type="date" style="font-size:12px">
       </div>
+      <button class="btn btn-ghost" id="vdm-ai-btn" style="padding:8px 14px;font-size:13px;display:none;border:1.5px solid #9B7535;color:#9B7535" onclick="readCoiWithAI()" title="A IA lê o certificado e preenche a validade sozinha">🤖 Ler validade com IA</button>
       <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="uploadVendorDoc()">⬆ Upload</button>
     </div>
     <div id="vdm-progress" style="font-size:12px;color:var(--gray3);margin-bottom:10px;display:none"></div>
@@ -5629,6 +5638,23 @@ async function viewVendorNoteFile() {
   window.open(data.signedUrl, '_blank');
 }
 
+// Retorna {date, days} se a apólice de seguro MAIS RECENTE do vendor está vencida; senão null.
+function _vendorInsuranceExpired(vid){
+  const docs=(vendorDocs[vid]||[]).filter(d=>d.doc_type==='insurance'&&d.expiration_date);
+  if(!docs.length) return null;
+  let latest=docs[0];
+  docs.forEach(d=>{ if(String(d.expiration_date)>String(latest.expiration_date)) latest=d; });
+  const days=Math.floor((new Date(latest.expiration_date+'T00:00:00')-new Date())/86400000);
+  return days<0 ? {date:latest.expiration_date, days} : null;
+}
+// Aviso (não bloqueia) ao lançar nota de vendor com seguro vencido. Retorna false se a CEO cancelar.
+function _confirmInsuranceOnLaunch(vid){
+  const ins=_vendorInsuranceExpired(vid);
+  if(!ins) return true;
+  const dstr=new Date(ins.date+'T00:00:00').toLocaleDateString('pt-BR');
+  return confirm(`⚠ ATENÇÃO: o seguro deste fornecedor está VENCIDO desde ${dstr} (há ${Math.abs(ins.days)} dias).\n\nDeseja lançar a nota mesmo assim?`);
+}
+
 async function approveVendorNote() {
   if (!_vnCurrent || !CID || !isCEO()) return;
 
@@ -5656,6 +5682,7 @@ async function approveVendorNote() {
     toast('Selecione um fornecedor cadastrado antes de lançar a nota', false);
     return;
   }
+  if (!_confirmInsuranceOnLaunch(vendorId)) return;
 
   // ─── DUPLICATE DETECTION ───────────────────────────────────────────
   // (1) por VALOR + FORNECEDOR (quando há fornecedor identificado)
@@ -5817,6 +5844,7 @@ async function approveVendorNoteItemized(){
   const vendorName = vendorId ? (vendors.find(v => v.id === vendorId) || {}).name || '' : '';
   const paidFromWC = !!document.getElementById('vn-paid-from-wc').checked;
   if (!vendorId) { toast('Selecione um fornecedor cadastrado antes de lançar a nota', false); return; }
+  if (!_confirmInsuranceOnLaunch(vendorId)) return;
 
   const lines = _vnLines
     .map(l => ({ gid:(l.group_id||'').trim(), category:(l.category||'').trim(), itemName:(l.item_name||'').trim(), amount:+l.amount||0, notes:(l.notes||'').trim() }))
@@ -10192,8 +10220,10 @@ function renderInvoices(){
   if(!tbody) return;
   const q=(document.getElementById('iv-search')?.value||'').toLowerCase().trim();
   const statusFlt=document.getElementById('iv-flt-status')?.value||'';
+  const kindFlt=document.getElementById('iv-flt-kind')?.value||'';
   let list=invoices.slice();
   if(statusFlt) list=list.filter(i=>i.status===statusFlt);
+  if(kindFlt) list=list.filter(i=>((i.kind||'operational').toLowerCase())===kindFlt);
   if(q){
     list=list.filter(i=>{
       const cName=(_clientById(i.client_id)?.name||'').toLowerCase();
@@ -12163,6 +12193,7 @@ function openVendorDocsModal(vendorId,docType){
   document.getElementById('vdm-subtitle').textContent=docType==='contract'?'Contracts signed with this vendor':'Active insurance policies';
   // Show/hide expiration date field (only for insurance)
   document.getElementById('vdm-expiry-wrap').style.display=docType==='insurance'?'block':'none';
+  document.getElementById('vdm-ai-btn').style.display=docType==='insurance'?'inline-flex':'none';
   document.getElementById('vdm-file').value='';
   document.getElementById('vdm-expiry').value='';
   document.getElementById('vdm-progress').style.display='none';
@@ -12208,6 +12239,53 @@ function renderVendorDocsList(vendorId,docType){
       <button onclick="deleteVendorDoc('${d.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
     </div>`;
   }).join('');
+}
+
+// Lê o Certificate of Insurance (COI) com IA e preenche a validade automaticamente.
+// Reaproveita a Edge Function process-vendor-note (mode:'coi'). Não sobe o arquivo —
+// só preenche a data; a CEO revisa e clica em Upload pra salvar.
+async function readCoiWithAI(){
+  if(!isCEO()) return;
+  const fileEl=document.getElementById('vdm-file');
+  const file=fileEl.files[0];
+  if(!file){toast('Selecione o arquivo do COI primeiro',false);return;}
+  if(file.size>10*1024*1024){toast('Arquivo maior que 10MB',false);return;}
+  const prog=document.getElementById('vdm-progress');
+  const btn=document.getElementById('vdm-ai-btn');
+  prog.style.display='block';
+  prog.textContent='🤖 Lendo o certificado com IA...';
+  if(btn){btn.disabled=true;btn.textContent='⏳ Lendo...';}
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const token=(session&&session.access_token)||SKEY;
+    const fileBase64=await _fileToBase64(file);
+    const resp=await fetch(VN_EDGE_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},
+      body:JSON.stringify({file_base64:fileBase64,file_type:file.type,mode:'coi'}),
+    });
+    const out=await resp.json();
+    if(!resp.ok||!out.success){throw new Error(out.message||out.error||('HTTP '+resp.status));}
+    const d=out.data||{};
+    if(d.expiration_date){
+      document.getElementById('vdm-expiry').value=d.expiration_date;
+      const covs=(d.coverages||[]).map(c=>c&&c.type).filter(Boolean);
+      const warn=(d.confidence_warnings||[]);
+      let msg='✅ Validade lida: '+d.expiration_date;
+      if(d.insured_name) msg+=' · segurado: '+d.insured_name;
+      if(covs.length) msg+=' · coberturas: '+covs.join(', ');
+      if(warn.length) msg+=' · ⚠ '+warn.join('; ');
+      msg+='  — confira e clique em ⬆ Upload pra salvar.';
+      prog.textContent=msg;
+    } else {
+      prog.textContent='⚠ Não consegui ler a validade — preencha manualmente. '+((d.confidence_warnings||[]).join('; '));
+    }
+  }catch(e){
+    console.error('coi read',e);
+    prog.textContent='⚠ Erro ao ler o COI: '+e.message+' — se disser "Invalid mode", a função process-vendor-note ainda não foi atualizada com o modo coi.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🤖 Ler validade com IA';}
+  }
 }
 
 async function uploadVendorDoc(){
