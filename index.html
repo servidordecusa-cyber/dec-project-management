@@ -5135,24 +5135,19 @@ function buildBudgetRooms(){
     estC.appendChild(card);
     renderEstimateFlat();
   }
-  // ── ACTUAL COSTS: mantém agrupado por fase ────────────────────────────
+  // ── ACTUAL COSTS: lista única (sem fases), agrupada só por categoria ───
   const actC=document.getElementById('act-rooms');
   if(actC){
     actC.innerHTML='';
-    GROUPS.forEach(g=>{
-      const lbl='Actual Spent ($)';
-      const card=document.createElement('div');
-      card.className='broom-card';
-      card.id='group-act-'+g.id;
-      const hdr=`<div class="brc-hdr" style="background:${g.color}"><span>${g.name}</span><span class="brc-tot" id="brt-act-${g.id}">$0</span></div>`;
-      const thead=`<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">${lbl}</th><th style="width:100px">Notes</th><th style="width:42px;text-align:center" title="Pago com Working Capital">💰 WC</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`;
-      card.innerHTML=hdr+`<table class="bitbl">${thead}<tbody id="tb-act-${g.id}"></tbody></table>
-        <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('act','${g.id}')">+ Add Item</button>
-        </div>`;
-      actC.appendChild(card);
-      renderItems('act',g.id);
-    });
+    const card=document.createElement('div');
+    card.className='broom-card';
+    const thead=`<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">Actual Spent ($)</th><th style="width:100px">Notes</th><th style="width:42px;text-align:center" title="Pago com Working Capital">💰 WC</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`;
+    card.innerHTML=`<table class="bitbl">${thead}<tbody id="tb-act-all"></tbody></table>
+      <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('act')">+ Add Item</button>
+      </div>`;
+    actC.appendChild(card);
+    renderActualFlat();
   }
   _updateEstGrandTotal();
 }
@@ -5207,19 +5202,60 @@ function toggleCat(gid, catKey){
   if(hint) hint.textContent=on?'clique p/ recolher':'clique p/ ver itens';
 }
 
-function _updateCatSummaries(gid){
-  const bm=(budgetMap[CID]||{})[gid]||{};
-  const items=(itemsMap[CID]||{})[gid]||[];
+function _updateCatSummaries(){
+  // Lista única: recalcula os subtotais por categoria somando TODAS as fases
   const byCat={};
-  items.forEach(it=>{ const c=((bm[it.slug]||{}).category)||''; (byCat[c]=byCat[c]||[]).push(it); });
-  Object.keys(byCat).forEach(cv=>{
-    const el=document.getElementById('catsum-'+gid+'-'+(cv||'none'));
-    if(el) el.textContent=fmt(byCat[cv].reduce((s,it)=>s+(+((bm[it.slug]||{}).actual)||0),0));
+  GROUPS.forEach(g=>{
+    const bm=(budgetMap[CID]||{})[g.id]||{};
+    ((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ const c=((bm[it.slug]||{}).category)||''; (byCat[c]=byCat[c]||[]).push(+((bm[it.slug]||{}).actual)||0); });
   });
+  Object.keys(byCat).forEach(cv=>{
+    const el=document.getElementById('catsum-all-'+(cv||'none'));
+    if(el) el.textContent=fmt(byCat[cv].reduce((s,v)=>s+v,0));
+  });
+}
+
+// Actual Costs como lista única: junta itens de todas as fases, agrupa por categoria
+function renderActualFlat(){
+  const tb=document.getElementById('tb-act-all'); if(!tb) return;
+  const all=[];
+  GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>all.push({gid:g.id,it})));
+  if(all.length===0){
+    tb.innerHTML=`<tr><td colspan="10" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
+    return;
+  }
+  const byCat={};
+  all.forEach(x=>{ const bm=(budgetMap[CID]||{})[x.gid]||{}; const c=((bm[x.it.slug]||{}).category)||''; (byCat[c]=byCat[c]||[]).push(x); });
+  const orderedKeys=CAT_DEFS.map(d=>d[0]).filter(k=>byCat[k]&&byCat[k].length);
+  Object.keys(byCat).forEach(k=>{ if(!CAT_DEFS.some(d=>d[0]===k)) orderedKeys.push(k); });
+  let html='';
+  orderedKeys.forEach(cv=>{
+    const list=byCat[cv]; if(!list||!list.length) return;
+    const label=((CAT_DEFS.find(d=>d[0]===cv)||[])[1]) || (cv||'Sem categoria');
+    const catKey=cv||'none';
+    const total=list.reduce((s,x)=>{ const bm=(budgetMap[CID]||{})[x.gid]||{}; return s+(+((bm[x.it.slug]||{}).actual)||0); },0);
+    const expanded=!!_catExpanded['all|'+catKey];
+    html+=`<tr class="cat-sum" onclick="toggleCat('all','${catKey}')" style="cursor:pointer;background:#F3EDE3;border-top:2px solid #E8DDC9">
+      <td style="padding:11px 12px;font-weight:800;color:#3D271A;font-size:13px"><span id="cat-caret-all-${catKey}" style="display:inline-block;width:14px;color:#9B7535">${expanded?'▾':'▸'}</span>${label} <span style="color:#999;font-weight:500;font-size:11px">· ${list.length} ${list.length===1?'item':'itens'}</span></td>
+      <td colspan="4"></td>
+      <td style="padding:11px 10px;text-align:right;font-weight:800;color:#9B7535;font-size:13px" id="catsum-all-${catKey}">${fmt(total)}</td>
+      <td colspan="4" style="text-align:right;padding-right:12px"><span id="cat-hint-all-${catKey}" style="color:#bbb;font-size:10px">${expanded?'clique p/ recolher':'clique p/ ver itens'}</span></td>
+    </tr>`;
+    list.forEach(x=>{
+      let rh=rowHTML('act',x.gid,x.it.name,x.it.slug);
+      rh=rh.replace('<tr id="row-act-'+x.gid+'-'+x.it.slug+'">',
+        '<tr id="row-act-'+x.gid+'-'+x.it.slug+'" class="cat-item catgrp-all-'+catKey+'" style="display:'+(expanded?'':'none')+'">');
+      html+=rh;
+    });
+  });
+  tb.innerHTML=html;
+  all.forEach(x=>hydrateRow('act',x.gid,x.it.slug));
+  if(_actVendorFilter) _applyActVendorFilter();
 }
 
 function renderItems(type,gid){
   if(type==='est'){ renderEstimateFlat(); return; }
+  if(type==='act'){ renderActualFlat(); return; }
   const tb=document.getElementById('tb-'+type+'-'+gid);
   if(!tb) return;
   const items=(itemsMap[CID]||{})[gid]||[];
@@ -5497,9 +5533,9 @@ function hydrateRow(type,gid,islug){
 // ═══ DYNAMIC ITEMS — Add / Remove ═══════════════════════════════════════
 let _addItemCtx={gid:null};
 function addItem(type,gid){
-  if(type==='est' && !gid) gid=(GROUPS[0]&&GROUPS[0].id)||'ph1';
+  if(!gid) gid=(GROUPS[0]&&GROUPS[0].id)||'ph1';
   _addItemCtx={gid,type};
-  document.getElementById('add-item-phase-label').textContent = type==='est' ? 'Estimate' : (GROUPS.find(g=>g.id===gid)?.name||'');
+  document.getElementById('add-item-phase-label').textContent = type==='est' ? 'Estimate' : 'Actual Costs';
   const inp=document.getElementById('add-item-name');
   inp.value='';
   document.getElementById('modal-add-item').classList.add('open');
