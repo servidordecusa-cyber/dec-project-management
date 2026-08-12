@@ -4573,7 +4573,18 @@ async function readStatementPDF(){
       line.fingerprint=_finFingerprint(accId,line);
       line.dup=seen.has(line.fingerprint);
       _finClassifyLine(line);
-      if(line.direction==='out'){ const _m=_finActualAmt[line.amount.toFixed(2)]; if(_m&&_m.length) line._dupActual=_m[0]; }
+      // Casamento com Actual Costs (por valor): puxa projeto/fornecedor/categoria e sinaliza possível duplicado
+      if(line.direction==='out'){
+        const _m=_finActualAmt[line.amount.toFixed(2)];
+        if(_m&&_m.length){
+          const mm=_m[0]; line._dupActual=mm;
+          if(mm.project_id) line.project_id=mm.project_id;
+          if(mm.actual_supplier && (vendors||[]).some(v=>v.id===mm.actual_supplier)) line.vendor_id=mm.actual_supplier;
+          const _fc={material:'COGS-MAT',labor:'COGS-LAB',material_labor:'COGS-LAB'}[(mm.category||'').toLowerCase()];
+          if(_fc){ const c=finCatByCode(_fc); if(c) line.category_id=c.id; }
+          line.classified_by='match';
+        }
+      }
       if(line.dup) line.status='ignored';
       return line;
     });
@@ -4607,7 +4618,7 @@ function renderFinReview(){
   const warn=(_finImport.warnings||[]).length?`<div style="font-size:11px;color:#9A3B27;margin-top:6px">⚠ ${(_finImport.warnings||[]).join('; ')}</div>`:'';
   const rows=L.map((l,i)=>{
     const uncat=!l.category_id||l.category_id===(finCatByCode('UNCAT')||{}).id;
-    const badge=l.classified_by==='rule'?'<span title="regra" style="color:#5C7A3F">●</span>':l.classified_by==='ai'?'<span title="IA" style="color:#9B7535">●</span>':l.classified_by==='manual'?'<span title="manual" style="color:#3D6BA5">●</span>':'<span style="color:#ccc">●</span>';
+    const badge=l.classified_by==='match'?'<span title="casado com lançamento do Actual Costs" style="color:#2D7D5F">◆</span>':l.classified_by==='rule'?'<span title="regra" style="color:#5C7A3F">●</span>':l.classified_by==='ai'?'<span title="IA" style="color:#9B7535">●</span>':l.classified_by==='manual'?'<span title="manual" style="color:#3D6BA5">●</span>':'<span style="color:#ccc">●</span>';
     const rowbg=l.dup?'background:#FBECEC;opacity:.7':(l._dupActual?'background:#FFF1E0':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':'')));
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowbg}">
       <td style="padding:6px 8px;text-align:center">${badge}</td>
@@ -4642,7 +4653,7 @@ function renderFinReview(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <div style="font-size:10px;color:var(--gray3);margin-top:8px">● verde = regra · ● dourado = IA · ● azul = você · fundo amarelo = "a classificar" · fundo roxo = transferência · fundo vermelho = já importado. 📌 cria regra pra próxima importação.</div>
+    <div style="font-size:10px;color:var(--gray3);margin-top:8px">◆ verde = casado c/ Actual Costs · ● verde = regra · ● dourado = IA · ● azul = você · fundo laranja = possível duplicado do Actual Costs · fundo amarelo = "a classificar" · fundo roxo = transferência · fundo vermelho = já importado. 📌 cria regra pra próxima importação.</div>
   </div>`;
 }
 
