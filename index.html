@@ -4421,6 +4421,14 @@ async function loadFinTx(){
 }
 function _finLedgerFilter(field,val){ if(field==='acc')_finLedgerAcc=val; else _finLedgerMonth=val; renderFinLedger(); }
 function _finPickAccount(id){ _finLedgerAcc=(id===_finLedgerAcc?'':id); _finLedgerMonth=''; _renderLivros(); const el=document.getElementById('fin-ledger'); if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),60); }
+// Índice dos custos reais (actual costs) por VALOR — pra sinalizar possível duplicidade na importação
+let _finActuals=[], _finActualAmt={};
+async function loadFinActuals(){
+  try{ const {data}=await fetchAllRows('budget_items',{build:q=>q.gt('actual',0)}); _finActuals=data||[]; }
+  catch(e){ console.warn('loadFinActuals',e); _finActuals=[]; }
+  _finActualAmt={};
+  _finActuals.forEach(r=>{ const k=(Math.round((+r.actual||0)*100)/100).toFixed(2); (_finActualAmt[k]=_finActualAmt[k]||[]).push(r); });
+}
 function _finAccName(id){const a=finAccounts.find(x=>x.id===id);return a?(a.name||'—'):'—';}
 function _finCatName(id){const c=finCategories.find(x=>x.id===id);return c?(c.name||'—'):'<span style="color:#B85450">a classificar</span>';}
 function _finProjName(id){const p=(projects||[]).find(x=>x.id===id);return p?(p.name||'—'):'—';}
@@ -4482,7 +4490,7 @@ function _finDeleteTx(id){
   });
 }
 
-function renderLivros(){ Promise.all([loadFinData(),loadFinTx()]).then(_renderLivros); }
+function renderLivros(){ Promise.all([loadFinData(),loadFinTx(),loadFinActuals()]).then(_renderLivros); }
 function _renderLivros(){
   const root=document.getElementById('livros-root'); if(!root) return;
   const _accChip=(id,label,icon)=>{const on=id===_finLedgerAcc;return `<span onclick="_finPickAccount('${id}')" title="Clique para ver os lançamentos desta conta por mês" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:${on?'#3D271A':'#FAF7F3'};color:${on?'#fff':'#3D271A'};border:1px solid ${on?'#3D271A':'#E8DDC9'};border-radius:20px;font-size:12px;margin:3px;font-weight:${on?'700':'500'}">${icon} ${label}</span>`;};
@@ -4565,6 +4573,7 @@ async function readStatementPDF(){
       line.fingerprint=_finFingerprint(accId,line);
       line.dup=seen.has(line.fingerprint);
       _finClassifyLine(line);
+      if(line.direction==='out'){ const _m=_finActualAmt[line.amount.toFixed(2)]; if(_m&&_m.length) line._dupActual=_m[0]; }
       if(line.dup) line.status='ignored';
       return line;
     });
@@ -4591,6 +4600,7 @@ function renderFinReview(){
   const L=_finImport.lines;
   const toPost=L.filter(l=>l.status==='confirmed'&&!l.dup);
   const dups=L.filter(l=>l.dup).length;
+  const dupActCount=L.filter(l=>l._dupActual&&!l.dup).length;
   const sumOut=toPost.filter(l=>l.direction==='out').reduce((s,l)=>s+l.amount,0);
   const sumIn=toPost.filter(l=>l.direction==='in').reduce((s,l)=>s+l.amount,0);
   const rep=_finImport.reported||{};
@@ -4598,11 +4608,11 @@ function renderFinReview(){
   const rows=L.map((l,i)=>{
     const uncat=!l.category_id||l.category_id===(finCatByCode('UNCAT')||{}).id;
     const badge=l.classified_by==='rule'?'<span title="regra" style="color:#5C7A3F">●</span>':l.classified_by==='ai'?'<span title="IA" style="color:#9B7535">●</span>':l.classified_by==='manual'?'<span title="manual" style="color:#3D6BA5">●</span>':'<span style="color:#ccc">●</span>';
-    const rowbg=l.dup?'background:#FBECEC;opacity:.7':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':''));
+    const rowbg=l.dup?'background:#FBECEC;opacity:.7':(l._dupActual?'background:#FFF1E0':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':'')));
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowbg}">
       <td style="padding:6px 8px;text-align:center">${badge}</td>
       <td style="padding:6px 8px;white-space:nowrap;font-size:11px">${l.date}${l.dup?'<div style="font-size:9px;color:#B85450;font-weight:700">já importado</div>':''}</td>
-      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}</td>
+      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')}</div>`:''}</td>
       <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:700;color:${l.direction==='in'?'#2D7D5F':'#3D271A'}">${l.direction==='in'?'+':'−'}${fmt(l.amount)}</td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'category_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:150px">${_finCatOptions(l.category_id)}</select></td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'project_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:140px">${_finProjOptions(l.project_id)}</select></td>
@@ -4617,6 +4627,7 @@ function renderFinReview(){
       <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="postFinImport()">✓ Postar ${toPost.length} transações</button>
     </div>
     <div style="font-size:12px;color:#655A4E;margin-bottom:8px">A postar: saídas <strong style="color:#3D271A">${fmt(sumOut)}</strong> · entradas <strong style="color:#2D7D5F">${fmt(sumIn)}</strong>${(rep.out!=null||rep.in!=null)?` <span style="color:var(--gray3)">· extrato reportou: saídas ${rep.out!=null?fmt(rep.out):'?'} / entradas ${rep.in!=null?fmt(rep.in):'?'}</span>`:''}${warn}</div>
+    ${dupActCount?`<div style="font-size:12px;color:#8a3b12;background:#FFF1E0;border:1px solid #F0C9A0;border-radius:6px;padding:9px 12px;margin-bottom:10px">⚠ <strong>${dupActCount}</strong> linha(s) batem em valor com lançamentos que já estão no <strong>Actual Costs</strong> (destacadas em laranja). Confira se são as mesmas e remova pra não duplicar. <button onclick="_finIgnoreDupActuals()" style="margin-left:6px;background:#8a3b12;color:#fff;border:0;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700">🚫 Ignorar essas ${dupActCount}</button></div>`:''}
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
       <thead><tr style="background:#FAF7F3">
         <th style="padding:6px 8px;font-size:10px"></th>
@@ -4635,6 +4646,7 @@ function renderFinReview(){
   </div>`;
 }
 
+async function _finIgnoreDupActuals(){ if(!_finImport) return; _finImport.lines.forEach(l=>{ if(l._dupActual&&!l.dup) l.status='ignored'; }); renderFinReview(); toast('Possíveis duplicados marcados como ignorados',true); }
 async function _finLearnRule(i){
   if(!_finImport||!_finImport.lines[i]) return;
   const l=_finImport.lines[i];
