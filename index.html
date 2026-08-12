@@ -378,6 +378,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg></span>Financial</button>
   <button class="gtab" data-view="livros" onclick="goView('livros')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>Livros</button>
   <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg></span>DRE</button>
+  <button class="gtab" data-view="fluxo" onclick="goView('fluxo')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></svg></span>Fluxo de Caixa</button>
   <button class="gtab" data-view="working-capital" onclick="goView('working-capital')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Working Capital</button>
 </div>
 
@@ -1668,6 +1669,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- LIVROS CAIXA (importar extrato → classificar → postar) -->
 <div id="view-livros" style="padding:26px;display:none">
   <div id="livros-root"></div>
+</div>
+
+<!-- FLUXO DE CAIXA (Resumo Anual: categoria × mês) -->
+<div id="view-fluxo" style="padding:26px;display:none">
+  <div id="fluxo-root"></div>
 </div>
 
 <!-- FIXED COSTS -->
@@ -4298,19 +4304,19 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','financial','livros','working-capital','dre','budgets'];
+const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','financial','livros','fluxo','working-capital','dre','budgets'];
 
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','livros','working-capital','dre','budgets'];
+  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','livros','fluxo','working-capital','dre','budgets'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-working-capital','view-dre','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -4337,6 +4343,7 @@ function goView(view){
   else if(view==='fixed' && isCEO()) renderFixedCosts();
   else if(view==='financial' && isCEO()) renderFinancial();
   else if(view==='livros' && isCEO()) renderLivros();
+  else if(view==='fluxo' && isCEO()) renderFluxo();
   else if(view==='working-capital' && isCEO()) renderWorkingCapitalCashFlow();
   else if(view==='dre' && isCEO()) renderDRE();
   else if(view==='budgets' && isCEO()) renderBudgets();
@@ -4393,7 +4400,6 @@ function _finClassifyLine(line){
       if(r.project_id) line.project_id=r.project_id;
       if(r.vendor_id) line.vendor_id=r.vendor_id;
       line.classified_by='rule';
-      if((finCategories.find(c=>c.id===r.category_id)||{}).grp==='transfer') line.is_transfer=true;
       return;
     }
   }
@@ -4405,20 +4411,26 @@ function _finClassifyLine(line){
 }
 
 let finTx=[];
+let _finLedgerAcc='', _finLedgerMonth='';
 async function loadFinTx(){
-  const r=await sb.from('fin_transactions').select('*').order('txn_date',{ascending:false}).limit(500);
+  const r=await sb.from('fin_transactions').select('*').order('txn_date',{ascending:false}).limit(2000);
   finTx=r.data||[];
 }
+function _finLedgerFilter(field,val){ if(field==='acc')_finLedgerAcc=val; else _finLedgerMonth=val; renderFinLedger(); }
 function _finAccName(id){const a=finAccounts.find(x=>x.id===id);return a?(a.name||'—'):'—';}
 function _finCatName(id){const c=finCategories.find(x=>x.id===id);return c?(c.name||'—'):'<span style="color:#B85450">a classificar</span>';}
 function _finProjName(id){const p=(projects||[]).find(x=>x.id===id);return p?(p.name||'—'):'—';}
 function renderFinLedger(){
   const el=document.getElementById('fin-ledger'); if(!el) return;
   if(!finTx.length){ el.innerHTML=`<div class="card"><div style="padding:18px;text-align:center;color:var(--gray3);font-size:13px;font-style:italic">Nenhuma transação lançada ainda. Importe um extrato acima e clique em Postar.</div></div>`; return; }
+  const monthsSet=[...new Set(finTx.map(t=>(t.txn_date||'').slice(0,7)).filter(Boolean))].sort().reverse();
+  let list=finTx.filter(t=>(!_finLedgerAcc||t.account_id===_finLedgerAcc)&&(!_finLedgerMonth||(t.txn_date||'').slice(0,7)===_finLedgerMonth));
+  const accSel='<select onchange="_finLedgerFilter(\'acc\',this.value)" style="font-size:11px;padding:5px 7px;border:1.5px solid var(--gray2);border-radius:6px;outline:none"><option value="">Todas as contas</option>'+finAccounts.map(a=>`<option value="${a.id}"${a.id===_finLedgerAcc?' selected':''}>${_finAccName(a.id)}</option>`).join('')+'</select>';
+  const monSel='<select onchange="_finLedgerFilter(\'mon\',this.value)" style="font-size:11px;padding:5px 7px;border:1.5px solid var(--gray2);border-radius:6px;outline:none"><option value="">Todos os meses</option>'+monthsSet.map(m=>`<option value="${m}"${m===_finLedgerMonth?' selected':''}>${m}</option>`).join('')+'</select>';
   const bal={};
-  finTx.forEach(t=>{ const s=(t.direction==='in'?1:-1)*(+t.amount||0); bal[t.account_id]=(bal[t.account_id]||0)+s; });
+  list.forEach(t=>{ const s=(t.direction==='in'?1:-1)*(+t.amount||0); bal[t.account_id]=(bal[t.account_id]||0)+s; });
   const chips=Object.keys(bal).map(aid=>`<span style="display:inline-flex;gap:6px;align-items:center;padding:5px 10px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:8px;font-size:12px;margin:3px"><strong>${_finAccName(aid)}</strong> <span style="color:${bal[aid]>=0?'#2D7D5F':'#B85450'};font-weight:700">${fmt(bal[aid])}</span></span>`).join('');
-  const rows=finTx.slice(0,300).map(t=>`<tr style="border-bottom:1px solid #F0EAE2${t.is_transfer?';background:#F3EFFA':''}">
+  const rows=list.slice(0,300).map(t=>`<tr style="border-bottom:1px solid #F0EAE2${t.is_transfer?';background:#F3EFFA':''}">
     <td style="padding:6px 8px;font-size:11px;white-space:nowrap">${t.txn_date}</td>
     <td style="padding:6px 8px;font-size:11px">${_finAccName(t.account_id)}</td>
     <td style="padding:6px 8px;font-size:11px;max-width:220px">${(t.description||'').replace(/</g,'&lt;')}${t.is_transfer?' <span style="font-size:9px;color:#5B3B8C">↔ transf.</span>':''}</td>
@@ -4428,7 +4440,10 @@ function renderFinLedger(){
     <td style="padding:6px 8px;text-align:center"><button onclick="_finDeleteTx('${t.id}')" title="Remover" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1);font-size:11px;padding:3px 6px">🗑</button></td>
   </tr>`).join('');
   el.innerHTML=`<div class="card">
-    <div class="card-title" style="border:0;padding:0;margin-bottom:8px">📄 Transações lançadas <span style="font-weight:500;color:var(--gray3);font-size:12px">— ${finTx.length}</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+      <div class="card-title" style="border:0;padding:0;margin:0">📄 Transações lançadas <span style="font-weight:500;color:var(--gray3);font-size:12px">— ${list.length}${(_finLedgerAcc||_finLedgerMonth)?' (filtrado)':''}</span></div>
+      <div style="display:flex;gap:8px">${accSel}${monSel}</div>
+    </div>
     <div style="margin-bottom:10px">${chips}</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:800px">
       <thead><tr style="background:#FAF7F3">
@@ -4440,7 +4455,7 @@ function renderFinLedger(){
         <th style="padding:6px 8px;text-align:right;font-size:10px">Valor</th>
         <th style="padding:6px 8px;font-size:10px"></th>
       </tr></thead><tbody>${rows}</tbody></table></div>
-    ${finTx.length>300?'<div style="font-size:11px;color:var(--gray3);margin-top:6px">Mostrando as 300 mais recentes.</div>':''}
+    ${list.length>300?'<div style="font-size:11px;color:var(--gray3);margin-top:6px">Mostrando as 300 mais recentes.</div>':''}
   </div>`;
 }
 function _finDeleteTx(id){
@@ -4635,6 +4650,70 @@ async function postFinImport(){
   toast(`✓ ${rows.length} transações postadas`+(nUncat?` (${nUncat} ainda "a classificar")`:''),true);
   _finImport=null;
   renderLivros();
+}
+
+// ═══ FLUXO DE CAIXA — Resumo Anual (categoria × mês) ══════════════════════
+let _fluxoYear=(new Date()).getFullYear();
+function _fluxoSetYear(v){ _fluxoYear=parseInt(v)||_fluxoYear; renderFluxo(); }
+async function renderFluxo(){
+  await loadFinData();
+  const root=document.getElementById('fluxo-root'); if(!root) return;
+  root.innerHTML='<div style="padding:40px;text-align:center;color:var(--gray3)">Carregando…</div>';
+  const y=_fluxoYear;
+  const r=await sb.from('fin_transactions').select('*').gte('txn_date',y+'-01-01').lte('txn_date',y+'-12-31').eq('is_transfer',false).limit(5000);
+  const tx=r.data||[];
+  const monN=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const catName=cid=>cid?((finCategories.find(c=>c.id===cid)||{}).name||'(?)'):'(sem categoria)';
+  const catSort=cid=>((finCategories.find(c=>c.id===cid)||{}).sort||9999);
+  const pivot=dir=>{ const map={}; tx.filter(t=>t.direction===dir).forEach(t=>{ const mi=(+((t.txn_date||'').slice(5,7)))-1; if(mi<0||mi>11) return; const cid=t.category_id||''; (map[cid]=map[cid]||Array(12).fill(0))[mi]+=(+t.amount||0); }); return map; };
+  const rec=pivot('in'), desp=pivot('out');
+  const dash='<span style="color:#ccc">–</span>';
+  const m2=n=>{ n=+n||0; if(Math.abs(n)<0.005) return dash; const s='$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); return n<0?('-'+s):s; };
+  const cell='padding:9px 12px;text-align:right;font-size:12px;border-bottom:1px solid #EFE7D8;white-space:nowrap';
+  const cellCat='padding:9px 14px;text-align:left;font-size:12px;border-bottom:1px solid #EFE7D8';
+  const bandRow=label=>`<tr style="background:#EDE4D3"><td colspan="14" style="padding:7px 14px;font-size:11px;font-weight:800;letter-spacing:.5px;color:#7A5A28;text-transform:uppercase">${label}</td></tr>`;
+  const catRows=map=>Object.keys(map).sort((a,b)=>catSort(a)-catSort(b)).map(cid=>{ const arr=map[cid]; const tot=arr.reduce((s,v)=>s+v,0); return `<tr><td style="${cellCat}">${catName(cid)}</td>`+arr.map(v=>`<td style="${cell}">${m2(v)}</td>`).join('')+`<td style="${cell};font-weight:800;background:#FBF8F2">${m2(tot)}</td></tr>`; }).join('');
+  const totRec=Array(12).fill(0), totDesp=Array(12).fill(0);
+  Object.values(rec).forEach(a=>a.forEach((v,i)=>totRec[i]+=v));
+  Object.values(desp).forEach(a=>a.forEach((v,i)=>totDesp[i]+=v));
+  const totalRow=(label,arr,color)=>`<tr style="background:#F7F1E6"><td style="${cellCat};font-weight:800;color:${color}">${label}</td>`+arr.map(v=>`<td style="${cell};font-weight:800;color:${color}">${m2(v)}</td>`).join('')+`<td style="${cell};font-weight:800;color:${color};background:#F1E8D6">${m2(arr.reduce((s,v)=>s+v,0))}</td></tr>`;
+  const saldo=monN.map((_,i)=>totRec[i]-totDesp[i]);
+  const grSaldo=saldo.reduce((s,v)=>s+v,0);
+  const th='padding:9px 12px;text-align:right;font-size:11px;font-weight:700;color:#EFE3CC;white-space:nowrap';
+  root.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:800;letter-spacing:2px;color:#8A7B68;text-transform:uppercase">Resumo Anual — Fluxo de Caixa</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <label style="font-size:11px;color:#8A7B68">ANO</label>
+        <input type="number" value="${y}" onchange="_fluxoSetYear(this.value)" style="width:90px;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;font-weight:700;text-align:center;outline:none">
+        <button onclick="_fluxoExport()" class="btn btn-primary" style="font-size:12px;padding:7px 14px">↓ Exportar PDF</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto" id="fluxo-table-wrap">
+      <table style="width:100%;border-collapse:collapse;min-width:1100px">
+        <thead><tr style="background:#3D271A">
+          <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:#EFE3CC">CATEGORIA</th>
+          ${monN.map(m=>`<th style="${th}">${m}</th>`).join('')}
+          <th style="${th};background:#2E1D12">TOTAL</th>
+        </tr></thead>
+        <tbody>
+          ${bandRow('▸ Receitas')}
+          ${catRows(rec)||`<tr><td colspan="14" style="${cellCat};color:#bbb;font-style:italic">Sem receitas lançadas em ${y}</td></tr>`}
+          ${totalRow('Total Receitas',totRec,'#5C7A3F')}
+          ${bandRow('▸ Despesas')}
+          ${catRows(desp)||`<tr><td colspan="14" style="${cellCat};color:#bbb;font-style:italic">Sem despesas lançadas em ${y}</td></tr>`}
+          ${totalRow('Total Despesas',totDesp,'#B03A2E')}
+          <tr style="background:#F1E8D6;border-top:2px solid #3D271A"><td style="${cellCat};font-weight:800;color:#3D271A">Saldo</td>${saldo.map(v=>`<td style="${cell};font-weight:800;color:${v>=0?'#2D7D5F':'#B03A2E'}">${m2(v)}</td>`).join('')}<td style="${cell};font-weight:800;color:${grSaldo>=0?'#2D7D5F':'#B03A2E'};background:#E8DCC4">${m2(grSaldo)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--gray3);margin-top:8px">Transferências internas (pagamento de fatura) ficam de fora. Aportes, empréstimo e dinheiro em trânsito aparecem como movimento de caixa. Puxa direto das transações lançadas nos Livros.</div>`;
+}
+function _fluxoExport(){
+  const wrap=document.getElementById('fluxo-table-wrap'); if(!wrap) return;
+  const w=window.open('','_blank'); if(!w){toast('Permita pop-ups para exportar',false);return;}
+  w.document.write('<html><head><title>Fluxo de Caixa '+_fluxoYear+'</title><style>body{font-family:-apple-system,Arial,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}@page{size:landscape}</style></head><body><h3>DEC Group USA — Fluxo de Caixa '+_fluxoYear+'</h3>'+wrap.innerHTML+'</body></html>');
+  w.document.close(); setTimeout(()=>{w.print();},350);
 }
 
 // ═══ PORTFOLIO ════════════════════════════════════════════════════════
@@ -4973,7 +5052,7 @@ function openProject(id){
   const p=projects.find(x=>x.id===id);
   if(!p) return;
   // Hide ALL global views
-  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-dre','view-working-capital','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-fluxo','view-dre','view-working-capital','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
