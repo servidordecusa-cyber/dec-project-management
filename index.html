@@ -4574,11 +4574,16 @@ async function readStatementPDF(){
       line.fingerprint=_finFingerprint(accId,line);
       line.dup=seen.has(line.fingerprint);
       _finClassifyLine(line);
-      // Casamento com Actual Costs (por valor): puxa projeto/fornecedor/categoria e sinaliza possível duplicado
-      if(line.direction==='out'){
-        const _m=_finActualAmt[line.amount.toFixed(2)];
-        if(_m&&_m.length){
-          const mm=_m[0]; line._dupActual=mm;
+      // Detecção de duplicidade (por valor, com tolerância de 1 centavo)
+      if(line.direction==='out' && !line.dup){
+        const TOL=0.02;
+        // (a) Já LANÇADO no livro (mesma conta, mesmo valor) — de um extrato anterior
+        const _post=(finTx||[]).find(t=>t.direction==='out' && t.account_id===accId && Math.abs((+t.amount||0)-line.amount)<=TOL);
+        if(_post) line._dupPosted=_post;
+        // (b) Já no ACTUAL COSTS (mesmo valor, qualquer projeto) → puxa projeto/fornecedor/categoria
+        const mm=(_finActuals||[]).find(r=>Math.abs((+r.actual||0)-line.amount)<=TOL);
+        if(mm){
+          line._dupActual=mm;
           const _att=(((attachMap[mm.project_id]||{})[mm.room_id]||{})[mm.item_slug])||[];
           if(_att.length) line._dupNotaPath=_att[0].storage_path;
           if(mm.project_id) line.project_id=mm.project_id;
@@ -4614,7 +4619,7 @@ function renderFinReview(){
   const L=_finImport.lines;
   const toPost=L.filter(l=>l.status==='confirmed'&&!l.dup);
   const dups=L.filter(l=>l.dup).length;
-  const dupActCount=L.filter(l=>l._dupActual&&!l.dup).length;
+  const dupActCount=L.filter(l=>(l._dupActual||l._dupPosted)&&!l.dup).length;
   const sumOut=toPost.filter(l=>l.direction==='out').reduce((s,l)=>s+l.amount,0);
   const sumIn=toPost.filter(l=>l.direction==='in').reduce((s,l)=>s+l.amount,0);
   const rep=_finImport.reported||{};
@@ -4622,11 +4627,11 @@ function renderFinReview(){
   const rows=L.map((l,i)=>{
     const uncat=!l.category_id||l.category_id===(finCatByCode('UNCAT')||{}).id;
     const badge=l.classified_by==='match'?'<span title="casado com lançamento do Actual Costs" style="color:#2D7D5F">◆</span>':l.classified_by==='rule'?'<span title="regra" style="color:#5C7A3F">●</span>':l.classified_by==='ai'?'<span title="IA" style="color:#9B7535">●</span>':l.classified_by==='manual'?'<span title="manual" style="color:#3D6BA5">●</span>':'<span style="color:#ccc">●</span>';
-    const rowbg=l.dup?'background:#FBECEC;opacity:.7':(l._dupActual?'background:#FFF1E0':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':'')));
+    const rowbg=l.dup?'background:#FBECEC;opacity:.7':((l._dupActual||l._dupPosted)?'background:#FFF1E0':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':'')));
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowbg}">
       <td style="padding:6px 8px;text-align:center">${badge}</td>
       <td style="padding:6px 8px;white-space:nowrap;font-size:11px">${l.date}${l.dup?'<div style="font-size:9px;color:#B85450;font-weight:700">já importado</div>':''}</td>
-      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')} · ${fmtc(l._dupActual.actual)}${l._dupNotaPath?` <a href="javascript:void(0)" onclick="_openNotaPath('${(l._dupNotaPath||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline">abrir nota →</a>`:' <span style="color:#c9a">(sem PDF)</span>'}</div>`:''}</td>
+      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')} · ${fmtc(l._dupActual.actual)}${l._dupNotaPath?` <a href="javascript:void(0)" onclick="_openNotaPath('${(l._dupNotaPath||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline">abrir nota →</a>`:' <span style="color:#c9a">(sem PDF)</span>'}</div>`:''}${l._dupPosted?`<div style="font-size:9px;color:#8a3b12;font-weight:700">⚠ já lançado no livro em ${l._dupPosted.txn_date} (${_finAccName(l._dupPosted.account_id).replace(/</g,'&lt;')})</div>`:''}</td>
       <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:700;color:${l.direction==='in'?'#2D7D5F':'#3D271A'}">${l.direction==='in'?'+':'−'}${fmtc(l.amount)}</td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'category_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:150px">${_finCatOptions(l.category_id)}</select></td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'project_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:140px">${_finProjOptions(l.project_id)}</select></td>
@@ -4641,7 +4646,7 @@ function renderFinReview(){
       <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="postFinImport()">✓ Postar ${toPost.length} transações</button>
     </div>
     <div style="font-size:12px;color:#655A4E;margin-bottom:8px">A postar: saídas <strong style="color:#3D271A">${fmtc(sumOut)}</strong> · entradas <strong style="color:#2D7D5F">${fmtc(sumIn)}</strong>${(rep.out!=null||rep.in!=null)?` <span style="color:var(--gray3)">· extrato reportou: saídas ${rep.out!=null?fmtc(rep.out):'?'} / entradas ${rep.in!=null?fmtc(rep.in):'?'}</span>`:''}${warn}</div>
-    ${dupActCount?`<div style="font-size:12px;color:#8a3b12;background:#FFF1E0;border:1px solid #F0C9A0;border-radius:6px;padding:9px 12px;margin-bottom:10px">⚠ <strong>${dupActCount}</strong> linha(s) batem em valor com lançamentos que já estão no <strong>Actual Costs</strong> (destacadas em laranja). Confira se são as mesmas e remova pra não duplicar. <button onclick="_finIgnoreDupActuals()" style="margin-left:6px;background:#8a3b12;color:#fff;border:0;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700">🚫 Ignorar essas ${dupActCount}</button></div>`:''}
+    ${dupActCount?`<div style="font-size:12px;color:#8a3b12;background:#FFF1E0;border:1px solid #F0C9A0;border-radius:6px;padding:9px 12px;margin-bottom:10px">⚠ <strong>${dupActCount}</strong> linha(s) batem em valor com algo já lançado — no <strong>livro</strong> (extrato anterior) ou no <strong>Actual Costs</strong> (destacadas em laranja). Confira se são as mesmas e remova pra não duplicar. <button onclick="_finIgnoreDupActuals()" style="margin-left:6px;background:#8a3b12;color:#fff;border:0;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700">🚫 Ignorar essas ${dupActCount}</button></div>`:''}
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
       <thead><tr style="background:#FAF7F3">
         <th style="padding:6px 8px;font-size:10px"></th>
@@ -4660,7 +4665,7 @@ function renderFinReview(){
   </div>`;
 }
 
-async function _finIgnoreDupActuals(){ if(!_finImport) return; _finImport.lines.forEach(l=>{ if(l._dupActual&&!l.dup) l.status='ignored'; }); renderFinReview(); toast('Possíveis duplicados marcados como ignorados',true); }
+async function _finIgnoreDupActuals(){ if(!_finImport) return; _finImport.lines.forEach(l=>{ if((l._dupActual||l._dupPosted)&&!l.dup) l.status='ignored'; }); renderFinReview(); toast('Possíveis duplicados marcados como ignorados',true); }
 async function _finLearnRule(i){
   if(!_finImport||!_finImport.lines[i]) return;
   const l=_finImport.lines[i];
