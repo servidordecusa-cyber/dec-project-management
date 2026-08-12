@@ -376,6 +376,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <button class="gtab" data-view="invoices" onclick="goView('invoices')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span>Invoices</button>
   <button class="gtab" data-view="fixed" onclick="goView('fixed')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>Costs</button>
   <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg></span>Financial</button>
+  <button class="gtab" data-view="livros" onclick="goView('livros')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>Livros</button>
   <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg></span>DRE</button>
   <button class="gtab" data-view="working-capital" onclick="goView('working-capital')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Working Capital</button>
 </div>
@@ -1662,6 +1663,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       </table>
     </div>
   </div>
+</div>
+
+<!-- LIVROS CAIXA (importar extrato → classificar → postar) -->
+<div id="view-livros" style="padding:26px;display:none">
+  <div id="livros-root"></div>
 </div>
 
 <!-- FIXED COSTS -->
@@ -4292,19 +4298,19 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','financial','working-capital','dre','budgets'];
+const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','financial','livros','working-capital','dre','budgets'];
 
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','working-capital','dre','budgets'];
+  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','livros','working-capital','dre','budgets'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-working-capital','view-dre','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-working-capital','view-dre','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -4330,6 +4336,7 @@ function goView(view){
   else if(view==='invoices' && isCEO()) renderInvoices();
   else if(view==='fixed' && isCEO()) renderFixedCosts();
   else if(view==='financial' && isCEO()) renderFinancial();
+  else if(view==='livros' && isCEO()) renderLivros();
   else if(view==='working-capital' && isCEO()) renderWorkingCapitalCashFlow();
   else if(view==='dre' && isCEO()) renderDRE();
   else if(view==='budgets' && isCEO()) renderBudgets();
@@ -4338,6 +4345,248 @@ function goView(view){
 
 // Back-compat alias (the old code calls goPortfolio in many places)
 function goPortfolio(){goView('portfolio');}
+
+// ═══ LIVROS CAIXA — importação de extrato (PDF) + classificação + posting ════
+let finAccounts=[], finCategories=[], finRules=[], _finLoaded=false;
+let _finImport=null; // {account, period, filename, lines:[...], warnings, reported}
+
+async function loadFinData(force){
+  if(_finLoaded && !force) return;
+  const [a,c,r]=await Promise.all([
+    sb.from('fin_accounts').select('*').order('sort'),
+    sb.from('fin_categories').select('*').order('sort'),
+    sb.from('fin_rules').select('*').eq('active',true).order('priority'),
+  ]);
+  finAccounts=a.data||[]; finCategories=c.data||[]; finRules=r.data||[];
+  _finLoaded=true;
+}
+function finCatByCode(code){ return finCategories.find(c=>c.code===code); }
+function _finCatOptions(sel){
+  const g={cogs:'Custo de obra',overhead:'Overhead',revenue:'Receita',transfer:'Transferência',other:'Outros'};
+  let html='<option value="">— categoria —</option>';
+  ['cogs','overhead','revenue','transfer','other'].forEach(k=>{
+    const cs=finCategories.filter(c=>c.grp===k&&c.active);
+    if(!cs.length) return;
+    html+=`<optgroup label="${g[k]}">`+cs.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${(c.name||'').replace(/</g,'&lt;')}</option>`).join('')+'</optgroup>';
+  });
+  return html;
+}
+function _finProjOptions(sel){
+  return '<option value="">Overhead (sem projeto)</option>'+(projects||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${(p.name||'').replace(/</g,'&lt;')}</option>`).join('');
+}
+function _finVendorOptions(sel){
+  return '<option value="">— fornecedor —</option>'+(vendors||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(v=>`<option value="${v.id}"${v.id===sel?' selected':''}>${(v.name||'').replace(/</g,'&lt;')}</option>`).join('');
+}
+function _finFingerprint(accId,l){
+  return [accId,l.date,(+l.amount||0).toFixed(2),l.direction,(l.description||'').toLowerCase().replace(/\s+/g,' ').trim()].join('|');
+}
+// Classifica uma linha: 1) regras aprendidas → 2) heurísticas embutidas → 3) "A classificar"
+function _finClassifyLine(line){
+  const d=(line.description||'').toUpperCase();
+  for(const r of finRules){
+    let hit=false;
+    if(r.match_type==='equals') hit=d.trim()===(r.pattern||'').toUpperCase().trim();
+    else if(r.match_type==='regex'){ try{hit=new RegExp(r.pattern,'i').test(line.description||'');}catch(e){hit=false;} }
+    else hit=d.includes((r.pattern||'').toUpperCase());
+    if(hit && (!r.direction || r.direction===line.direction)){
+      if(r.category_id) line.category_id=r.category_id;
+      if(r.project_id) line.project_id=r.project_id;
+      if(r.vendor_id) line.vendor_id=r.vendor_id;
+      line.classified_by='rule';
+      if((finCategories.find(c=>c.id===r.category_id)||{}).grp==='transfer') line.is_transfer=true;
+      return;
+    }
+  }
+  const isPay=/PAYMENT|THANK YOU|AUTOPAY|ONLINE PAYMENT|E-PAYMENT|\bPMT\b|ELECTRONIC PAYMENT/.test(d);
+  if(isPay && line.direction==='in'){ line.is_transfer=true; line.category_id=(finCatByCode('TRANSFER')||{}).id||''; line.classified_by='rule'; return; }
+  if(/HOME DEPOT|LOWE'?S|FLOOR & DECOR|SHERWIN|FERGUSON|MENARDS|LUMBER|ACE HARDWARE|HARBOR FREIGHT/.test(d)){ line.category_id=(finCatByCode('COGS-MAT')||{}).id||''; line.classified_by='ai'; return; }
+  if(/INTEREST CHARGE|FINANCE CHARGE|ANNUAL FEE|LATE FEE|MEMBERSHIP FEE/.test(d)){ line.category_id=(finCatByCode('OH-CCFEE')||{}).id||''; line.classified_by='ai'; return; }
+  line.category_id=line.category_id||(finCatByCode('UNCAT')||{}).id||'';
+}
+
+function renderLivros(){ loadFinData().then(_renderLivros); }
+function _renderLivros(){
+  const root=document.getElementById('livros-root'); if(!root) return;
+  const accRows=finAccounts.length? finAccounts.map(a=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:20px;font-size:12px;margin:3px">${a.kind==='bank'?'🏦':'💳'} ${(a.name||'').replace(/</g,'&lt;')}${a.last4?' ·'+a.last4:''}</span>`).join('')
+    : '<span style="font-size:12px;color:var(--gray3);font-style:italic">Nenhuma conta ainda — cadastre as 20 cartões + banco abaixo (ou pelo template SQL).</span>';
+  const accOpts=finAccounts.map(a=>`<option value="${a.id}">${(a.kind==='bank'?'🏦 ':'💳 ')+(a.name||'').replace(/</g,'&lt;')}</option>`).join('');
+  root.innerHTML=`
+    <div class="card-title">📒 Livros Caixa — importação de extratos</div>
+    <div style="color:var(--gray3);font-size:13px;margin-bottom:16px">Suba o PDF do extrato de cada conta; a IA lê as linhas, classifica o que dá e você revisa antes de postar. Reimportar o mesmo extrato não duplica.</div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-weight:700;color:#3D271A;font-size:13px;margin-bottom:8px">Contas (${finAccounts.length})</div>
+      <div style="margin-bottom:10px">${accRows}</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding-top:10px;border-top:1px dashed var(--gray2)">
+        <div class="fg" style="margin:0"><label style="font-size:11px">Nova conta</label><input id="fin-acc-name" placeholder="ex: Amex Business 1234" style="font-size:12px;padding:6px 8px"></div>
+        <div class="fg" style="margin:0"><label style="font-size:11px">Tipo</label>
+          <select id="fin-acc-kind" style="font-size:12px;padding:6px 8px"><option value="credit_card">💳 Cartão</option><option value="bank">🏦 Banco</option></select>
+        </div>
+        <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="addFinAccount()">+ Adicionar conta</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-weight:700;color:#3D271A;font-size:13px;margin-bottom:10px">Importar extrato (PDF)</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="fg" style="margin:0;min-width:220px"><label style="font-size:11px">Conta</label>
+          <select id="fin-imp-account" style="font-size:12px;padding:7px 8px">${accOpts||'<option value="">— cadastre uma conta —</option>'}</select>
+        </div>
+        <div class="fg" style="margin:0"><label style="font-size:11px">Arquivo do extrato</label>
+          <input type="file" id="fin-imp-file" accept=".pdf,.png,.jpg,.jpeg" style="font-size:12px">
+        </div>
+        <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="readStatementPDF()">🤖 Ler extrato</button>
+      </div>
+      <div id="fin-imp-status" style="display:none;font-size:12px;color:#655A4E;margin-top:10px;padding:8px 12px;background:#FAF7F3;border-radius:6px"></div>
+    </div>
+
+    <div id="fin-review"></div>`;
+  if(_finImport) renderFinReview();
+}
+
+async function addFinAccount(){
+  if(!isCEO()) return;
+  const name=(document.getElementById('fin-acc-name').value||'').trim();
+  const kind=document.getElementById('fin-acc-kind').value;
+  if(!name){toast('Informe o nome da conta',false);return;}
+  const ins=await sb.from('fin_accounts').insert({name,kind,sort:finAccounts.length}).select().single();
+  if(ins.error){console.error(ins.error);toast('Erro: '+ins.error.message,false);return;}
+  finAccounts.push(ins.data);
+  _renderLivros();
+}
+
+async function readStatementPDF(){
+  if(!isCEO()) return;
+  const accId=document.getElementById('fin-imp-account')?.value;
+  const fileEl=document.getElementById('fin-imp-file');
+  const file=fileEl&&fileEl.files[0];
+  if(!accId){toast('Escolha a conta',false);return;}
+  if(!file){toast('Selecione o PDF do extrato',false);return;}
+  if(file.size>15*1024*1024){toast('Arquivo maior que 15MB',false);return;}
+  const acc=finAccounts.find(a=>a.id===accId);
+  const st=document.getElementById('fin-imp-status');
+  st.style.display='block'; st.textContent='🤖 Lendo o extrato... extratos grandes podem levar ~30s.';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const token=(session&&session.access_token)||SKEY;
+    const b64=await _fileToBase64(file);
+    const resp=await fetch(VN_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},body:JSON.stringify({file_base64:b64,file_type:file.type,mode:'statement',account_kind:acc.kind})});
+    const out=await resp.json();
+    if(!resp.ok||!out.success) throw new Error(out.message||out.error||('HTTP '+resp.status));
+    const data=out.data||{};
+    let raw=(data.lines||[]).filter(l=>l&&l.date&&(+l.amount>0));
+    // dedup contra o que já foi importado nessa conta
+    const existing=await sb.from('fin_transactions').select('fingerprint').eq('account_id',accId);
+    const seen=new Set((existing.data||[]).map(x=>x.fingerprint));
+    const lines=raw.map(l=>{
+      const line={date:l.date,post_date:l.post_date||null,description:l.description||'',amount:Math.round((+l.amount||0)*100)/100,direction:(l.direction==='in'?'in':'out'),category_id:'',project_id:'',vendor_id:'',is_transfer:false,classified_by:null,status:'confirmed'};
+      line.fingerprint=_finFingerprint(accId,line);
+      line.dup=seen.has(line.fingerprint);
+      _finClassifyLine(line);
+      if(line.dup) line.status='ignored';
+      return line;
+    });
+    _finImport={account:acc,period:data.period||'',filename:file.name,lines,warnings:data.confidence_warnings||[],reported:{out:data.reported_total_out,in:data.reported_total_in}};
+    st.style.display='none';
+    renderFinReview();
+  }catch(e){
+    console.error('statement read',e);
+    st.textContent='⚠ Erro ao ler: '+e.message+' — se disser "Invalid mode", a função process-vendor-note ainda não foi atualizada com o modo statement.';
+  }
+}
+
+function _finSet(i,field,val){
+  if(!_finImport||!_finImport.lines[i]) return;
+  const l=_finImport.lines[i];
+  if(field==='is_transfer'){ l.is_transfer=val; if(val){ l.category_id=(finCatByCode('TRANSFER')||{}).id||''; } l.classified_by='manual'; renderFinReview(); return; }
+  if(field==='status'){ l.status=val; renderFinReview(); return; }
+  l[field]=val; l.classified_by='manual';
+  renderFinReview();
+}
+
+function renderFinReview(){
+  const wrap=document.getElementById('fin-review'); if(!wrap||!_finImport) return;
+  const L=_finImport.lines;
+  const toPost=L.filter(l=>l.status==='confirmed'&&!l.dup);
+  const dups=L.filter(l=>l.dup).length;
+  const sumOut=toPost.filter(l=>l.direction==='out').reduce((s,l)=>s+l.amount,0);
+  const sumIn=toPost.filter(l=>l.direction==='in').reduce((s,l)=>s+l.amount,0);
+  const rep=_finImport.reported||{};
+  const warn=(_finImport.warnings||[]).length?`<div style="font-size:11px;color:#9A3B27;margin-top:6px">⚠ ${(_finImport.warnings||[]).join('; ')}</div>`:'';
+  const rows=L.map((l,i)=>{
+    const uncat=!l.category_id||l.category_id===(finCatByCode('UNCAT')||{}).id;
+    const badge=l.classified_by==='rule'?'<span title="regra" style="color:#5C7A3F">●</span>':l.classified_by==='ai'?'<span title="IA" style="color:#9B7535">●</span>':l.classified_by==='manual'?'<span title="manual" style="color:#3D6BA5">●</span>':'<span style="color:#ccc">●</span>';
+    const rowbg=l.dup?'background:#FBECEC;opacity:.7':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':''));
+    return `<tr style="border-bottom:1px solid #F0EAE2;${rowbg}">
+      <td style="padding:6px 8px;text-align:center">${badge}</td>
+      <td style="padding:6px 8px;white-space:nowrap;font-size:11px">${l.date}${l.dup?'<div style="font-size:9px;color:#B85450;font-weight:700">já importado</div>':''}</td>
+      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}</td>
+      <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:700;color:${l.direction==='in'?'#2D7D5F':'#3D271A'}">${l.direction==='in'?'+':'−'}${fmt(l.amount)}</td>
+      <td style="padding:6px 6px"><select onchange="_finSet(${i},'category_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:150px">${_finCatOptions(l.category_id)}</select></td>
+      <td style="padding:6px 6px"><select onchange="_finSet(${i},'project_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:140px">${_finProjOptions(l.project_id)}</select></td>
+      <td style="padding:6px 6px"><select onchange="_finSet(${i},'vendor_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:130px">${_finVendorOptions(l.vendor_id)}</select></td>
+      <td style="padding:6px 6px;text-align:center"><input type="checkbox" ${l.is_transfer?'checked':''} onchange="_finSet(${i},'is_transfer',this.checked)" title="Transferência (fora de caixa-despesa e DRE)"></td>
+      <td style="padding:6px 6px;text-align:center">${l.dup?'—':`<button onclick="_finLearnRule(${i})" title="Criar regra a partir desta linha" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;padding:3px 6px">📌</button> <button onclick="_finSet(${i},'status','${l.status==='confirmed'?'ignored':'confirmed'}')" title="${l.status==='confirmed'?'Ignorar':'Incluir'}" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;font-size:11px;padding:3px 6px">${l.status==='confirmed'?'🚫':'↩'}</button>`}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+      <div style="font-weight:800;color:#3D271A">${(_finImport.account.name||'').replace(/</g,'&lt;')} · ${_finImport.period||'período ?'} <span style="font-weight:500;color:var(--gray3);font-size:12px">— ${L.length} linhas${dups?` · ${dups} já importadas (ignoradas)`:''}</span></div>
+      <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="postFinImport()">✓ Postar ${toPost.length} transações</button>
+    </div>
+    <div style="font-size:12px;color:#655A4E;margin-bottom:8px">A postar: saídas <strong style="color:#3D271A">${fmt(sumOut)}</strong> · entradas <strong style="color:#2D7D5F">${fmt(sumIn)}</strong>${(rep.out!=null||rep.in!=null)?` <span style="color:var(--gray3)">· extrato reportou: saídas ${rep.out!=null?fmt(rep.out):'?'} / entradas ${rep.in!=null?fmt(rep.in):'?'}</span>`:''}${warn}</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
+      <thead><tr style="background:#FAF7F3">
+        <th style="padding:6px 8px;font-size:10px"></th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px">Data</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px">Descrição</th>
+        <th style="padding:6px 8px;text-align:right;font-size:10px">Valor</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px">Categoria</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px">Projeto</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px">Fornecedor</th>
+        <th style="padding:6px 8px;font-size:10px" title="Transferência">↔</th>
+        <th style="padding:6px 8px;font-size:10px"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div style="font-size:10px;color:var(--gray3);margin-top:8px">● verde = regra · ● dourado = IA · ● azul = você · fundo amarelo = "a classificar" · fundo roxo = transferência · fundo vermelho = já importado. 📌 cria regra pra próxima importação.</div>
+  </div>`;
+}
+
+async function _finLearnRule(i){
+  if(!_finImport||!_finImport.lines[i]) return;
+  const l=_finImport.lines[i];
+  if(!l.category_id){toast('Classifique a categoria antes de criar a regra',false);return;}
+  const suggested=(l.description||'').toUpperCase().replace(/\s{2,}/g,' ').trim().slice(0,22);
+  const pattern=prompt('Criar regra: classificar automaticamente quando a descrição CONTIVER:', suggested);
+  if(!pattern) return;
+  const rule={match_type:'contains',pattern:pattern.trim(),category_id:l.category_id||null,project_id:l.project_id||null,vendor_id:l.vendor_id||null,direction:l.direction,priority:100};
+  const ins=await sb.from('fin_rules').insert(rule).select().single();
+  if(ins.error){console.error(ins.error);toast('Erro ao criar regra: '+ins.error.message,false);return;}
+  finRules.unshift(ins.data);
+  finRules.sort((a,b)=>(a.priority||100)-(b.priority||100));
+  // reaplica nas linhas ainda não tocadas manualmente
+  _finImport.lines.forEach(x=>{ if(x.classified_by!=='manual'&&!x.dup) _finClassifyLine(x); });
+  toast('Regra criada e aplicada',true);
+  renderFinReview();
+}
+
+async function postFinImport(){
+  if(!_finImport||!isCEO()) return;
+  const acc=_finImport.account;
+  const toPost=_finImport.lines.filter(l=>l.status==='confirmed'&&!l.dup);
+  if(!toPost.length){toast('Nada pra postar',false);return;}
+  const uncatId=(finCatByCode('UNCAT')||{}).id;
+  const stmt=await sb.from('fin_statements').insert({account_id:acc.id,period_label:_finImport.period||null,filename:_finImport.filename||null,source:'pdf',tx_count:toPost.length}).select().single();
+  const statement_id=stmt.data?stmt.data.id:null;
+  const rows=toPost.map(l=>({account_id:acc.id,statement_id,txn_date:l.date,post_date:l.post_date||null,description:l.description||'',amount:l.amount,direction:l.direction,category_id:l.category_id||null,project_id:l.project_id||null,vendor_id:l.vendor_id||null,is_transfer:!!l.is_transfer,status:'confirmed',classified_by:l.classified_by||'manual',fingerprint:l.fingerprint}));
+  const ins=await sb.from('fin_transactions').insert(rows);
+  if(ins.error){console.error('post',ins.error);toast('Erro ao postar: '+ins.error.message,false);return;}
+  const nUncat=rows.filter(r=>!r.category_id||r.category_id===uncatId).length;
+  toast(`✓ ${rows.length} transações postadas`+(nUncat?` (${nUncat} ainda "a classificar")`:''),true);
+  _finImport=null;
+  _renderLivros();
+}
 
 // ═══ PORTFOLIO ════════════════════════════════════════════════════════
 
@@ -4675,7 +4924,7 @@ function openProject(id){
   const p=projects.find(x=>x.id===id);
   if(!p) return;
   // Hide ALL global views
-  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-dre','view-working-capital','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-dre','view-working-capital','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
