@@ -2378,6 +2378,7 @@ const ROOMS=GROUPS;
 
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'_');}
 function fmt(n){return '$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtc(n){return '$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function v(id){const el=document.getElementById(id);return el?el.value:'';}
 let charts_={};
 function dChart(id){if(charts_[id]){charts_[id].destroy();delete charts_[id];}}
@@ -4441,14 +4442,14 @@ function renderFinLedger(){
   const monSel='<select onchange="_finLedgerFilter(\'mon\',this.value)" style="font-size:11px;padding:5px 7px;border:1.5px solid var(--gray2);border-radius:6px;outline:none"><option value="">Todos os meses</option>'+monthsSet.map(m=>`<option value="${m}"${m===_finLedgerMonth?' selected':''}>${m}</option>`).join('')+'</select>';
   const bal={};
   list.forEach(t=>{ const s=(t.direction==='in'?1:-1)*(+t.amount||0); bal[t.account_id]=(bal[t.account_id]||0)+s; });
-  const chips=Object.keys(bal).map(aid=>`<span style="display:inline-flex;gap:6px;align-items:center;padding:5px 10px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:8px;font-size:12px;margin:3px"><strong>${_finAccName(aid)}</strong> <span style="color:${bal[aid]>=0?'#2D7D5F':'#B85450'};font-weight:700">${fmt(bal[aid])}</span></span>`).join('');
+  const chips=Object.keys(bal).map(aid=>`<span style="display:inline-flex;gap:6px;align-items:center;padding:5px 10px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:8px;font-size:12px;margin:3px"><strong>${_finAccName(aid)}</strong> <span style="color:${bal[aid]>=0?'#2D7D5F':'#B85450'};font-weight:700">${fmtc(bal[aid])}</span></span>`).join('');
   const _txRow=t=>`<tr style="border-bottom:1px solid #F0EAE2${t.is_transfer?';background:#F3EFFA':''}">
     <td style="padding:6px 8px;font-size:11px;white-space:nowrap">${t.txn_date}</td>
     <td style="padding:6px 8px;font-size:11px">${_finAccName(t.account_id)}</td>
     <td style="padding:6px 8px;font-size:11px;max-width:220px">${(t.description||'').replace(/</g,'&lt;')}${t.is_transfer?' <span style="font-size:9px;color:#5B3B8C">↔ transf.</span>':''}</td>
     <td style="padding:6px 8px;font-size:11px">${_finCatName(t.category_id)}</td>
     <td style="padding:6px 8px;font-size:11px">${t.project_id?_finProjName(t.project_id):'<span style="color:#999">Overhead</span>'}</td>
-    <td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;color:${t.direction==='in'?'#2D7D5F':'#3D271A'}">${t.direction==='in'?'+':'−'}${fmt(t.amount)}</td>
+    <td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;color:${t.direction==='in'?'#2D7D5F':'#3D271A'}">${t.direction==='in'?'+':'−'}${fmtc(t.amount)}</td>
     <td style="padding:6px 8px;text-align:center"><button onclick="_finDeleteTx('${t.id}')" title="Remover" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1);font-size:11px;padding:3px 6px">🗑</button></td>
   </tr>`;
   // Agrupa por mês (cabeçalho do mês + subtotais)
@@ -4460,7 +4461,7 @@ function renderFinLedger(){
     const mIn=arr.filter(t=>t.direction==='in').reduce((s,t)=>s+(+t.amount||0),0);
     const mOut=arr.filter(t=>t.direction==='out').reduce((s,t)=>s+(+t.amount||0),0);
     const [yy,mm]=mk.split('-');
-    const head=`<tr style="background:#EDE4D3"><td colspan="7" style="padding:7px 12px;font-size:11px;font-weight:800;color:#7A5A28"><span style="text-transform:uppercase;letter-spacing:.5px">${(nn[+mm]||mm)}/${yy}</span> <span style="font-weight:500;color:#8A7B68;font-size:10px">· ${arr.length} lançamentos · entradas <span style="color:#2D7D5F">+${fmt(mIn)}</span> · saídas <span style="color:#B85450">−${fmt(mOut)}</span> · saldo <span style="color:${(mIn-mOut)>=0?'#2D7D5F':'#B85450'}">${fmt(mIn-mOut)}</span></span></td></tr>`;
+    const head=`<tr style="background:#EDE4D3"><td colspan="7" style="padding:7px 12px;font-size:11px;font-weight:800;color:#7A5A28"><span style="text-transform:uppercase;letter-spacing:.5px">${(nn[+mm]||mm)}/${yy}</span> <span style="font-weight:500;color:#8A7B68;font-size:10px">· ${arr.length} lançamentos · entradas <span style="color:#2D7D5F">+${fmtc(mIn)}</span> · saídas <span style="color:#B85450">−${fmtc(mOut)}</span> · saldo <span style="color:${(mIn-mOut)>=0?'#2D7D5F':'#B85450'}">${fmtc(mIn-mOut)}</span></span></td></tr>`;
     return head+arr.map(_txRow).join('');
   }).join('');
   el.innerHTML=`<div class="card">
@@ -4578,6 +4579,8 @@ async function readStatementPDF(){
         const _m=_finActualAmt[line.amount.toFixed(2)];
         if(_m&&_m.length){
           const mm=_m[0]; line._dupActual=mm;
+          const _att=(((attachMap[mm.project_id]||{})[mm.room_id]||{})[mm.item_slug])||[];
+          if(_att.length) line._dupNotaPath=_att[0].storage_path;
           if(mm.project_id) line.project_id=mm.project_id;
           if(mm.actual_supplier && (vendors||[]).some(v=>v.id===mm.actual_supplier)) line.vendor_id=mm.actual_supplier;
           const _fc={material:'COGS-MAT',labor:'COGS-LAB',material_labor:'COGS-LAB'}[(mm.category||'').toLowerCase()];
@@ -4623,8 +4626,8 @@ function renderFinReview(){
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowbg}">
       <td style="padding:6px 8px;text-align:center">${badge}</td>
       <td style="padding:6px 8px;white-space:nowrap;font-size:11px">${l.date}${l.dup?'<div style="font-size:9px;color:#B85450;font-weight:700">já importado</div>':''}</td>
-      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')}</div>`:''}</td>
-      <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:700;color:${l.direction==='in'?'#2D7D5F':'#3D271A'}">${l.direction==='in'?'+':'−'}${fmt(l.amount)}</td>
+      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')} · ${fmtc(l._dupActual.actual)}${l._dupNotaPath?` <a href="javascript:void(0)" onclick="_openNotaPath('${(l._dupNotaPath||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline">abrir nota →</a>`:' <span style="color:#c9a">(sem PDF)</span>'}</div>`:''}</td>
+      <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:700;color:${l.direction==='in'?'#2D7D5F':'#3D271A'}">${l.direction==='in'?'+':'−'}${fmtc(l.amount)}</td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'category_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:150px">${_finCatOptions(l.category_id)}</select></td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'project_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:140px">${_finProjOptions(l.project_id)}</select></td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'vendor_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:130px">${_finVendorOptions(l.vendor_id)}</select></td>
@@ -4637,7 +4640,7 @@ function renderFinReview(){
       <div style="font-weight:800;color:#3D271A">${(_finImport.account.name||'').replace(/</g,'&lt;')} · ${_finImport.period||'período ?'} <span style="font-weight:500;color:var(--gray3);font-size:12px">— ${L.length} linhas${dups?` · ${dups} já importadas (ignoradas)`:''}</span></div>
       <button class="btn btn-primary" style="font-size:13px;padding:8px 16px" onclick="postFinImport()">✓ Postar ${toPost.length} transações</button>
     </div>
-    <div style="font-size:12px;color:#655A4E;margin-bottom:8px">A postar: saídas <strong style="color:#3D271A">${fmt(sumOut)}</strong> · entradas <strong style="color:#2D7D5F">${fmt(sumIn)}</strong>${(rep.out!=null||rep.in!=null)?` <span style="color:var(--gray3)">· extrato reportou: saídas ${rep.out!=null?fmt(rep.out):'?'} / entradas ${rep.in!=null?fmt(rep.in):'?'}</span>`:''}${warn}</div>
+    <div style="font-size:12px;color:#655A4E;margin-bottom:8px">A postar: saídas <strong style="color:#3D271A">${fmtc(sumOut)}</strong> · entradas <strong style="color:#2D7D5F">${fmtc(sumIn)}</strong>${(rep.out!=null||rep.in!=null)?` <span style="color:var(--gray3)">· extrato reportou: saídas ${rep.out!=null?fmtc(rep.out):'?'} / entradas ${rep.in!=null?fmtc(rep.in):'?'}</span>`:''}${warn}</div>
     ${dupActCount?`<div style="font-size:12px;color:#8a3b12;background:#FFF1E0;border:1px solid #F0C9A0;border-radius:6px;padding:9px 12px;margin-bottom:10px">⚠ <strong>${dupActCount}</strong> linha(s) batem em valor com lançamentos que já estão no <strong>Actual Costs</strong> (destacadas em laranja). Confira se são as mesmas e remova pra não duplicar. <button onclick="_finIgnoreDupActuals()" style="margin-left:6px;background:#8a3b12;color:#fff;border:0;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700">🚫 Ignorar essas ${dupActCount}</button></div>`:''}
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
       <thead><tr style="background:#FAF7F3">
