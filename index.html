@@ -4405,8 +4405,11 @@ function _finClassifyLine(line){
   }
   const isPay=/PAYMENT|THANK YOU|AUTOPAY|ONLINE PAYMENT|E-PAYMENT|\bPMT\b|ELECTRONIC PAYMENT/.test(d);
   if(isPay && line.direction==='in'){ line.is_transfer=true; line.category_id=(finCatByCode('TRANSFER')||{}).id||''; line.classified_by='rule'; return; }
+  // 3) sugestão da IA (category_code vindo do leitor de extrato)
+  if(line._aiCode && line._aiCode!=='UNCAT'){ const c=finCatByCode(line._aiCode); if(c){ line.category_id=c.id; line.classified_by='ai'; if(c.grp==='transfer' && /PAYMENT|THANK YOU|AUTOPAY/.test(d)) line.is_transfer=true; return; } }
+  // 4) heurísticas embutidas (fallback se a IA não classificou)
   if(/HOME DEPOT|LOWE'?S|FLOOR & DECOR|SHERWIN|FERGUSON|MENARDS|LUMBER|ACE HARDWARE|HARBOR FREIGHT/.test(d)){ line.category_id=(finCatByCode('COGS-MAT')||{}).id||''; line.classified_by='ai'; return; }
-  if(/INTEREST CHARGE|FINANCE CHARGE|ANNUAL FEE|LATE FEE|MEMBERSHIP FEE/.test(d)){ line.category_id=(finCatByCode('OH-CCFEE')||{}).id||''; line.classified_by='ai'; return; }
+  if(/INTEREST CHARGE|FINANCE CHARGE|ANNUAL FEE|LATE FEE|MEMBERSHIP FEE/.test(d)){ line.category_id=(finCatByCode('OH-JUROS')||finCatByCode('OH-CCFEE')||{}).id||''; line.classified_by='ai'; return; }
   line.category_id=line.category_id||(finCatByCode('UNCAT')||{}).id||'';
 }
 
@@ -4430,7 +4433,7 @@ function renderFinLedger(){
   const bal={};
   list.forEach(t=>{ const s=(t.direction==='in'?1:-1)*(+t.amount||0); bal[t.account_id]=(bal[t.account_id]||0)+s; });
   const chips=Object.keys(bal).map(aid=>`<span style="display:inline-flex;gap:6px;align-items:center;padding:5px 10px;background:#FAF7F3;border:1px solid #E8DDC9;border-radius:8px;font-size:12px;margin:3px"><strong>${_finAccName(aid)}</strong> <span style="color:${bal[aid]>=0?'#2D7D5F':'#B85450'};font-weight:700">${fmt(bal[aid])}</span></span>`).join('');
-  const rows=list.slice(0,300).map(t=>`<tr style="border-bottom:1px solid #F0EAE2${t.is_transfer?';background:#F3EFFA':''}">
+  const _txRow=t=>`<tr style="border-bottom:1px solid #F0EAE2${t.is_transfer?';background:#F3EFFA':''}">
     <td style="padding:6px 8px;font-size:11px;white-space:nowrap">${t.txn_date}</td>
     <td style="padding:6px 8px;font-size:11px">${_finAccName(t.account_id)}</td>
     <td style="padding:6px 8px;font-size:11px;max-width:220px">${(t.description||'').replace(/</g,'&lt;')}${t.is_transfer?' <span style="font-size:9px;color:#5B3B8C">↔ transf.</span>':''}</td>
@@ -4438,7 +4441,19 @@ function renderFinLedger(){
     <td style="padding:6px 8px;font-size:11px">${t.project_id?_finProjName(t.project_id):'<span style="color:#999">Overhead</span>'}</td>
     <td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;color:${t.direction==='in'?'#2D7D5F':'#3D271A'}">${t.direction==='in'?'+':'−'}${fmt(t.amount)}</td>
     <td style="padding:6px 8px;text-align:center"><button onclick="_finDeleteTx('${t.id}')" title="Remover" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1);font-size:11px;padding:3px 6px">🗑</button></td>
-  </tr>`).join('');
+  </tr>`;
+  // Agrupa por mês (cabeçalho do mês + subtotais)
+  const nn=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const byMonth={};
+  list.slice(0,500).forEach(t=>{ const mk=(t.txn_date||'').slice(0,7); (byMonth[mk]=byMonth[mk]||[]).push(t); });
+  const rows=Object.keys(byMonth).sort().reverse().map(mk=>{
+    const arr=byMonth[mk];
+    const mIn=arr.filter(t=>t.direction==='in').reduce((s,t)=>s+(+t.amount||0),0);
+    const mOut=arr.filter(t=>t.direction==='out').reduce((s,t)=>s+(+t.amount||0),0);
+    const [yy,mm]=mk.split('-');
+    const head=`<tr style="background:#EDE4D3"><td colspan="7" style="padding:7px 12px;font-size:11px;font-weight:800;color:#7A5A28"><span style="text-transform:uppercase;letter-spacing:.5px">${(nn[+mm]||mm)}/${yy}</span> <span style="font-weight:500;color:#8A7B68;font-size:10px">· ${arr.length} lançamentos · entradas <span style="color:#2D7D5F">+${fmt(mIn)}</span> · saídas <span style="color:#B85450">−${fmt(mOut)}</span> · saldo <span style="color:${(mIn-mOut)>=0?'#2D7D5F':'#B85450'}">${fmt(mIn-mOut)}</span></span></td></tr>`;
+    return head+arr.map(_txRow).join('');
+  }).join('');
   el.innerHTML=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px">
       <div class="card-title" style="border:0;padding:0;margin:0">📄 Transações lançadas <span style="font-weight:500;color:var(--gray3);font-size:12px">— ${list.length}${(_finLedgerAcc||_finLedgerMonth)?' (filtrado)':''}</span></div>
@@ -4534,7 +4549,8 @@ async function readStatementPDF(){
     const {data:{session}}=await sb.auth.getSession();
     const token=(session&&session.access_token)||SKEY;
     const b64=await _fileToBase64(file);
-    const resp=await fetch(VN_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},body:JSON.stringify({file_base64:b64,file_type:file.type,mode:'statement',account_kind:acc.kind})});
+    const cats=finCategories.map(c=>({code:c.code,name:c.name,grp:c.grp}));
+    const resp=await fetch(VN_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},body:JSON.stringify({file_base64:b64,file_type:file.type,mode:'statement',account_kind:acc.kind,categories:cats})});
     const out=await resp.json();
     if(!resp.ok||!out.success) throw new Error(out.message||out.error||('HTTP '+resp.status));
     const data=out.data||{};
@@ -4543,7 +4559,7 @@ async function readStatementPDF(){
     const existing=await sb.from('fin_transactions').select('fingerprint').eq('account_id',accId);
     const seen=new Set((existing.data||[]).map(x=>x.fingerprint));
     const lines=raw.map(l=>{
-      const line={date:l.date,post_date:l.post_date||null,description:l.description||'',amount:Math.round((+l.amount||0)*100)/100,direction:(l.direction==='in'?'in':'out'),category_id:'',project_id:'',vendor_id:'',is_transfer:false,classified_by:null,status:'confirmed'};
+      const line={date:l.date,post_date:l.post_date||null,description:l.description||'',amount:Math.round((+l.amount||0)*100)/100,direction:(l.direction==='in'?'in':'out'),category_id:'',project_id:'',vendor_id:'',is_transfer:false,classified_by:null,status:'confirmed',_aiCode:(l.category_code||'')};
       line.fingerprint=_finFingerprint(accId,line);
       line.dup=seen.has(line.fingerprint);
       _finClassifyLine(line);
