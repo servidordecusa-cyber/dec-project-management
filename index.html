@@ -4494,7 +4494,7 @@ function _finDeleteTx(id){
 function renderLivros(){ Promise.all([loadFinData(),loadFinTx(),loadFinActuals()]).then(_renderLivros); }
 function _renderLivros(){
   const root=document.getElementById('livros-root'); if(!root) return;
-  const _accChip=(id,label,icon)=>{const on=id===_finLedgerAcc;return `<span onclick="_finPickAccount('${id}')" title="Clique para ver os lançamentos desta conta por mês" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:${on?'#3D271A':'#FAF7F3'};color:${on?'#fff':'#3D271A'};border:1px solid ${on?'#3D271A':'#E8DDC9'};border-radius:20px;font-size:12px;margin:3px;font-weight:${on?'700':'500'}">${icon} ${label}</span>`;};
+  const _accChip=(id,label,icon)=>{const on=id===_finLedgerAcc;return `<span onclick="_finPickAccount('${id}')" title="Clique para ver os lançamentos desta conta por mês" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:${on?'#3D271A':'#FAF7F3'};color:${on?'#fff':'#3D271A'};border:1px solid ${on?'#3D271A':'#E8DDC9'};border-radius:20px;font-size:12px;margin:3px;font-weight:${on?'700':'500'}">${icon} ${label}${id?`<span onclick="_finDeleteAccount('${id}',event)" title="Excluir esta conta" style="margin-left:6px;padding:1px 5px;border-radius:10px;background:${on?'rgba(255,255,255,.2)':'#FBEAE7'};color:${on?'#fff':'#C0392B'};cursor:pointer;font-weight:800;font-size:11px">🗑 excluir</span>`:''}</span>`;};
   const accRows=finAccounts.length? (_accChip('','Todas','📂')+finAccounts.map(a=>_accChip(a.id,(a.name||'').replace(/</g,'&lt;')+(a.last4?' ·'+a.last4:''),a.kind==='bank'?'🏦':'💳')).join(''))
     : '<span style="font-size:12px;color:var(--gray3);font-style:italic">Nenhuma conta ainda — cadastre os 20 cartões + o banco abaixo (ou pelo template SQL).</span>';
   const accOpts=finAccounts.map(a=>`<option value="${a.id}">${(a.kind==='bank'?'🏦 ':'💳 ')+(a.name||'').replace(/</g,'&lt;')}</option>`).join('');
@@ -4532,6 +4532,20 @@ function _renderLivros(){
     <div id="fin-ledger"></div>`;
   renderFinLedger();
   if(_finImport) renderFinReview();
+}
+
+async function _finDeleteAccount(id, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  if(!isCEO()) return;
+  const a=finAccounts.find(x=>x.id===id); if(!a) return;
+  const cnt=(finTx||[]).filter(t=>t.account_id===id).length;
+  if(!confirm(`Excluir a conta "${a.name}"?`+(cnt?`\n\n⚠ ATENÇÃO: isso vai APAGAR também as ${cnt} transação(ões) já lançadas nessa conta. Não dá pra desfazer.`:''))) return;
+  const {error}=await sb.from('fin_accounts').delete().eq('id',id);
+  if(error){console.error('del account',error);toast('Erro ao excluir: '+error.message,false);return;}
+  finAccounts=finAccounts.filter(x=>x.id!==id);
+  if(_finLedgerAcc===id) _finLedgerAcc='';
+  toast('Conta excluída',true);
+  renderLivros();
 }
 
 async function addFinAccount(){
