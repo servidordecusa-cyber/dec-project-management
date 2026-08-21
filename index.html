@@ -13639,6 +13639,7 @@ function renderRecurringDetailHeader(){
   const yShort=String(yearLabel).slice(-2);
   let html=`<tr style="background:#FAF7F3">
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);position:sticky;left:0;background:#FAF7F3;z-index:1;min-width:140px">Item</th>
+    <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:120px">Nº conta</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Empresa</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:130px">Forma pgto</th>
     <th style="padding:8px 6px;text-align:left;border-bottom:2px solid var(--gray2);min-width:90px">Últ. 4</th>`;
@@ -13691,6 +13692,12 @@ function renderRecurringDetail(){
     }
     return `<tr data-rc-item="${itemName.replace(/"/g,'&quot;')}">
       <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #F0EAE2;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${itemName}</td>
+      <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
+        <input type="text" value="${(row.account||'').replace(/"/g,'&quot;')}" placeholder="ex: 726388495"
+          oninput="updateRCDMeta('${itemName.replace(/'/g,"\\'")}','account',this.value)"
+          title="Número da conta da utilidade (ex: conta de luz/água)"
+          style="padding:5px 6px;font-size:12px;border:1px solid var(--gray2);border-radius:5px;outline:none;width:100%">
+      </td>
       <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
         ${_supplierSelectHTML(row.supplier||row.company, `setRecurringSupplier('${itemName.replace(/'/g,"\\'")}',this.value)`,'font-size:11px;padding:5px 4px')}
       </td>
