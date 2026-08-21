@@ -14829,13 +14829,19 @@ async function postImport(id){
   const nm=((pi.vendor||pi.source||'Compra')+' #'+(pi.order_number||'')).slice(0,60);
   const islug=slug(nm)+'-'+(pi.order_number||Date.now());
   const note='PO: '+(pi.po_job_name||'')+' · pedido '+(pi.order_number||'');
+  // Fornecedor: casa o source com o vendor cadastrado (Lowes/Home Depot/Amazon)
+  const _vre={lowes:/lowe/i, home_depot:/home\s*depot/i, amazon:/amazon/i}[pi.source];
+  const _vend=_vre?(vendors||[]).find(v=>_vre.test(v.name||'')):null;
+  const supplierId=_vend?_vend.id:'';
   const {error}=await sb.from('budget_items').upsert({
     project_id:projId, room_id:gid, item_slug:islug, item_name:nm,
     est:0, actual:+pi.total||0, est_note:'', actual_note:note,
-    est_supplier:'', actual_supplier:'', est_qty:0, actual_qty:1, est_unit_cost:0, actual_unit_cost:+pi.total||0,
+    est_supplier:'', actual_supplier:supplierId, est_qty:0, actual_qty:1, est_unit_cost:0, actual_unit_cost:+pi.total||0,
     category:'material'
   },{onConflict:'project_id,room_id,item_slug'});
   if(error){ console.error('postImport',error); toast('Erro ao postar: '+error.message,false); return; }
+  // Anexa o recibo, se o agente já tiver baixado (receipt_path)
+  if(pi.receipt_path){ try{ await sb.from('budget_attachments').insert({project_id:projId, room_id:gid, item_slug:islug, item_name:nm, name:('recibo-'+(pi.order_number||'')+'.pdf'), storage_path:pi.receipt_path}); }catch(e){} }
   await sb.from('purchase_imports').update({status:'posted',posted_ref:islug,matched_project_id:projId}).eq('id',id);
   purchaseImports=purchaseImports.filter(x=>x.id!==id);
   toast('✓ Compra postada no Actual Costs',true);
@@ -14843,7 +14849,7 @@ async function postImport(id){
     if(!itemsMap[CID]) itemsMap[CID]={}; if(!itemsMap[CID][gid]) itemsMap[CID][gid]=[];
     if(!itemsMap[CID][gid].find(x=>x.slug===islug)) itemsMap[CID][gid].push({slug:islug,name:nm});
     if(!budgetMap[CID]) budgetMap[CID]={}; if(!budgetMap[CID][gid]) budgetMap[CID][gid]={};
-    budgetMap[CID][gid][islug]={est:0,actual:+pi.total||0,category:'material',actual_qty:1,actual_unit_cost:+pi.total||0,actual_note:note,est_supplier:'',actual_supplier:'',est_note:'',est_qty:0,est_unit_cost:0};
+    budgetMap[CID][gid][islug]={est:0,actual:+pi.total||0,category:'material',actual_qty:1,actual_unit_cost:+pi.total||0,actual_note:note,est_supplier:'',actual_supplier:supplierId,est_note:'',est_qty:0,est_unit_cost:0};
     renderActualFlat(); updateGroupTotals(gid);
   }
   renderImportQueue();
