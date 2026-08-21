@@ -1641,7 +1641,6 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="final_roi">Final ROI</option>
           <option value="refund">Refund (REF)</option>
           <option value="third_party_asset_manager">Third Party (TPAM)</option>
-          <option value="working_capital">Working Capital (WC)</option>
         </select>
         <input id="iv-search" type="text" placeholder="🔍 Search..." oninput="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
         <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openInvoiceModal()">+ New Invoice</button>
@@ -1995,7 +1994,6 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="final_roi">Final ROI (after sale)</option>
           <option value="refund">Refund (reimbursement of advance)</option>
           <option value="third_party_asset_manager">Third Party Asset Manager</option>
-          <option value="working_capital">Working Capital</option>
         </select>
       </div>
       <div class="fg"></div>
@@ -2043,7 +2041,6 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="zelle">Zelle</option>
           <option value="ach">ACH</option>
           <option value="credit_card">Credit Card</option>
-          <option value="working_capital">Working Capital</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -2113,12 +2110,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <div class="fg"></div>
     </div>
     <div class="fg"><label>Notes</label><textarea id="fcm-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Additional notes..."></textarea></div>
-    <div class="fg">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input id="fcm-paid-from-wc" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#2D7D5F">
-        <span>💰 Pago com Working Capital</span>
-      </label>
-      <div style="font-size:11px;color:var(--gray3);margin-top:4px;margin-left:28px">Marca se esse custo saiu do fundo de Working Capital.</div>
+    <div class="fg" style="display:none">
+      <input id="fcm-paid-from-wc" type="checkbox">
     </div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeFixedCostModal()">Cancel</button><button class="btn btn-primary" onclick="saveFixedCost()">Save →</button></div>
   </div>
@@ -2216,12 +2209,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <input id="vn-notes" maxlength="200" placeholder="What was purchased">
     </div>
 
-    <div class="fg" style="background:#F5F8F0;padding:10px 12px;border-radius:7px;border:1px dashed #2D7D5F">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
-        <input id="vn-paid-from-wc" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#2D7D5F">
-        <span style="font-weight:600;color:#2D7D5F">💰 Pago com Working Capital</span>
-      </label>
-      <div style="font-size:11px;color:#655A4E;margin-top:4px;margin-left:28px">Marca se este custo foi pago com dinheiro do fundo de Working Capital.</div>
+    <div class="fg" style="display:none">
+      <input id="vn-paid-from-wc" type="checkbox">
     </div>
 
     <div class="mactions">
@@ -2304,12 +2293,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <input id="vnr-notes" maxlength="200" placeholder="What was paid">
     </div>
 
-    <div class="fg" style="background:#F5F8F0;padding:10px 12px;border-radius:7px;border:1px dashed #2D7D5F">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
-        <input id="vnr-paid-from-wc" type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#2D7D5F">
-        <span style="font-weight:600;color:#2D7D5F">💰 Pago com Working Capital</span>
-      </label>
-      <div style="font-size:11px;color:#655A4E;margin-top:4px;margin-left:28px">Marca se essa conta foi paga com dinheiro do fundo de Working Capital.</div>
+    <div class="fg" style="display:none">
+      <input id="vnr-paid-from-wc" type="checkbox">
     </div>
 
     <div class="mactions">
@@ -5156,7 +5141,7 @@ function buildBudgetRooms(){
     actC.innerHTML='';
     const card=document.createElement('div');
     card.className='broom-card';
-    const thead=`<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">Actual Spent ($)</th><th style="width:100px">Notes</th><th style="width:42px;text-align:center" title="Pago com Working Capital">💰 WC</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`;
+    const thead=`<thead><tr><th style="width:240px">Item</th><th style="width:155px">Category</th><th style="width:100px">Supplier</th><th style="width:50px">Qty</th><th style="width:85px">Unit Cost ($)</th><th style="width:95px">Actual Spent ($)</th><th style="width:100px">Notes</th><th style="width:60px;text-align:center">📎</th><th style="width:40px"></th></tr></thead>`;
     card.innerHTML=`<table class="bitbl">${thead}<tbody id="tb-act-all"></tbody></table>
       <div style="padding:10px 15px;background:#FAF7F3;border-top:1px solid #F0EAE2">
         <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addItem('act')">+ Add Item</button>
@@ -5236,7 +5221,7 @@ function renderActualFlat(){
   const all=[];
   GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>all.push({gid:g.id,it})));
   if(all.length===0){
-    tb.innerHTML=`<tr><td colspan="10" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="9" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">No items yet — click "+ Add Item" below</td></tr>`;
     return;
   }
   const byCat={};
@@ -5254,7 +5239,7 @@ function renderActualFlat(){
       <td style="padding:11px 12px;font-weight:800;color:#3D271A;font-size:13px"><span id="cat-caret-all-${catKey}" style="display:inline-block;width:14px;color:#9B7535">${expanded?'▾':'▸'}</span>${label} <span style="color:#999;font-weight:500;font-size:11px">· ${list.length} ${list.length===1?'item':'itens'}</span></td>
       <td colspan="4"></td>
       <td style="padding:11px 10px;text-align:right;font-weight:800;color:#9B7535;font-size:13px" id="catsum-all-${catKey}">${fmt(total)}</td>
-      <td colspan="4" style="text-align:right;padding-right:12px"><span id="cat-hint-all-${catKey}" style="color:#bbb;font-size:10px">${expanded?'clique p/ recolher':'clique p/ ver itens'}</span></td>
+      <td colspan="3" style="text-align:right;padding-right:12px"><span id="cat-hint-all-${catKey}" style="color:#bbb;font-size:10px">${expanded?'clique p/ recolher':'clique p/ ver itens'}</span></td>
     </tr>`;
     list.forEach(x=>{
       let rh=rowHTML('act',x.gid,x.it.name,x.it.slug);
@@ -5479,10 +5464,8 @@ function rowHTML(type,gid,item,islug){
   const attachCell=type==='act'
     ? `<td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="openAttach('${gid}','${encodeURIComponent(item)}','${islug}')" id="att-btn-${gid}-${islug}">📎 <span id="att-count-${gid}-${islug}">0</span></button></td>`
     : '';
-  // WC (Working Capital) checkbox — only on Actual Costs, not Estimate
-  const wcCell=type==='act'
-    ? `<td style="text-align:center"><label style="display:inline-flex;align-items:center;cursor:pointer;font-size:11px;color:#2D7D5F" title="Pago com Working Capital"><input type="checkbox" id="bwc-${gid}-${islug}" onchange="onBWC('${gid}','${islug}',this)" style="width:16px;height:16px;cursor:pointer;accent-color:#2D7D5F"></label></td>`
-    : '';
+  // WC (Working Capital) removido — não há mais célula de checkbox
+  const wcCell='';
   return `<tr id="row-${type}-${gid}-${islug}">
     <td><span class="item-name" contenteditable="true" data-gid="${gid}" data-islug="${islug}" style="display:block;min-width:200px;font-size:13px;font-weight:600;outline:none;border-bottom:1px dashed transparent;padding:2px 0;line-height:1.3;word-break:break-word" onblur="renameBudgetItem('${gid}','${islug}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${item}</span></td>
     <td>
@@ -10818,7 +10801,6 @@ function renderPartialPayments(){
         <option value="zelle"${p.method==='zelle'?' selected':''}>Zelle</option>
         <option value="ach"${p.method==='ach'?' selected':''}>ACH</option>
         <option value="credit_card"${p.method==='credit_card'?' selected':''}>Credit Card</option>
-        <option value="working_capital"${p.method==='working_capital'?' selected':''}>Working Capital</option>
         <option value="other"${p.method==='other'?' selected':''}>Other</option>
       </select>
       <input type="date" value="${p.date||''}"
@@ -13670,9 +13652,9 @@ function renderRecurringDetail(){
       const key=_rcKey(yOff,m);
       const val=months[key];
       const displayVal=(val==null||val===0)?'':val;
-      const isWC=!!wcFlags[key];
-      const wcStyle=isWC?'background:#DCEFE6;border-color:#2D7D5F;':'';
-      const wcTitle=isWC?'💰 Pago com Working Capital (Shift+click pra desmarcar)':'Shift+click pra marcar como pago com WC';
+      const isWC=false; // Working Capital removido
+      const wcStyle='';
+      const wcTitle='';
       monthCells.push(`<td style="padding:4px 2px;border-bottom:1px solid #F0EAE2;position:relative" title="${wcTitle}">
         <input type="number" min="0" step="0.01" value="${displayVal}" placeholder="0"
           oninput="updateRCDMonth('${itemName.replace(/'/g,"\\'")}',${yOff},${m},this.value)"
@@ -13899,6 +13881,7 @@ async function saveRCDMonth(itemName,yearOffset,month){
 
 // Shift+click on a recurring cell toggles "Paid from Working Capital"
 async function onRCDCellClick(event,itemName,yearOffset,month){
+  return; // Working Capital removido — Shift+click desativado
   if(!event.shiftKey) return;
   event.preventDefault();
   if(!CID||!isCEO()) return;
