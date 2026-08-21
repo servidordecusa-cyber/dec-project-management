@@ -534,6 +534,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div id="vn-queue-banner" style="display:none;margin-top:10px;padding:12px 14px;background:#fff;border:2px solid #5C7A3F;border-radius:8px"></div>
         </div>
 
+        <div id="act-import-queue"></div>
         <div id="act-rooms"></div>
         <div id="act-supplier-summary"></div>
       </div>
@@ -5160,6 +5161,7 @@ function buildBudgetRooms(){
     renderActualFlat();
   }
   _updateEstGrandTotal();
+  renderImportQueue();
 }
 // Estimate como lista única (junta os itens de todas as fases num só corpo)
 // A 1ª linha é sempre REHAB — valor puxado ao vivo do orçamento vinculado (baseline).
@@ -14730,6 +14732,117 @@ function _toggleSupNotas(i){
   const r=document.getElementById('sup-notas-'+i); const c=document.getElementById('sup-caret-'+i);
   if(!r) return; const open=r.style.display==='none'; r.style.display=open?'':'none'; if(c) c.textContent=open?'▾':'▸';
 }
+// ═══ FILA DE IMPORTAÇÃO DE COMPRAS (agente Home Depot/Lowe's/Amazon) ══════
+let purchaseImports=[], purchaseAliases=[];
+async function loadPurchaseData(){
+  try{
+    const [pi,pa]=await Promise.all([
+      sb.from('purchase_imports').select('*').eq('status','pending').order('order_date',{ascending:false}),
+      sb.from('purchase_aliases').select('*'),
+    ]);
+    purchaseImports=pi.data||[]; purchaseAliases=pa.data||[];
+  }catch(e){ purchaseImports=[]; purchaseAliases=[]; }
+}
+function _pnorm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+// Casa o PO/Job Name com um projeto: 1) apelido aprendido; 2) endereço/nome por tokens.
+function matchProjectByText(txt){
+  const t=_pnorm(txt);
+  if(!t||t==='no'||t==='na') return null;
+  const al=purchaseAliases.find(a=>a.alias_norm===t);
+  if(al){ const p=(projects||[]).find(x=>x.id===al.project_id); if(p) return p; }
+  const tks=t.split(' ').filter(w=>w.length>=3);
+  let best=null,bestScore=0;
+  (projects||[]).forEach(p=>{
+    const hay=_pnorm((p.name||'')+' '+(p.address||'')); if(!hay) return;
+    let score=0;
+    if(t.length>=4 && hay.includes(t)) score=1;
+    else if(tks.length){ const hit=tks.filter(w=>hay.includes(w)).length; score=hit/tks.length; }
+    if(score>bestScore){ bestScore=score; best=p; }
+  });
+  return bestScore>=0.6?best:null;
+}
+function renderImportQueue(){
+  const el=document.getElementById('act-import-queue'); if(!el||!CID) return;
+  loadPurchaseData().then(()=>{
+    if(!el||!CID) return;
+    const rows=purchaseImports.map(pi=>{
+      const proj=pi.matched_project_id?(projects||[]).find(p=>p.id===pi.matched_project_id):matchProjectByText(pi.po_job_name);
+      return {pi, proj};
+    });
+    const mine=rows.filter(r=>r.proj && r.proj.id===CID);
+    const unassigned=rows.filter(r=>!r.proj);
+    if(mine.length===0 && unassigned.length===0){ el.innerHTML=''; return; }
+    const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>`<option value="${p.id}">${((p.name||p.address||'')).replace(/</g,'&lt;')}</option>`).join('');
+    const srcLbl={lowes:'🔵 Lowe\'s',home_depot:'🟠 Home Depot',amazon:'🟡 Amazon'};
+    const rowHtml=(r,assignable)=>{
+      const pi=r.pi;
+      const src=srcLbl[pi.source]||pi.source||'';
+      return `<tr style="border-bottom:1px solid #F0EAE2">
+        <td style="padding:8px 10px;font-size:11px;white-space:nowrap">${pi.order_date||''}<div style="color:#999">${src}</div></td>
+        <td style="padding:8px 10px;font-size:11px">${(pi.vendor||'').replace(/</g,'&lt;')} · #${(pi.order_number||'').replace(/</g,'&lt;')}<div style="color:#9B7535">PO: ${(pi.po_job_name||'—').replace(/</g,'&lt;')}</div></td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(pi.total)}</td>
+        <td style="padding:8px 10px;font-size:11px">${assignable?`<select onchange="assignImportProject('${pi.id}',this.value)" style="font-size:11px;padding:4px 6px;max-width:180px">${projOpts}</select>`:'<span style="color:#5C7A3F;font-weight:700">esta obra</span>'}</td>
+        <td style="padding:8px 10px;text-align:center;white-space:nowrap">${pi.receipt_path?`<a href="javascript:void(0)" onclick="_openNotaPath('${(pi.receipt_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:11px">recibo</a> · `:''}<button onclick="postImport('${pi.id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Postar</button> <button onclick="ignoreImport('${pi.id}')" title="Ignorar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🚫</button></td>
+      </tr>`;
+    };
+    el.innerHTML=`<div class="card" style="margin-bottom:18px;border-left:4px solid #9B7535">
+      <div class="card-title">📥 Compras importadas — fila <span style="font-weight:500;color:var(--gray3);font-size:12px">${mine.length} desta obra${unassigned.length?` · ${unassigned.length} sem obra`:''}</span></div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:640px">
+        <thead><tr style="background:#FAF7F3"><th style="padding:6px 10px;text-align:left;font-size:10px">Data</th><th style="padding:6px 10px;text-align:left;font-size:10px">Fornecedor / PO</th><th style="padding:6px 10px;text-align:right;font-size:10px">Valor</th><th style="padding:6px 10px;text-align:left;font-size:10px">Obra</th><th style="padding:6px 10px;font-size:10px"></th></tr></thead>
+        <tbody>
+          ${mine.map(r=>rowHtml(r,false)).join('')}
+          ${unassigned.length?`<tr><td colspan="5" style="padding:6px 10px;background:#FBF6EC;font-size:10px;font-weight:700;color:#8a3b12">Sem obra identificada — atribua (o apelido fica lembrado):</td></tr>`:''}
+          ${unassigned.map(r=>rowHtml(r,true)).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+  });
+}
+async function assignImportProject(id, projectId){
+  if(!projectId) return;
+  const pi=purchaseImports.find(x=>x.id===id); if(!pi) return;
+  await sb.from('purchase_imports').update({matched_project_id:projectId}).eq('id',id);
+  pi.matched_project_id=projectId;
+  const an=_pnorm(pi.po_job_name);
+  if(an && an!=='no' && an!=='na'){ try{ await sb.from('purchase_aliases').upsert({alias_norm:an,project_id:projectId},{onConflict:'alias_norm'}); }catch(e){} }
+  renderImportQueue();
+  toast('Obra atribuída · apelido lembrado',true);
+}
+async function ignoreImport(id){
+  if(!confirm('Ignorar essa compra? (não será lançada)')) return;
+  await sb.from('purchase_imports').update({status:'ignored'}).eq('id',id);
+  purchaseImports=purchaseImports.filter(x=>x.id!==id);
+  renderImportQueue();
+}
+async function postImport(id){
+  if(!isCEO()) return;
+  const pi=purchaseImports.find(x=>x.id===id); if(!pi) return;
+  const projId=pi.matched_project_id||(matchProjectByText(pi.po_job_name)||{}).id;
+  if(!projId){ toast('Atribua a obra antes de postar',false); return; }
+  const gid=(GROUPS[0]&&GROUPS[0].id)||'ph1';
+  const nm=((pi.vendor||pi.source||'Compra')+' #'+(pi.order_number||'')).slice(0,60);
+  const islug=slug(nm)+'-'+(pi.order_number||Date.now());
+  const note='PO: '+(pi.po_job_name||'')+' · pedido '+(pi.order_number||'');
+  const {error}=await sb.from('budget_items').upsert({
+    project_id:projId, room_id:gid, item_slug:islug, item_name:nm,
+    est:0, actual:+pi.total||0, est_note:'', actual_note:note,
+    est_supplier:'', actual_supplier:'', est_qty:0, actual_qty:1, est_unit_cost:0, actual_unit_cost:+pi.total||0,
+    category:'material'
+  },{onConflict:'project_id,room_id,item_slug'});
+  if(error){ console.error('postImport',error); toast('Erro ao postar: '+error.message,false); return; }
+  await sb.from('purchase_imports').update({status:'posted',posted_ref:islug,matched_project_id:projId}).eq('id',id);
+  purchaseImports=purchaseImports.filter(x=>x.id!==id);
+  toast('✓ Compra postada no Actual Costs',true);
+  if(projId===CID){
+    if(!itemsMap[CID]) itemsMap[CID]={}; if(!itemsMap[CID][gid]) itemsMap[CID][gid]=[];
+    if(!itemsMap[CID][gid].find(x=>x.slug===islug)) itemsMap[CID][gid].push({slug:islug,name:nm});
+    if(!budgetMap[CID]) budgetMap[CID]={}; if(!budgetMap[CID][gid]) budgetMap[CID][gid]={};
+    budgetMap[CID][gid][islug]={est:0,actual:+pi.total||0,category:'material',actual_qty:1,actual_unit_cost:+pi.total||0,actual_note:note,est_supplier:'',actual_supplier:'',est_note:'',est_qty:0,est_unit_cost:0};
+    renderActualFlat(); updateGroupTotals(gid);
+  }
+  renderImportQueue();
+}
+
 function renderProjectSupplierSummary(){
   const el=document.getElementById('act-supplier-summary');
   if(!el) return;
