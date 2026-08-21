@@ -2041,6 +2041,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="zelle">Zelle</option>
           <option value="ach">ACH</option>
           <option value="credit_card">Credit Card</option>
+          <option value="transfer">Transfer (entre contas)</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -10611,7 +10612,7 @@ function _invoiceSortKey(inv){
 
 const PAYMENT_METHOD_LABELS={
   wire:'Wire', check:'Check', cash:'Cash', zelle:'Zelle',
-  ach:'ACH', credit_card:'Credit Card', working_capital:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Working Capital', other:'Other',
+  ach:'ACH', credit_card:'Credit Card', transfer:'Transfer', working_capital:'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Working Capital', other:'Other',
 };
 const INVOICE_STATUS_META={
   open: {label:'PENDING', color:'#7A5A28', bg:'#F5EBDA'},
@@ -10830,6 +10831,7 @@ function renderPartialPayments(){
         <option value="zelle"${p.method==='zelle'?' selected':''}>Zelle</option>
         <option value="ach"${p.method==='ach'?' selected':''}>ACH</option>
         <option value="credit_card"${p.method==='credit_card'?' selected':''}>Credit Card</option>
+        <option value="transfer"${p.method==='transfer'?' selected':''}>Transfer (entre contas)</option>
         <option value="other"${p.method==='other'?' selected':''}>Other</option>
       </select>
       <input type="date" value="${p.date||''}"
