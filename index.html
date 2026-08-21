@@ -1722,7 +1722,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- FINANCIAL -->
 <div id="view-financial">
-  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financial</h2><p style="color:var(--gray3);margin-top:4px">Receita e custo da DEC · todos os projetos</p></div></div>
+  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financial</h2><p style="color:var(--gray3);margin-top:4px">Resumo financeiro · <strong>lucro por projeto</strong> (regime de competência). Para o caixa veja a aba <strong>Fluxo de Caixa</strong>; para o resultado da empresa, o <strong>DRE</strong>.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-self:center"><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fluxo')">📊 Fluxo de Caixa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('dre')">📈 DRE</button></div></div>
   <div class="home-grid" id="fin-kpis"></div>
 
   <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD">
@@ -4416,6 +4416,12 @@ async function loadFinActuals(){
   _finActualAmt={};
   _finActuals.forEach(r=>{ const k=(Math.round((+r.actual||0)*100)/100).toFixed(2); (_finActualAmt[k]=_finActualAmt[k]||[]).push(r); });
 }
+// Valores dos recorrentes (Recurring Costs) — pra não duplicar no Livros
+let _finRecurring=[];
+async function loadFinRecurring(){
+  try{ const {data}=await fetchAllRows('recurring_detail_months',{build:q=>q.gt('amount',0)}); _finRecurring=data||[]; }
+  catch(e){ console.warn('loadFinRecurring',e); _finRecurring=[]; }
+}
 function _finAccName(id){const a=finAccounts.find(x=>x.id===id);return a?(a.name||'—'):'—';}
 function _finCatName(id){const c=finCategories.find(x=>x.id===id);return c?(c.name||'—'):'<span style="color:#B85450">a classificar</span>';}
 function _finProjName(id){const p=(projects||[]).find(x=>x.id===id);return p?(p.name||'—'):'—';}
@@ -4477,7 +4483,7 @@ function _finDeleteTx(id){
   });
 }
 
-function renderLivros(){ Promise.all([loadFinData(),loadFinTx(),loadFinActuals()]).then(_renderLivros); }
+function renderLivros(){ Promise.all([loadFinData(),loadFinTx(),loadFinActuals(),loadFinRecurring()]).then(_renderLivros); }
 function _renderLivros(){
   const root=document.getElementById('livros-root'); if(!root) return;
   const _accChip=(id,label,icon)=>{const on=id===_finLedgerAcc;return `<span onclick="_finPickAccount('${id}')" title="Clique para ver os lançamentos desta conta por mês" style="cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:${on?'#3D271A':'#FAF7F3'};color:${on?'#fff':'#3D271A'};border:1px solid ${on?'#3D271A':'#E8DDC9'};border-radius:20px;font-size:12px;margin:3px;font-weight:${on?'700':'500'}">${icon} ${label}${id?`<span onclick="_finDeleteAccount('${id}',event)" title="Excluir esta conta" style="margin-left:6px;padding:1px 5px;border-radius:10px;background:${on?'rgba(255,255,255,.2)':'#FBEAE7'};color:${on?'#fff':'#C0392B'};cursor:pointer;font-weight:800;font-size:11px">🗑 excluir</span>`:''}</span>`;};
@@ -4592,6 +4598,9 @@ async function readStatementPDF(){
           if(_fc){ const c=finCatByCode(_fc); if(c) line.category_id=c.id; }
           line.classified_by='match';
         }
+        // (c) Já lançado no RECURRING (mesmo valor)
+        const rr=(_finRecurring||[]).find(r=>Math.abs((+r.amount||0)-line.amount)<=TOL);
+        if(rr) line._dupRecurring=rr;
       }
       if(line.dup) line.status='ignored';
       return line;
@@ -4619,7 +4628,7 @@ function renderFinReview(){
   const L=_finImport.lines;
   const toPost=L.filter(l=>l.status==='confirmed'&&!l.dup);
   const dups=L.filter(l=>l.dup).length;
-  const dupActCount=L.filter(l=>(l._dupActual||l._dupPosted)&&!l.dup).length;
+  const dupActCount=L.filter(l=>(l._dupActual||l._dupPosted||l._dupRecurring)&&!l.dup).length;
   const sumOut=toPost.filter(l=>l.direction==='out').reduce((s,l)=>s+l.amount,0);
   const sumIn=toPost.filter(l=>l.direction==='in').reduce((s,l)=>s+l.amount,0);
   const rep=_finImport.reported||{};
@@ -4627,11 +4636,11 @@ function renderFinReview(){
   const rows=L.map((l,i)=>{
     const uncat=!l.category_id||l.category_id===(finCatByCode('UNCAT')||{}).id;
     const badge=l.classified_by==='match'?'<span title="casado com lançamento do Actual Costs" style="color:#2D7D5F">◆</span>':l.classified_by==='rule'?'<span title="regra" style="color:#5C7A3F">●</span>':l.classified_by==='ai'?'<span title="IA" style="color:#9B7535">●</span>':l.classified_by==='manual'?'<span title="manual" style="color:#3D6BA5">●</span>':'<span style="color:#ccc">●</span>';
-    const rowbg=l.dup?'background:#FBECEC;opacity:.7':((l._dupActual||l._dupPosted)?'background:#FFF1E0':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':'')));
+    const rowbg=l.dup?'background:#FBECEC;opacity:.7':((l._dupActual||l._dupPosted||l._dupRecurring)?'background:#FFF1E0':(l.is_transfer?'background:#F3EFFA':(uncat&&l.status==='confirmed'?'background:#FFFBEF':'')));
     return `<tr style="border-bottom:1px solid #F0EAE2;${rowbg}">
       <td style="padding:6px 8px;text-align:center">${badge}</td>
       <td style="padding:6px 8px;white-space:nowrap;font-size:11px">${l.date}${l.dup?'<div style="font-size:9px;color:#B85450;font-weight:700">já importado</div>':''}</td>
-      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')} · ${fmtc(l._dupActual.actual)}${l._dupNotaPath?` <a href="javascript:void(0)" onclick="_openNotaPath('${(l._dupNotaPath||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline">abrir nota →</a>`:' <span style="color:#c9a">(sem PDF)</span>'}</div>`:''}${l._dupPosted?`<div style="font-size:9px;color:#8a3b12;font-weight:700">⚠ já lançado no livro em ${l._dupPosted.txn_date} (${_finAccName(l._dupPosted.account_id).replace(/</g,'&lt;')})</div>`:''}</td>
+      <td style="padding:6px 8px;font-size:11px;max-width:220px">${(l.description||'').replace(/</g,'&lt;')}${l._dupActual?`<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ possível duplicado — já no Actual Costs: ${_finProjName(l._dupActual.project_id).replace(/</g,'&lt;')} · ${(l._dupActual.item_name||'').replace(/</g,'&lt;')} · ${fmtc(l._dupActual.actual)}${l._dupNotaPath?` <a href="javascript:void(0)" onclick="_openNotaPath('${(l._dupNotaPath||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline">abrir nota →</a>`:' <span style="color:#c9a">(sem PDF)</span>'}</div>`:''}${l._dupPosted?`<div style="font-size:9px;color:#8a3b12;font-weight:700">⚠ já lançado no livro em ${l._dupPosted.txn_date} (${_finAccName(l._dupPosted.account_id).replace(/</g,'&lt;')})</div>`:''}${l._dupRecurring?`<div style="font-size:9px;color:#8a3b12;font-weight:700">⚠ possível duplicado — já no Recurring: ${_finProjName(l._dupRecurring.project_id).replace(/</g,'&lt;')} · ${(l._dupRecurring.item_name||'').replace(/</g,'&lt;')}</div>`:''}</td>
       <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:700;color:${l.direction==='in'?'#2D7D5F':'#3D271A'}">${l.direction==='in'?'+':'−'}${fmtc(l.amount)}</td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'category_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:150px">${_finCatOptions(l.category_id)}</select></td>
       <td style="padding:6px 6px"><select onchange="_finSet(${i},'project_id',this.value)" style="font-size:11px;padding:4px 5px;max-width:140px">${_finProjOptions(l.project_id)}</select></td>
@@ -4665,7 +4674,7 @@ function renderFinReview(){
   </div>`;
 }
 
-async function _finIgnoreDupActuals(){ if(!_finImport) return; _finImport.lines.forEach(l=>{ if((l._dupActual||l._dupPosted)&&!l.dup) l.status='ignored'; }); renderFinReview(); toast('Possíveis duplicados marcados como ignorados',true); }
+async function _finIgnoreDupActuals(){ if(!_finImport) return; _finImport.lines.forEach(l=>{ if((l._dupActual||l._dupPosted||l._dupRecurring)&&!l.dup) l.status='ignored'; }); renderFinReview(); toast('Possíveis duplicados marcados como ignorados',true); }
 async function _finLearnRule(i){
   if(!_finImport||!_finImport.lines[i]) return;
   const l=_finImport.lines[i];
@@ -9848,6 +9857,24 @@ function renderVendorExpenses(){
   </tr>`;
 }
 
+// Caixa do mês corrente — vem do Livros (fin_transactions), fonte única do caixa.
+async function _finFillCaixaKPI(){
+  const el=document.getElementById('fin-kpi-caixa-val'); if(!el) return;
+  const now=new Date();
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  try{
+    const r=await sb.from('fin_transactions').select('amount,direction,is_transfer,txn_date').gte('txn_date',ym+'-01').lte('txn_date',ym+'-31');
+    const tx=(r.data||[]).filter(t=>!t.is_transfer);
+    let inn=0,out=0;
+    tx.forEach(t=>{ if(t.direction==='in') inn+=+t.amount||0; else out+=+t.amount||0; });
+    const net=inn-out;
+    el.textContent=(net<0?'-':'')+fmtc(Math.abs(net));
+    el.style.color=net>=0?'var(--p3)':'var(--p1)';
+    const sub=document.getElementById('fin-kpi-caixa-sub');
+    if(sub) sub.textContent=`entr. ${fmtc(inn)} · saíd. ${fmtc(out)}`;
+  }catch(e){ el.textContent='—'; el.style.color='var(--gray3)'; }
+}
+
 function renderFinancial(){
   if(!isCEO()) return;
   const q=(document.getElementById('fin-search')?.value||'').toLowerCase().trim();
@@ -9880,7 +9907,9 @@ function renderFinancial(){
       <div class="home-card gold"><div class="lbl">💵 Faturamento DEC</div><div class="val">${fmt(totRev)}</div><div class="sub">Op ${fmt(totOp)} · ROI ${fmt(totRoi)}</div></div>
       <div class="home-card"><div class="lbl">🔨 Custos (Actual)</div><div class="val">${fmt(totCost)}</div></div>
       <div class="home-card"><div class="lbl">🏢 Overhead (${(+appConfig.overhead_rate_pct||0)}%)</div><div class="val">${fmt(totOh)}</div></div>
-      <div class="home-card green"><div class="lbl">📈 Lucro DEC</div><div class="val" style="color:${totProfit>=0?'var(--p3)':'var(--p1)'}">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</div><div class="sub">Margem ${totMargin.toFixed(1)}%</div></div>`;
+      <div class="home-card green"><div class="lbl">📈 Lucro DEC</div><div class="val" style="color:${totProfit>=0?'var(--p3)':'var(--p1)'}">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</div><div class="sub">Margem ${totMargin.toFixed(1)}%</div></div>
+      <div class="home-card"><div class="lbl">💳 Caixa do mês <span style="font-size:9px;color:var(--gray3)">(Livros)</span></div><div class="val" id="fin-kpi-caixa-val" style="color:var(--gray3)">…</div><div class="sub" id="fin-kpi-caixa-sub"></div></div>`;
+    _finFillCaixaKPI();
   }
   // Render table
   const tbody=document.getElementById('fin-tbody');
