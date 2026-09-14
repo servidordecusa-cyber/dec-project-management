@@ -13206,7 +13206,8 @@ function cdNewBudget(){
 }
 
 async function cdApproveBudget(budgetId){
-  const b=budgets.find(x=>x.id===budgetId);
+  // Prefere o orçamento aberto no editor (cópia viva) se for o mesmo id — evita ler versão desatualizada da lista
+  const b=(_bdgCurrent&&_bdgCurrent.id===budgetId)?_bdgCurrent:budgets.find(x=>x.id===budgetId);
   if(!b){toast('Orçamento não encontrado',false);return;}
   if(b.status!=='approved'){toast('Mude o status para Aprovado primeiro',false);return;}
   if(b.converted_to_project_id){toast('Já foi convertido em projeto',false);return;}
@@ -13257,6 +13258,9 @@ async function cdApproveBudget(budgetId){
   // Update in-memory
   b.converted_to_project_id=newProj.id;
   b.approved_at=new Date().toISOString();
+  // Sincroniza também o item na lista `budgets` (caso `b` seja a cópia do editor)
+  const _bi=budgets.findIndex(x=>x.id===budgetId);
+  if(_bi>=0){ budgets[_bi].converted_to_project_id=newProj.id; budgets[_bi].approved_at=b.approved_at; budgets[_bi].status='approved'; }
   if(!projects.find(p=>p.id===newProj.id)) projects.push(newProj);
   toast('✅ Projeto criado! Redirecionando...',true);
   setTimeout(()=>openProject(newProj.id),800);
@@ -13267,25 +13271,13 @@ async function updateBudgetStatusAndApprove(newStatus){
   if(!_bdgCurrent) return;
   const oldStatus = _bdgCurrent.status;
   _bdgCurrent.status = newStatus;
-  
-  // Se mudou para 'approved', tenta criar projeto automaticamente
-  if(newStatus === 'approved' && oldStatus !== 'approved'){
-    // Salva primeiro o status
-    const {error: saveErr} = await sb.from('budgets').update({status: 'approved'}).eq('id', _bdgCurrent.id);
-    if(saveErr){
-      toast('Erro ao atualizar status: '+saveErr.message, false);
-      _bdgCurrent.status = oldStatus; // reverte
-      return;
-    }
-    // Depois cria o projeto automaticamente
-    setTimeout(()=> cdApproveBudget(_bdgCurrent.id), 300);
-  } else {
-    // Só atualiza o status sem criar projeto
-    const {error} = await sb.from('budgets').update({status: newStatus}).eq('id', _bdgCurrent.id);
-    if(error){
-      toast('Erro ao atualizar status: '+error.message, false);
-      _bdgCurrent.status = oldStatus;
-    }
+  // Salva o orçamento INTEIRO (status + endereço, cliente, valores editados) e
+  // sincroniza a lista `budgets` + refaz _bdgCurrent com a linha do banco.
+  await saveBudget();
+  if(!_bdgCurrent || !_bdgCurrent.id) return; // saveBudget falhou/reverteu
+  // Se acabou de virar 'approved', cria o projeto automaticamente
+  if(newStatus === 'approved' && oldStatus !== 'approved' && !_bdgCurrent.converted_to_project_id){
+    setTimeout(()=> cdApproveBudget(_bdgCurrent.id), 200);
   }
 }
 
