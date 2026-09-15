@@ -15115,7 +15115,11 @@ async function lancarSubmit(){
       const cat=((document.getElementById('lc-ohcat')||{}).value||'').trim()||nm;
       const r=await sb.from('fixed_costs').insert({date,category:cat,description:nm,cost_type:'fixed',amount,notes:vendor?('Fornecedor: '+vendor):'',paid_from_wc:false});
       if(r.error) return fail('Erro (overhead): '+r.error.message);
-      return done('Lançado em Costs (overhead) ✓');
+      // preserva o PDF da nota (registro, pra não ficar órfão)
+      if(_lcUpload && _lcUpload.storage_path){ try{
+        await sb.from('vendor_notes').insert({target_type:'fixed_costs',storage_path:_lcUpload.storage_path,original_filename:_lcUpload.filename,file_type:_lcUpload.type,file_size_bytes:_lcUpload.size,extracted_vendor:vendor||null,extracted_total:amount,extracted_date:date,extracted_category:cat,status:'approved',approved_at:new Date().toISOString()});
+      }catch(_){} }
+      return done('Lançado em Custos da empresa (overhead) ✓');
     }
     if(dest==='utilities'){
       const pid=(document.getElementById('lc-proj')||{}).value; if(!pid) return fail('Escolha a obra');
