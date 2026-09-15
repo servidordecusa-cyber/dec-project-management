@@ -15016,7 +15016,8 @@ async function openLancarModal(){
   try{ await loadFinData(); }catch(e){}
   let m=document.getElementById('lancar-modal');
   if(!m){ m=document.createElement('div'); m.id='lancar-modal'; m.className='modal-overlay'; document.body.appendChild(m); }
-  const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>(a.address||a.name||'').localeCompare(b.address||b.name||'')).map(p=>`<option value="${p.id}">${((p.address||p.name||'')).replace(/</g,'&lt;')}</option>`).join('');
+  const _obraKey=x=>String(x||'').replace(/^[\s\d().,#\-]+/,'').trim().toLowerCase();
+  const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>_obraKey(a.address||a.name).localeCompare(_obraKey(b.address||b.name))).map(p=>`<option value="${p.id}">${((p.address||p.name||'')).replace(/</g,'&lt;')}</option>`).join('');
   const acctOpts='<option value="">— escolher conta —</option>'+((typeof finAccounts!=='undefined'?finAccounts:[])||[]).map(a=>`<option value="${a.id}">${(a.name||'').replace(/</g,'&lt;')}</option>`).join('');
   const rcOpts='<option value="">— escolher item —</option>'+((typeof RC_ITEMS!=='undefined'?RC_ITEMS:[])||[]).map(n=>`<option value="${n}">${n}</option>`).join('');
   const today=new Date().toISOString().slice(0,10);
@@ -15162,7 +15163,8 @@ function renderImportQueue(){
     const mine=rows.filter(r=>r.proj && r.proj.id===CID);
     const unassigned=rows.filter(r=>!r.proj);
     if(mine.length===0 && unassigned.length===0){ el.innerHTML=''; return; }
-    const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(p=>`<option value="${p.id}">${((p.name||p.address||'')).replace(/</g,'&lt;')}</option>`).join('');
+    const _obraKey=x=>String(x||'').replace(/^[\s\d().,#\-]+/,'').trim().toLowerCase();
+    const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>_obraKey(a.name||a.address).localeCompare(_obraKey(b.name||b.address))).map(p=>`<option value="${p.id}">${((p.name||p.address||'')).replace(/</g,'&lt;')}</option>`).join('');
     const srcLbl={lowes:'🔵 Lowe\'s',home_depot:'🟠 Home Depot',amazon:'🟡 Amazon'};
     // Duplicidade: valor que se repete na fila OU que já existe no Actual Costs
     const _tc={}; purchaseImports.forEach(x=>{const k=(+x.total||0).toFixed(2); _tc[k]=(_tc[k]||0)+1;});
