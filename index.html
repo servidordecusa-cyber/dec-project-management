@@ -375,6 +375,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <button class="gtab" data-view="vendors" onclick="goView('vendors')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>Suppliers</button>
   <button class="gtab" data-view="invoices" onclick="goView('invoices')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span>Invoices</button>
   <button class="gtab" data-view="fixed" onclick="goView('fixed')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>Costs</button>
+  <button class="gtab" data-view="lancar" onclick="goView('lancar')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>Lançar</button>
   <button class="gtab" data-view="financial" onclick="goView('financial')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg></span>Financial</button>
   <button class="gtab" data-view="livros" onclick="goView('livros')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>Livros</button>
   <button class="gtab" data-view="dre" onclick="goView('dre')"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg></span>DRE</button>
@@ -1678,6 +1679,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div id="fluxo-root"></div>
 </div>
 
+<!-- CENTRAL DE LANÇAMENTOS (todas as notas pendentes de todos os projetos) -->
+<div id="view-lancar" style="padding:26px;display:none">
+  <div id="lancar-root"></div>
+</div>
+
 <!-- FIXED COSTS -->
 <div id="view-fixed">
   <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Costs</h2><p style="color:var(--gray3);margin-top:4px">Company administrative expenses · not project-related</p></div></div>
@@ -2542,7 +2548,23 @@ function showApp(){
   setLoading(false);
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  // CEO starts in Home, others in Portfolio
+  // Restaura a última tela (refresh volta pra onde você estava)
+  const nav=_readNav();
+  try{
+    if(nav && nav.t==='proj' && nav.cid && projects.find(p=>p.id===nav.cid)){
+      openProject(nav.cid);
+      const tab=nav.tab||'dash';
+      const el=document.getElementById('snav-'+tab);
+      const cls=({ph1:'s1',ph2:'s2',ph3:'s3',ph4:'s4'})[tab]||'';
+      if(document.getElementById('page-'+tab)) sp(tab, el, cls);
+      return;
+    }
+    if(nav && nav.t==='view' && GLOBAL_VIEWS.includes(nav.view)){
+      const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','livros','fluxo','working-capital','dre','budgets'];
+      if(!(ceoOnly.includes(nav.view) && !isCEO())){ goView(nav.view); return; }
+    }
+  }catch(e){ console.warn('restore nav', e); }
+  // Padrão: CEO em Home, demais em Portfolio
   goView(isCEO()?'home':'portfolio');
 }
 
@@ -4294,19 +4316,22 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','financial','livros','fluxo','working-capital','dre','budgets'];
+const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets'];
 
+// ─── Memória de navegação: lembra a última tela no refresh ───────────────
+function _saveNav(o){ try{ localStorage.setItem('dec_nav', JSON.stringify(o)); }catch(e){} }
+function _readNav(){ try{ return JSON.parse(localStorage.getItem('dec_nav')||'null'); }catch(e){ return null; } }
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','financial','livros','fluxo','working-capital','dre','budgets'];
+  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-lancar','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -4331,12 +4356,14 @@ function goView(view){
   else if(view==='vendors' && isCEO()){ renderVendors(); _vexpPopulateProjects(); renderVendorExpenses(); }
   else if(view==='invoices' && isCEO()) renderInvoices();
   else if(view==='fixed' && isCEO()) renderFixedCosts();
+  else if(view==='lancar' && isCEO()) renderLancar();
   else if(view==='financial' && isCEO()) renderFinancial();
   else if(view==='livros' && isCEO()) renderLivros();
   else if(view==='fluxo' && isCEO()) renderFluxo();
   else if(view==='working-capital' && isCEO()) renderWorkingCapitalCashFlow();
   else if(view==='dre' && isCEO()) renderDRE();
   else if(view==='budgets' && isCEO()) renderBudgets();
+  _saveNav({t:'view',view});
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -5113,7 +5140,7 @@ function openProject(id){
   const p=projects.find(x=>x.id===id);
   if(!p) return;
   // Hide ALL global views
-  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-financial','view-livros','view-fluxo','view-dre','view-working-capital','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-lancar','view-financial','view-livros','view-fluxo','view-dre','view-working-capital','view-budgets'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -14823,6 +14850,75 @@ function findPendingDuplicatesByAmount(amount, excludeNoteId){
       note:' (nota pendente com mesmo valor)',
     }));
 }
+// ═══ CENTRAL DE LANÇAMENTOS (Fase 1) — todas as pendentes, de todos os projetos ══
+let pendingAll=[];
+async function loadPendingAll(){
+  const r=await sb.from('vendor_notes')
+    .select('id,project_id,extracted_vendor,extracted_date,extracted_total,suggested_item_name,storage_path,target_type,created_at')
+    .eq('status','pending_review').order('created_at',{ascending:false});
+  pendingAll=r.error?[]:(r.data||[]);
+}
+function _lancarProjName(id){ const p=(projects||[]).find(x=>x.id===id); return p?(p.address||p.name||'—'):'(sem projeto)'; }
+function goLancarToProject(pid){ if(!pid){toast('Nota sem projeto vinculado',false);return;} openProject(pid); setTimeout(()=>{ const el=document.getElementById('snav-act'); if(document.getElementById('page-act')) sp('act', el, ''); },150); }
+async function discardFromLancar(id){
+  const n=pendingAll.find(x=>x.id===id); if(!n) return;
+  if(!confirm('Descartar esta nota pendente?\n\n'+(n.extracted_vendor||'—')+' · '+fmtc(n.extracted_total)+'\n\nEla sai da fila. Não mexe em nada já lançado.')) return;
+  const {error}=await sb.from('vendor_notes').delete().eq('id',id);
+  if(error){toast('Erro ao descartar: '+error.message,false);return;}
+  pendingAll=pendingAll.filter(x=>x.id!==id);
+  toast('Nota pendente descartada',true);
+  renderLancar();
+}
+function renderLancar(){
+  if(!isCEO()) return;
+  const el=document.getElementById('lancar-root'); if(!el) return;
+  el.innerHTML='<div style="color:var(--gray3);padding:20px">Carregando lançamentos pendentes…</div>';
+  loadPendingAll().then(()=>{
+    const total=pendingAll.length;
+    const _c={}; pendingAll.forEach(n=>{const k=(+n.extracted_total||0).toFixed(2); _c[k]=(_c[k]||0)+1;});
+    const dupCount=pendingAll.filter(n=>(+n.extracted_total||0)>0 && _c[(+n.extracted_total||0).toFixed(2)]>1).length;
+    const zeroCount=pendingAll.filter(n=>!(+n.extracted_total>0)).length;
+    const somaP=pendingAll.reduce((s,n)=>s+(+n.extracted_total||0),0);
+    const header=`<div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Lançar — Central de Lançamentos</h2><p style="color:var(--gray3);margin-top:4px">Todas as notas pendentes de revisão, de todos os projetos, num lugar só. Elas não contam no total até serem aprovadas.</p></div></div>`;
+    if(!total){ el.innerHTML=header+'<div class="card" style="text-align:center;color:var(--gray3);padding:30px">✅ Nenhuma nota pendente. Tudo revisado!</div>'; return; }
+    const kpis=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
+      <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Pendentes</div><div style="font-size:24px;font-weight:800;color:#3D271A">${total}</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Valor pendente</div><div style="font-size:24px;font-weight:800;color:#9B7535">${fmtc(somaP)}</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Valor duplicado</div><div style="font-size:24px;font-weight:800;color:${dupCount?'#C0392B':'#5C7A3F'}">${dupCount}</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Sem valor ($0)</div><div style="font-size:24px;font-weight:800;color:${zeroCount?'#C0392B':'#5C7A3F'}">${zeroCount}</div></div>
+    </div>`;
+    // ordena por projeto, depois valor desc
+    const rows=pendingAll.slice().sort((a,b)=> _lancarProjName(a.project_id).localeCompare(_lancarProjName(b.project_id)) || (+b.extracted_total||0)-(+a.extracted_total||0));
+    const body=rows.map(n=>{
+      const amt=+n.extracted_total||0;
+      const dupP=amt>0 && _c[amt.toFixed(2)]>1;
+      const zero=!(amt>0);
+      const flag=dupP?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor repetido na fila</div>':(zero?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ sem valor (pode não ser nota de compra)</div>':'');
+      const bg=(dupP||zero)?';background:#FFF1E0':'';
+      return `<tr style="border-bottom:1px solid #F0EAE2${bg}">
+        <td style="padding:8px 10px;font-size:12px">${_lancarProjName(n.project_id).replace(/</g,'&lt;')}</td>
+        <td style="padding:8px 10px;font-size:11px;white-space:nowrap">${(n.extracted_date||(n.created_at||'').slice(0,10)||'')}</td>
+        <td style="padding:8px 10px;font-size:12px">${(n.extracted_vendor||'—').replace(/</g,'&lt;')}<div style="color:#9B7535;font-size:11px">${(n.suggested_item_name||'').replace(/</g,'&lt;')}</div></td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(n.extracted_total)}${flag}</td>
+        <td style="padding:8px 10px;text-align:center">${n.storage_path?`<a href="javascript:void(0)" onclick="_openVendorNotePath('${(n.storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:11px">abrir</a>`:'<span style="color:#c9c0b3;font-size:11px">—</span>'}</td>
+        <td style="padding:8px 10px;text-align:center;white-space:nowrap"><button onclick="goLancarToProject('${n.project_id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Revisar no projeto →</button> <button onclick="discardFromLancar('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button></td>
+      </tr>`;
+    }).join('');
+    el.innerHTML=header+kpis+`<div class="card" style="padding:0;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#3D271A;color:#fff">
+          <th style="padding:9px 10px;text-align:left">Projeto</th>
+          <th style="padding:9px 10px;text-align:left">Data</th>
+          <th style="padding:9px 10px;text-align:left">Fornecedor / Item</th>
+          <th style="padding:9px 10px;text-align:right">Valor</th>
+          <th style="padding:9px 10px;text-align:center">Arquivo</th>
+          <th style="padding:9px 10px;text-align:center">Ações</th>
+        </tr></thead><tbody>${body}</tbody>
+      </table>
+    </div>
+    <div style="font-size:10px;color:var(--gray3);margin-top:8px">Fundo laranja = valor repetido na fila ou nota sem valor (pode ser um documento que não é nota de compra, ex.: seguro/COI). <strong>Revisar no projeto</strong> te leva pro Actual Costs daquele projeto pra conferir e aprovar; <strong>🗑</strong> descarta a pendente.</div>`;
+  });
+}
 function renderImportQueue(){
   const el=document.getElementById('act-import-queue'); if(!el||!CID) return;
   Promise.all([loadPurchaseData(),loadFinActuals()]).then(()=>{
@@ -14998,6 +15094,7 @@ function sp(id,el,cls){
   if(id==='act' && isCEO()){ _populateActVendorFilter(); renderProjectSupplierSummary(); }
   if(id==='daily') dlOpen();
   // (clients/vendors/invoices moved to global views — see goView)
+  if(CID) _saveNav({t:'proj',cid:CID,tab:id});
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
