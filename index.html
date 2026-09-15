@@ -15227,66 +15227,52 @@ async function postImport(id){
   renderImportQueue();
 }
 
-function renderProjectSupplierSummary(){
+async function renderProjectSupplierSummary(){
   const el=document.getElementById('act-supplier-summary');
   if(!el) return;
   if(!CID){ el.innerHTML=''; return; }
-  const rooms=budgetMap[CID]||{};
-  const agg={};
-  Object.keys(rooms).forEach(rid=>{
-    const items=rooms[rid]||{};
-    Object.keys(items).forEach(islug=>{
-      const d=items[islug]||{};
-      const amt=+d.actual||0;
-      const sup=(d.actual_supplier||'').trim();
-      if(amt<=0 && !sup) return;
-      const key=sup||'__none__';
-      if(!agg[key]){
-        const known=!!(sup && (vendors||[]).some(v=>v.id===sup));
-        const nm=sup?(vendorName(sup)||sup):'(sem fornecedor)';
-        agg[key]={name:nm,total:0,count:0,known,notas:[],items:[]};
-      }
-      agg[key].total+=amt;
-      agg[key].count++;
-      const atts=(((attachMap[CID]||{})[rid]||{})[islug])||[];
-      atts.forEach(at=>agg[key].notas.push({name:at.name||'nota', item:at.item_name||islug, path:at.storage_path}));
-      const _iname=(((itemsMap[CID]||{})[rid]||[]).find(x=>x.slug===islug)||{}).name||islug;
-      agg[key].items.push({name:_iname, amount:amt, atts});
-    });
-  });
-  const list=Object.values(agg).filter(a=>a.total>0||a.count>0).sort((a,b)=>b.total-a.total);
-  if(list.length===0){ el.innerHTML=''; return; }
-  const grandTotal=list.reduce((s,a)=>s+a.total,0);
-  const grandCount=list.reduce((s,a)=>s+a.count,0);
-  const rows=list.map((a,i)=>{
-    const itemsHtml=a.items.length
-      ? a.items.map(it=>`<div style="padding:5px 0;border-bottom:1px solid #EFE9DF;display:flex;justify-content:space-between;gap:12px;align-items:center">
-          <span style="color:#655A4E;font-size:12px">📄 ${(it.name||'').replace(/</g,'&lt;')} <span style="color:#9B7535;font-weight:700">· ${fmtc(it.amount)}</span></span>
-          ${(it.atts&&it.atts.length)? it.atts.map(at=>`<a href="javascript:void(0)" onclick="_openNotaPath('${(at.storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;font-weight:700;font-size:12px;text-decoration:underline;white-space:nowrap">abrir nota →</a>`).join(' ') : '<span style="color:#c9c0b3;font-size:11px;font-style:italic;white-space:nowrap">sem PDF anexado</span>'}
-        </div>`).join('')
-      : '<div style="padding:6px 0;color:var(--gray3);font-size:12px;font-style:italic">Sem itens.</div>';
-    return `<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer" onclick="_toggleSupNotas(${i})">
-      <td style="padding:8px 10px;font-weight:600;color:var(--navy)"><span id="sup-caret-${i}" style="display:inline-block;width:14px;color:#9B7535">▸</span>${(a.name||'').replace(/</g,'&lt;')}${a.known?'':' <span style="font-size:10px;color:#B85450;font-weight:600">(não cadastrado)</span>'} <span style="font-size:10px;color:#bbb">· ${a.items.length} ${a.items.length===1?'item':'itens'}${a.notas.length?` · ${a.notas.length} c/ PDF`:' · sem PDF'}</span></td>
-      <td style="padding:8px 10px;text-align:center;color:var(--gray3);font-size:12px">${a.count}</td>
-      <td style="padding:8px 10px;text-align:right;font-weight:700;color:#9B7535">${fmtc(a.total)}</td>
-    </tr>
-    <tr id="sup-notas-${i}" style="display:none;background:#FBF8F3"><td colspan="3" style="padding:6px 16px 10px 34px">${itemsHtml}</td></tr>`;
+  const pid=CID;
+  // Lista PLANA: 1 nota = 1 linha (Data · Fornecedor · Item · Valor · Arquivo) — sem agrupar por fornecedor
+  const bi=await sb.from('budget_items').select('item_slug,room_id,item_name,actual,actual_supplier,updated_at').eq('project_id',pid);
+  if(bi.error){ el.innerHTML=''; return; }
+  const items=(bi.data||[]).filter(x=>(+x.actual||0)>0 || (x.actual_supplier||'').trim());
+  if(!items.length){ el.innerHTML=''; return; }
+  const at=await sb.from('budget_attachments').select('item_slug,room_id,storage_path,name').eq('project_id',pid);
+  const attBy={}; (at.data||[]).forEach(a=>{const k=(a.room_id||'')+'|'+(a.item_slug||''); (attBy[k]=attBy[k]||[]).push(a);});
+  items.sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')) || (+b.actual||0)-(+a.actual||0));
+  const grand=items.reduce((s,x)=>s+(+x.actual||0),0);
+  const supName=s=>{ s=(s||'').trim(); if(!s) return '<span style="color:#B85450">(sem fornecedor)</span>'; return (vendorName(s)||s).replace(/</g,'&lt;'); };
+  const rows=items.map(x=>{
+    const k=(x.room_id||'')+'|'+(x.item_slug||'');
+    const atts=attBy[k]||[];
+    const arq=atts.length
+      ? `<a href="javascript:void(0)" onclick="_openNotaPath('${(atts[0].storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:12px">abrir</a>`
+      : '<span style="color:#c9c0b3;font-size:11px">—</span>';
+    return `<tr style="border-bottom:1px solid #F0EAE2">
+      <td style="padding:8px 10px;font-size:12px;white-space:nowrap">${String(x.updated_at||'').slice(0,10)}</td>
+      <td style="padding:8px 10px;font-size:12px">${supName(x.actual_supplier)}</td>
+      <td style="padding:8px 10px;font-size:12px">${(x.item_name||'').replace(/</g,'&lt;')}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:#9B7535;white-space:nowrap">${fmtc(x.actual)}</td>
+      <td style="padding:8px 10px;text-align:center">${arq}</td>
+    </tr>`;
   }).join('');
   el.innerHTML=`<div class="card" style="margin-top:18px">
-    <div class="card-title">🧾 Fornecedores usados neste projeto
-      <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">${list.length} fornecedor(es) · clique pra ver as notas</span>
+    <div class="card-title">🧾 Notas lançadas neste projeto
+      <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--gray3);margin-left:8px">${items.length} nota(s) · 1 linha por nota</span>
     </div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#FAF7F3">
+        <th style="padding:8px 10px;text-align:left;font-size:11px;border-bottom:2px solid var(--gray2);width:110px">Data</th>
         <th style="padding:8px 10px;text-align:left;font-size:11px;border-bottom:2px solid var(--gray2)">Fornecedor</th>
-        <th style="padding:8px 10px;text-align:center;font-size:11px;border-bottom:2px solid var(--gray2);width:80px">Itens</th>
-        <th style="padding:8px 10px;text-align:right;font-size:11px;border-bottom:2px solid var(--gray2);width:130px">Total</th>
+        <th style="padding:8px 10px;text-align:left;font-size:11px;border-bottom:2px solid var(--gray2)">Item</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;border-bottom:2px solid var(--gray2);width:120px">Valor</th>
+        <th style="padding:8px 10px;text-align:center;font-size:11px;border-bottom:2px solid var(--gray2);width:70px">Arquivo</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr style="background:#3D271A;color:#D5C9BC">
-        <td style="padding:9px 10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px">Total</td>
-        <td style="padding:9px 10px;text-align:center;font-weight:700">${grandCount}</td>
-        <td style="padding:9px 10px;text-align:right;font-weight:700">${fmtc(grandTotal)}</td>
+        <td style="padding:9px 10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px" colspan="3">Total (${items.length} notas)</td>
+        <td style="padding:9px 10px;text-align:right;font-weight:700">${fmtc(grand)}</td>
+        <td></td>
       </tr></tfoot>
     </table></div>
   </div>`;
