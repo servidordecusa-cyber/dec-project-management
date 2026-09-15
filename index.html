@@ -6178,6 +6178,11 @@ async function approveVendorNote() {
   amtDups.forEach(ad => {
     if (!dups.some(d => d.gid === ad.gid && d.item_name === ad.item_name)) dups.push(ad);
   });
+  // Quarta trava: mesmo VALOR entre as notas PENDENTES da fila (fecha o ponto cego)
+  const pendDups = findPendingDuplicatesByAmount(total, _vnCurrent && _vnCurrent.note_id) || [];
+  pendDups.forEach(pd => {
+    if (!dups.some(d => Math.abs((+d.amount||0)-(+pd.amount||0))<0.01 && d.item_name===pd.item_name)) dups.push(pd);
+  });
   if (dups.length > 0) {
     if (!confirm(formatDuplicateMessage('actual', dups))) {
       const btn0 = document.getElementById('vn-approve-btn');
@@ -6316,6 +6321,9 @@ async function approveVendorNoteItemized(){
     .forEach(fd => { if (!dups.some(d => d.gid===fd.gid && d.item_name===fd.item_name)) dups.push(fd); });
   lines.forEach(l => (findActualDuplicatesByAmount(CID, l.amount) || [])
     .forEach(ad => { if (!dups.some(d => d.gid===ad.gid && d.item_name===ad.item_name)) dups.push(ad); }));
+  // Mesmo VALOR entre as notas pendentes da fila
+  lines.forEach(l => (findPendingDuplicatesByAmount(l.amount, _vnCurrent && _vnCurrent.note_id) || [])
+    .forEach(pd => { if (!dups.some(d => Math.abs((+d.amount||0)-(+pd.amount||0))<0.01 && d.item_name===pd.item_name)) dups.push(pd); }));
   if (dups.length > 0 && !confirm(formatDuplicateMessage('actual', dups))) return;
 
   const btn = document.getElementById('vn-approve-btn');
@@ -14745,14 +14753,17 @@ function renderPendingNotes(){
   loadPendingNotes().then(()=>{
     if(!el||!CID) return;
     if(!pendingNotes.length){ el.innerHTML=''; return; }
+    // conta quantas pendentes têm cada valor (pra sinalizar repetição na fila)
+    const _pc={}; pendingNotes.forEach(n=>{const k=(+n.extracted_total||0).toFixed(2); _pc[k]=(_pc[k]||0)+1;});
     const rows=pendingNotes.map(n=>{
       const amt=+n.extracted_total||0;
       const dupA=amt>0 && (findActualDuplicatesByAmount(CID,amt)||[]).length>0;
-      return {n,dupA};
+      const dupP=amt>0 && _pc[amt.toFixed(2)]>1; // mesmo valor repetido entre as pendentes
+      return {n,dupA,dupP};
     });
-    const dupCount=rows.filter(r=>r.dupA).length;
+    const dupCount=rows.filter(r=>r.dupA||r.dupP).length;
     el.innerHTML=`<div class="card" style="margin-bottom:18px;border-left:4px solid #B85450">
-      <div class="card-title">📥 Notas pendentes de revisão <span style="font-weight:500;color:var(--gray3);font-size:12px">${pendingNotes.length} nesta obra${dupCount?` · ${dupCount} c/ valor já lançado`:''} · não contam no total até aprovar</span></div>
+      <div class="card-title">📥 Notas pendentes de revisão <span style="font-weight:500;color:var(--gray3);font-size:12px">${pendingNotes.length} nesta obra${dupCount?` · ${dupCount} c/ valor duplicado`:''} · não contam no total até aprovar</span></div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#FAF7F3">
           <th style="padding:7px 10px;text-align:left">Data</th>
@@ -14761,10 +14772,10 @@ function renderPendingNotes(){
           <th style="padding:7px 10px;text-align:center">Arquivo</th>
           <th style="padding:7px 10px;text-align:center">Ações</th>
         </tr></thead><tbody>
-        ${rows.map(({n,dupA})=>`<tr style="border-bottom:1px solid #F0EAE2${dupA?';background:#FFF1E0':''}">
+        ${rows.map(({n,dupA,dupP})=>`<tr style="border-bottom:1px solid #F0EAE2${(dupA||dupP)?';background:#FFF1E0':''}">
           <td style="padding:8px 10px;white-space:nowrap">${(n.extracted_date||(n.created_at||'').slice(0,10)||'')}</td>
           <td style="padding:8px 10px">${(n.extracted_vendor||'—').replace(/</g,'&lt;')}<div style="color:#9B7535;font-size:11px">${(n.suggested_item_name||'').replace(/</g,'&lt;')}</div></td>
-          <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(n.extracted_total)}${dupA?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor já no Actual Costs</div>':''}</td>
+          <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(n.extracted_total)}${dupA?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor já no Actual Costs</div>':''}${dupP?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor repetido na fila</div>':''}</td>
           <td style="padding:8px 10px;text-align:center">${n.storage_path?`<a href="javascript:void(0)" onclick="_openVendorNotePath('${(n.storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:11px">abrir</a>`:'<span style="color:#c9c0b3;font-size:11px">—</span>'}</td>
           <td style="padding:8px 10px;text-align:center;white-space:nowrap"><button onclick="reviewPendingNote('${n.id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Revisar</button> <button onclick="discardPendingNote('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button></td>
         </tr>`).join('')}
@@ -14797,6 +14808,20 @@ async function discardPendingNote(id){
   pendingNotes=pendingNotes.filter(x=>x.id!==id);
   toast('Nota pendente descartada',true);
   renderPendingNotes();
+}
+// Duplicidade por VALOR contra as OUTRAS notas pendentes do projeto (mesmo valor na fila).
+// Fecha o ponto cego: o mesmo PDF subido 2x (ambos pendentes) agora avisa.
+function findPendingDuplicatesByAmount(amount, excludeNoteId){
+  if(!amount || amount<=0) return [];
+  return (pendingNotes||[])
+    .filter(n => n.id!==excludeNoteId && Math.abs((+n.extracted_total||0)-amount)<0.01)
+    .map(n => ({
+      gid:'', groupName:'Fila de pendentes',
+      item_name:(n.suggested_item_name||n.extracted_vendor||'nota pendente'),
+      amount:(+n.extracted_total||0),
+      supplier_name:(n.extracted_vendor||''),
+      note:' (nota pendente com mesmo valor)',
+    }));
 }
 function renderImportQueue(){
   const el=document.getElementById('act-import-queue'); if(!el||!CID) return;
