@@ -6948,7 +6948,7 @@ async function approveRecurringNote() {
   const date = document.getElementById('vnr-date').value || null;
   const totalStr = document.getElementById('vnr-total').value;
   const total = parseFloat(totalStr);
-  const itemName = document.getElementById('vnr-recurring-item').value;
+  const itemName = _rcCanonItem(document.getElementById('vnr-recurring-item').value);
   const yearOffsetStr = document.getElementById('vnr-year-offset').value;
   const monthStr = document.getElementById('vnr-month').value;
   const yearOffset = parseInt(yearOffsetStr);
@@ -13487,6 +13487,14 @@ const RC_ITEMS=[
   'Landscape','Energy','Water','Gas','Club','HOA','Internet','Pool',
   'Loan payment','Insurance','Annual Taxes 1','Annual Taxes 2','Annual Taxes 3'
 ];
+// Normaliza o nome do item recorrente pro nome oficial (ignora maiúsc/minúsc e espaços)
+// Evita duplicar "Landscape" vs "landscape" vs " landscape ".
+function _rcCanonItem(name){
+  const t=String(name||'').trim();
+  if(!t) return t;
+  const hit=RC_ITEMS.find(x=>x.toLowerCase()===t.toLowerCase());
+  return hit || t;
+}
 const RC_YEARS_COUNT=4; // anos suportados (mude aqui se quiser 5, 6, etc)
 const RC_MONTHS_PER_YEAR=12;
 const RC_MONTH_LABELS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -15010,6 +15018,7 @@ async function openLancarModal(){
   if(!m){ m=document.createElement('div'); m.id='lancar-modal'; m.className='modal-overlay'; document.body.appendChild(m); }
   const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>(a.address||a.name||'').localeCompare(b.address||b.name||'')).map(p=>`<option value="${p.id}">${((p.address||p.name||'')).replace(/</g,'&lt;')}</option>`).join('');
   const acctOpts='<option value="">— escolher conta —</option>'+((typeof finAccounts!=='undefined'?finAccounts:[])||[]).map(a=>`<option value="${a.id}">${(a.name||'').replace(/</g,'&lt;')}</option>`).join('');
+  const rcOpts='<option value="">— escolher item —</option>'+((typeof RC_ITEMS!=='undefined'?RC_ITEMS:[])||[]).map(n=>`<option value="${n}">${n}</option>`).join('');
   const today=new Date().toISOString().slice(0,10);
   m.innerHTML=`<div class="modal" style="max-width:560px;padding:0">
     <div style="background:linear-gradient(135deg,#3D271A,#655A4E);padding:16px 22px;color:#fff;display:flex;justify-content:space-between;align-items:center;border-radius:13px 13px 0 0">
@@ -15037,7 +15046,7 @@ async function openLancarModal(){
       <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Descrição / item</label><input id="lc-desc" type="text" placeholder="ex: Piso vinílico" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
       <div id="lc-f-proj" style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Projeto (obra)</label><select id="lc-proj" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit">${projOpts}</select></div>
       <div id="lc-f-cat" style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Categoria</label><select id="lc-cat" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"><option value="material">Material</option><option value="labor">Mão de obra</option></select></div>
-      <div id="lc-f-conta" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Nome da conta (ex: Energia, Água, HOA)</label><input id="lc-conta" type="text" placeholder="ex: Energia" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+      <div id="lc-f-conta" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Conta recorrente (item oficial)</label><select id="lc-conta" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit">${rcOpts}</select></div>
       <div id="lc-f-ohcat" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Categoria do overhead</label><input id="lc-ohcat" type="text" placeholder="ex: Contador, Combustível, Software" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
       <div id="lc-f-acct" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Conta bancária (de onde saiu)</label><select id="lc-acct" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit">${acctOpts}</select></div>
       <div id="lc-hint" style="font-size:11px;color:var(--gray3);background:#FAF7F3;border-left:3px solid var(--gold);padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:14px"></div>
@@ -15110,7 +15119,8 @@ async function lancarSubmit(){
     }
     if(dest==='utilities'){
       const pid=(document.getElementById('lc-proj')||{}).value; if(!pid) return fail('Escolha a obra');
-      const conta=((document.getElementById('lc-conta')||{}).value||'').trim()||nm;
+      const conta=_rcCanonItem((document.getElementById('lc-conta')||{}).value||'');
+      if(!conta) return fail('Escolha a conta recorrente (item da lista)');
       const month=parseInt(date.slice(5,7),10);
       const proj=(projects||[]).find(p=>p.id===pid)||{};
       const cy=(new Date()).getFullYear();
