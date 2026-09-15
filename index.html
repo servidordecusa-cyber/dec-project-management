@@ -15130,6 +15130,10 @@ async function lancarSubmit(){
       const r=await sb.from('recurring_detail_months').upsert({project_id:pid,item_name:conta,year_offset:yoff,month,amount,paid_from_wc:false,updated_at:new Date().toISOString()},{onConflict:'project_id,item_name,year_offset,month'});
       if(r.error) return fail('Erro (utilities): '+r.error.message);
       await sb.from('recurring_detail_meta').upsert({project_id:pid,item_name:conta,company:vendor||'',account:'',notes:''},{onConflict:'project_id,item_name'});
+      // registra no Histórico de Notas (com o PDF), se veio do upload
+      if(_lcUpload && _lcUpload.storage_path){ try{
+        await sb.from('vendor_notes').insert({project_id:pid,target_type:'recurring_costs',storage_path:_lcUpload.storage_path,original_filename:_lcUpload.filename,file_type:_lcUpload.type,file_size_bytes:_lcUpload.size,extracted_vendor:vendor||null,extracted_total:amount,extracted_date:date,recurring_item_name:conta,recurring_year_offset:yoff,recurring_month:month,status:'approved',approved_at:new Date().toISOString()});
+      }catch(_){} }
       return done('Lançado em Recurring ✓');
     }
     if(dest==='repasse'||dest==='socio'){
