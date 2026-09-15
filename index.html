@@ -535,6 +535,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         </div>
 
         <div id="act-import-queue"></div>
+        <div id="vn-pending-panel"></div>
         <div id="act-rooms"></div>
         <div id="act-supplier-summary"></div>
       </div>
@@ -5162,6 +5163,7 @@ function buildBudgetRooms(){
   }
   _updateEstGrandTotal();
   renderImportQueue();
+  renderPendingNotes();
 }
 // Estimate como lista única (junta os itens de todas as fases num só corpo)
 // A 1ª linha é sempre REHAB — valor puxado ao vivo do orçamento vinculado (baseline).
@@ -6296,6 +6298,7 @@ async function approveVendorNote() {
     _vnCurrent = null;
     _vnCurrentIndex = -1;
     _renderActualQueueBanner();
+    if(typeof renderPendingNotes==='function') renderPendingNotes();
     if (_vnQueue.length > 0) {
       setTimeout(() => _vnShowQueueIndex(0), 250);
     } else if (_vnQueueErrors.length === 0) {
@@ -6377,6 +6380,7 @@ async function approveVendorNoteItemized(){
     if (_vnCurrentIndex >= 0 && _vnQueue.length > 0) _vnQueue.splice(_vnCurrentIndex, 1);
     _vnCurrent = null; _vnCurrentIndex = -1;
     _renderActualQueueBanner();
+    if(typeof renderPendingNotes==='function') renderPendingNotes();
     if (_vnQueue.length > 0) setTimeout(() => _vnShowQueueIndex(0), 250);
     else if (_vnQueueErrors.length === 0) _vnSetStatus(' Fila concluída');
   } catch (err) {
@@ -14752,6 +14756,82 @@ function matchProjectByText(txt){
     if(score>bestScore){ bestScore=score; best=p; }
   });
   return bestScore>=0.6?best:null;
+}
+// ═══ NOTAS PENDENTES DE REVISÃO (persistentes, salvas no banco) ══════════
+// Mostra as vendor_notes com status 'pending_review' do projeto atual, que antes
+// ficavam invisíveis (a fila em memória só mostrava o lote recém-subido).
+let pendingNotes=[];
+function _openVendorNotePath(path){
+  if(!path) return;
+  sb.storage.from('vendor-notes').createSignedUrl(path,60).then(({data,error})=>{
+    if(error||!data){toast('Erro ao abrir a nota',false);return;}
+    window.open(data.signedUrl,'_blank');
+  });
+}
+async function loadPendingNotes(){
+  if(!CID){pendingNotes=[];return;}
+  const r=await sb.from('vendor_notes')
+    .select('id,extracted_vendor,extracted_date,extracted_total,extracted_category,extracted_notes,suggested_group_id,suggested_item_name,vendor_match_id,original_filename,file_size_bytes,storage_path,status,target_type,created_at')
+    .eq('project_id',CID).eq('status','pending_review').order('created_at',{ascending:false});
+  pendingNotes=r.error?[]:(r.data||[]);
+}
+function renderPendingNotes(){
+  const el=document.getElementById('vn-pending-panel'); if(!el||!CID) return;
+  loadPendingNotes().then(()=>{
+    if(!el||!CID) return;
+    if(!pendingNotes.length){ el.innerHTML=''; return; }
+    const rows=pendingNotes.map(n=>{
+      const amt=+n.extracted_total||0;
+      const dupA=amt>0 && (findActualDuplicatesByAmount(CID,amt)||[]).length>0;
+      return {n,dupA};
+    });
+    const dupCount=rows.filter(r=>r.dupA).length;
+    el.innerHTML=`<div class="card" style="margin-bottom:18px;border-left:4px solid #B85450">
+      <div class="card-title">📥 Notas pendentes de revisão <span style="font-weight:500;color:var(--gray3);font-size:12px">${pendingNotes.length} nesta obra${dupCount?` · ${dupCount} c/ valor já lançado`:''} · não contam no total até aprovar</span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#FAF7F3">
+          <th style="padding:7px 10px;text-align:left">Data</th>
+          <th style="padding:7px 10px;text-align:left">Fornecedor / Item</th>
+          <th style="padding:7px 10px;text-align:right">Valor</th>
+          <th style="padding:7px 10px;text-align:center">Arquivo</th>
+          <th style="padding:7px 10px;text-align:center">Ações</th>
+        </tr></thead><tbody>
+        ${rows.map(({n,dupA})=>`<tr style="border-bottom:1px solid #F0EAE2${dupA?';background:#FFF1E0':''}">
+          <td style="padding:8px 10px;white-space:nowrap">${(n.extracted_date||(n.created_at||'').slice(0,10)||'')}</td>
+          <td style="padding:8px 10px">${(n.extracted_vendor||'—').replace(/</g,'&lt;')}<div style="color:#9B7535;font-size:11px">${(n.suggested_item_name||'').replace(/</g,'&lt;')}</div></td>
+          <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(n.extracted_total)}${dupA?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor já no Actual Costs</div>':''}</td>
+          <td style="padding:8px 10px;text-align:center">${n.storage_path?`<a href="javascript:void(0)" onclick="_openVendorNotePath('${(n.storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:11px">abrir</a>`:'<span style="color:#c9c0b3;font-size:11px">—</span>'}</td>
+          <td style="padding:8px 10px;text-align:center;white-space:nowrap"><button onclick="reviewPendingNote('${n.id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Revisar</button> <button onclick="discardPendingNote('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button></td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="padding:8px 12px;font-size:10px;color:var(--gray3)">Fundo laranja = valor já existe no Actual Costs (possível duplicado). <strong>Revisar</strong> abre a nota pra conferir e aprovar; <strong>🗑</strong> descarta a pendente (não mexe no que já está lançado).</div>
+    </div>`;
+  });
+}
+function reviewPendingNote(id){
+  const n=pendingNotes.find(x=>x.id===id); if(!n){toast('Nota não encontrada',false);return;}
+  _vnLines=[]; // fluxo de linha única
+  _vnCurrent={
+    note_id:n.id, original_filename:n.original_filename, file_size_bytes:n.file_size_bytes, storage_path:n.storage_path,
+    extracted:{ date:n.extracted_date, total:n.extracted_total, category:n.extracted_category,
+      suggested_group_id:n.suggested_group_id, suggested_item_name:n.suggested_item_name,
+      notes:n.extracted_notes, vendor_match_id:n.vendor_match_id, confidence_warnings:[] }
+  };
+  _vnQueue=[_vnCurrent]; _vnCurrentIndex=0;
+  openVendorNoteModal();
+  // pré-seleciona o fornecedor sugerido, se houver
+  const vs=document.getElementById('vn-vendor-select');
+  if(vs && n.vendor_match_id) vs.value=n.vendor_match_id;
+}
+async function discardPendingNote(id){
+  const n=pendingNotes.find(x=>x.id===id); if(!n) return;
+  if(!confirm('Descartar esta nota pendente?\n\n'+(n.extracted_vendor||'—')+' · '+fmtc(n.extracted_total)+'\n\nEla sai da fila de revisão. Não mexe em nada que já está lançado no Actual Costs.')) return;
+  const {error}=await sb.from('vendor_notes').delete().eq('id',id);
+  if(error){toast('Erro ao descartar: '+error.message,false);return;}
+  pendingNotes=pendingNotes.filter(x=>x.id!==id);
+  toast('Nota pendente descartada',true);
+  renderPendingNotes();
 }
 function renderImportQueue(){
   const el=document.getElementById('act-import-queue'); if(!el||!CID) return;
