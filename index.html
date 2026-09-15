@@ -518,21 +518,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <span id="act-vendor-count" style="font-size:11px;color:var(--gray3);font-style:italic"></span>
         </div>
 
-        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px">
-            <div>
-              <div style="font-weight:700;color:#3D271A;font-size:14px;letter-spacing:.3px"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dec-marrom-esc)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>Assistente Administrativo</div>
-              <div style="font-size:12px;color:#655A4E;margin-top:2px">Faça upload de uma nota fiscal (PDF ou imagem) e eu lanço pra você</div>
-            </div>
-            <div style="font-size:10px;color:#999;font-style:italic">Powered by Claude Haiku 4.5 · ~$0.03/nota</div>
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#FAF7F3,#F5EBDA);border:1.5px solid #E8DDC9;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:240px">
+            <div style="font-weight:700;color:#3D271A;font-size:14px"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dec-marrom-esc)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>Upload de notas centralizado</div>
+            <div style="font-size:12px;color:#655A4E;margin-top:2px">O Assistente Administrativo agora vive na aba <strong>Lançar</strong> — suba até 10 notas de uma vez e a IA casa cada uma com a obra certa.</div>
           </div>
-          <input type="file" id="vn-file-input" accept="application/pdf,image/jpeg,image/png,image/webp" multiple style="display:none" onchange="handleVendorNoteUpload(event)">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <button onclick="document.getElementById('vn-file-input').click()" id="vn-upload-btn" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(61,39,26,.2)">📤 Selecionar nota(s)</button>
-            <span style="font-size:11px;color:#999">até 10 arquivos por vez</span>
-            <span id="vn-status" style="font-size:12px;color:#655A4E;margin-left:auto"></span>
-          </div>
-          <div id="vn-queue-banner" style="display:none;margin-top:10px;padding:12px 14px;background:#fff;border:2px solid #5C7A3F;border-radius:8px"></div>
+          <button onclick="goView('lancar')" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;padding:10px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;white-space:nowrap">Ir para Lançar →</button>
         </div>
 
         <div id="act-import-queue"></div>
@@ -14881,6 +14872,62 @@ async function discardFromLancar(id){
   toast('Nota pendente descartada',true);
   renderLancar();
 }
+// Vincula uma obra a uma nota pendente que a IA não conseguiu casar sozinha
+async function assignLancarProject(id,pid){
+  if(!pid) return;
+  const r=await sb.from('vendor_notes').update({project_id:pid}).eq('id',id);
+  if(r.error){toast('Erro ao vincular: '+r.error.message,false);return;}
+  toast('Obra vinculada ✓',true);
+  renderLancar();
+}
+// Upload em lote (até 10) na Central — a IA lê cada nota e casa com a obra; cai na fila de revisão
+async function handleLancarBatchUpload(event){
+  const input=event.target; const fl=input.files; if(!fl||!fl.length) return;
+  const files=Array.from(fl); input.value='';
+  if(!isCEO()){ toast('CEO only',false); return; }
+  const MAXN=10, MAX_SIZE=5*1024*1024;
+  const allowed=['application/pdf','image/jpeg','image/jpg','image/png','image/webp'];
+  if(files.length>MAXN){ toast('Máximo de '+MAXN+' notas por vez. Selecionadas: '+files.length,false); return; }
+  for(const f of files){ if(f.size>MAX_SIZE){toast('"'+f.name+'" passa de 5MB',false);return;} if(!allowed.includes(f.type)){toast('"'+f.name+'" — tipo não suportado (PDF ou imagem)',false);return;} }
+  const btn=document.getElementById('lc-batch-btn'); if(btn) btn.disabled=true;
+  const st=document.getElementById('lc-batch-status');
+  if(st) st.innerHTML='<div class="card" style="background:#FAF7F3;border:1.5px solid #E8DDC9;font-size:13px;color:#3D271A;margin-bottom:14px">🤖 Lendo '+files.length+' nota(s) e casando com as obras…</div>';
+  let token=null; try{ const {data:{session}}=await sb.auth.getSession(); token=session&&session.access_token; }catch(_){}
+  const vendorsCtx=(vendors||[]).map(v=>({id:v.id,name:v.name}));
+  const results=await Promise.allSettled(files.map(f=>_lcBatchOne(f,vendorsCtx,token)));
+  let ok=0,matched=0,unassigned=0,err=0; const errs=[];
+  results.forEach((r,i)=>{
+    if(r.status==='fulfilled'&&r.value){ ok++; if(r.value.project_id) matched++; else unassigned++; }
+    else { err++; errs.push(files[i].name+': '+(r.reason&&r.reason.message?r.reason.message:String(r.reason))); }
+  });
+  if(btn) btn.disabled=false;
+  toast('✅ '+ok+' nota(s) na fila'+(matched?(' · '+matched+' casada(s)'):'')+(unassigned?(' · '+unassigned+' sem obra'):'')+(err?(' · '+err+' erro(s)'):''), ok>0);
+  renderLancar();
+  if(err&&errs.length){ setTimeout(()=>{ const s2=document.getElementById('lc-batch-status'); if(s2) s2.innerHTML='<div class="card" style="background:#FDECEA;border:1.5px solid #E6A9A2;font-size:12px;color:#922;margin-bottom:14px"><strong>'+err+' nota(s) com erro:</strong><br>'+errs.slice(0,5).map(e=>'• '+e.replace(/</g,'&lt;')).join('<br>')+(errs.length>5?('<br>(+'+(errs.length-5)+' outras)'):'')+'</div>'; },300); }
+}
+async function _lcBatchOne(file,vendorsCtx,token){
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+  const noteId=crypto.randomUUID();
+  const path='lancar-batch/'+noteId+'.'+ext;
+  const up=await sb.storage.from('vendor-notes').upload(path,file,{contentType:file.type,upsert:false});
+  if(up.error) throw new Error('upload: '+up.error.message);
+  const b64=await _fileToBase64(file);
+  const resp=await fetch(VN_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},body:JSON.stringify({file_base64:b64,file_type:file.type,vendors:vendorsCtx,groups:[]})});
+  if(!resp.ok){ let m='IA '+resp.status; try{const e=JSON.parse(await resp.text()); if(e&&e.message)m=e.message;}catch(_){}; throw new Error(m); }
+  const result=await resp.json();
+  if(!result.success) throw new Error(result.message||'IA falhou');
+  const d=result.data||{};
+  let proj=null; try{ proj=matchProjectByText([d.vendor,d.notes,d.suggested_item_name,d.category].filter(Boolean).join(' ')); }catch(_){}
+  const row={ id:noteId, project_id:proj?proj.id:null, target_type:'actual_costs', storage_path:path,
+    original_filename:file.name, file_type:file.type, file_size_bytes:file.size,
+    extracted_vendor:d.vendor||null, extracted_date:d.date||null, extracted_total:d.total||null,
+    extracted_category:d.category||null, extracted_notes:d.notes||null,
+    suggested_group_id:d.suggested_group_id||null, suggested_item_name:d.suggested_item_name||null,
+    vendor_match_id:d.vendor_match_id||null, vendor_is_new:!!d.vendor_is_new, status:'pending_review' };
+  const ins=await sb.from('vendor_notes').insert(row);
+  if(ins.error) throw new Error('salvar: '+ins.error.message);
+  return {project_id:row.project_id};
+}
 function renderLancar(){
   if(!isCEO()) return;
   const el=document.getElementById('lancar-root'); if(!el) return;
@@ -14891,8 +14938,11 @@ function renderLancar(){
     const dupCount=pendingAll.filter(n=>(+n.extracted_total||0)>0 && _c[(+n.extracted_total||0).toFixed(2)]>1).length;
     const zeroCount=pendingAll.filter(n=>!(+n.extracted_total>0)).length;
     const somaP=pendingAll.reduce((s,n)=>s+(+n.extracted_total||0),0);
-    const header=`<div class="port-hdr" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Lançar — Central de Lançamentos</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Todas as notas pendentes de revisão, de todos os projetos, num lugar só. Elas não contam no total até serem aprovadas.</p></div><button onclick="openLancarModal()" style="background:#9B7535;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap">＋ Lançar conta</button></div>`;
-    if(!total){ el.innerHTML=header+'<div class="card" style="text-align:center;color:var(--gray3);padding:30px">✅ Nenhuma nota pendente. Tudo revisado!</div>'; return; }
+    const header=`<div class="port-hdr" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Lançar — Central de Lançamentos</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Todas as notas pendentes de revisão, de todos os projetos, num lugar só. Elas não contam no total até serem aprovadas.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><input type="file" id="lc-batch-input" accept="application/pdf,image/jpeg,image/png,image/webp" multiple style="display:none" onchange="handleLancarBatchUpload(event)"><button id="lc-batch-btn" onclick="document.getElementById('lc-batch-input').click()" title="Sobe até 10 notas; a IA lê cada uma e casa com a obra" style="background:linear-gradient(135deg,#3D271A,#655A4E);color:#fff;border:0;border-radius:8px;padding:11px 16px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:7px">📤 Subir notas (até 10)</button><button onclick="openLancarModal()" style="background:#9B7535;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap">＋ Lançar conta</button></div></div>`;
+    const statusDiv='<div id="lc-batch-status"></div>';
+    const _obraKeyL=x=>String(x||'').replace(/^[\s\d().,#\-]+/,'').trim().toLowerCase();
+    const projOptsL='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>_obraKeyL(a.address||a.name).localeCompare(_obraKeyL(b.address||b.name))).map(p=>`<option value="${p.id}">${((p.address||p.name||'')).replace(/</g,'&lt;')}</option>`).join('');
+    if(!total){ el.innerHTML=header+statusDiv+'<div class="card" style="text-align:center;color:var(--gray3);padding:30px">✅ Nenhuma nota pendente. Tudo revisado!</div>'; return; }
     const kpis=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
       <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Pendentes</div><div style="font-size:24px;font-weight:800;color:#3D271A">${total}</div></div>
       <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Valor pendente</div><div style="font-size:24px;font-weight:800;color:#9B7535">${fmtc(somaP)}</div></div>
@@ -14905,18 +14955,25 @@ function renderLancar(){
       const amt=+n.extracted_total||0;
       const dupP=amt>0 && _c[amt.toFixed(2)]>1;
       const zero=!(amt>0);
+      const noProj=!n.project_id;
       const flag=dupP?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor repetido na fila</div>':(zero?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ sem valor (pode não ser nota de compra)</div>':'');
-      const bg=(dupP||zero)?';background:#FFF1E0':'';
+      const bg=(dupP||zero||noProj)?';background:#FFF1E0':'';
+      const projCell=noProj
+        ? `<select onchange="assignLancarProject('${n.id}',this.value)" style="font-size:11px;padding:4px 6px;max-width:200px;border:1.5px solid #E8C57F;border-radius:5px">${projOptsL}</select><div style="font-size:9px;color:#C0392B;font-weight:700;margin-top:2px">⚠ IA não achou a obra — escolha aqui</div>`
+        : _lancarProjName(n.project_id).replace(/</g,'&lt;');
+      const actCell=noProj
+        ? `<span style="font-size:10px;color:var(--gray3)">vincule a obra ao lado</span> <button onclick="discardFromLancar('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button>`
+        : `<button onclick="goLancarToProject('${n.project_id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Revisar no projeto →</button> <button onclick="discardFromLancar('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button>`;
       return `<tr style="border-bottom:1px solid #F0EAE2${bg}">
-        <td style="padding:8px 10px;font-size:12px">${_lancarProjName(n.project_id).replace(/</g,'&lt;')}</td>
+        <td style="padding:8px 10px;font-size:12px">${projCell}</td>
         <td style="padding:8px 10px;font-size:11px;white-space:nowrap">${(n.extracted_date||(n.created_at||'').slice(0,10)||'')}</td>
         <td style="padding:8px 10px;font-size:12px">${(n.extracted_vendor||'—').replace(/</g,'&lt;')}<div style="color:#9B7535;font-size:11px">${(n.suggested_item_name||'').replace(/</g,'&lt;')}</div></td>
         <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(n.extracted_total)}${flag}</td>
         <td style="padding:8px 10px;text-align:center">${n.storage_path?`<a href="javascript:void(0)" onclick="_openVendorNotePath('${(n.storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:11px">abrir</a>`:'<span style="color:#c9c0b3;font-size:11px">—</span>'}</td>
-        <td style="padding:8px 10px;text-align:center;white-space:nowrap"><button onclick="goLancarToProject('${n.project_id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Revisar no projeto →</button> <button onclick="discardFromLancar('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button></td>
+        <td style="padding:8px 10px;text-align:center;white-space:nowrap">${actCell}</td>
       </tr>`;
     }).join('');
-    el.innerHTML=header+kpis+`<div class="card" style="padding:0;overflow:hidden">
+    el.innerHTML=header+statusDiv+kpis+`<div class="card" style="padding:0;overflow:hidden">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:#3D271A;color:#fff">
           <th style="padding:9px 10px;text-align:left">Projeto</th>
