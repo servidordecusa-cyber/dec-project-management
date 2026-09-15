@@ -329,7 +329,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div class="login-box">
     <div class="login-logo">
       <h1>DEC <span>Group</span> USA</h1>
-      <p>Project Management System</p>
+      <p>Sistema de Gestão de Projetos</p>
     </div>
     <h2>Sign In</h2>
     <div class="login-fg"><label>Email</label><input id="li-email" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -355,12 +355,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <h1>DEC Group USA</h1>
     <span id="proj-count-lbl">Loading...</span>
   </div>
-  <div class="back-btn" id="back-btn" onclick="goView('portfolio')"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>All Projects</div>
+  <div class="back-btn" id="back-btn" onclick="goView('portfolio')"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Todos os projetos</div>
   <div class="tn-center" id="tn-pname"></div>
   <div class="tn-right">
     <div class="user-chip"><div class="online-dot"></div><span id="user-email-lbl">—</span></div>
     <button class="btn btn-red btn-sm no-print" id="del-btn" style="display:none" onclick="deleteProject()">🗑</button>
-    <button class="btn btn-gold btn-sm no-print" onclick="openNewModal()">+ New Project</button>
+    <button class="btn btn-gold btn-sm no-print" onclick="openNewModal()">+ Novo projeto</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="doLogout()">Sign Out</button>
   </div>
@@ -386,25 +386,25 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- PORTFOLIO -->
 <div id="view-portfolio">
-  <div class="port-hdr"><div><h2>All Projects</h2><p id="port-sub">Loading projects...</p></div></div>
+  <div class="port-hdr"><div><h2>Todos os projetos</h2><p id="port-sub">Loading projects...</p></div></div>
   <div class="kpi-row">
     <div class="kpi"><label>📁 Total</label><div class="val" id="pk-total">—</div></div>
-    <div class="kpi ko"><label><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>In Progress</label><div class="val" id="pk-prog">—</div></div>
-    <div class="kpi kg"><label>✅ Completed</label><div class="val" id="pk-done">—</div></div>
-    <div class="kpi" style="border-left-color:#7B5E8B"><label>🔧 Rehab Completed</label><div class="val" id="pk-rehab">—</div></div>
-    <div class="kpi" style="border-left-color:var(--blue)"><label>🏷️ For Sale</label><div class="val" id="pk-sale">—</div></div>
-    <div class="kpi" style="border-left-color:var(--gold)"><label><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.9 3.2 2 4.2V18a2 2 0 0 0 4 0v-1.8c.6.1 1.3.2 2 .2 2.2 0 4.1-.5 5.5-1.4l1.5 1.5a1 1 0 0 0 1.7-.7V12c1.1-.5 2-1.5 2-3 0-2.2-1.5-4-3.7-4Z"/></svg>Sold</label><div class="val" id="pk-sold">—</div></div>
-    <div class="kpi" style="border-left-color:#C62B2B"><label>⛔ Cancelled</label><div class="val" id="pk-cancelled">—</div></div>
+    <div class="kpi ko"><label><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Em andamento</label><div class="val" id="pk-prog">—</div></div>
+    <div class="kpi kg"><label>✅ Concluído</label><div class="val" id="pk-done">—</div></div>
+    <div class="kpi" style="border-left-color:#7B5E8B"><label>🔧 Reforma concluída</label><div class="val" id="pk-rehab">—</div></div>
+    <div class="kpi" style="border-left-color:var(--blue)"><label>🏷️ À venda</label><div class="val" id="pk-sale">—</div></div>
+    <div class="kpi" style="border-left-color:var(--gold)"><label><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.9 3.2 2 4.2V18a2 2 0 0 0 4 0v-1.8c.6.1 1.3.2 2 .2 2.2 0 4.1-.5 5.5-1.4l1.5 1.5a1 1 0 0 0 1.7-.7V12c1.1-.5 2-1.5 2-3 0-2.2-1.5-4-3.7-4Z"/></svg>Vendido</label><div class="val" id="pk-sold">—</div></div>
+    <div class="kpi" style="border-left-color:#C62B2B"><label>⛔ Cancelado</label><div class="val" id="pk-cancelled">—</div></div>
   </div>
   <!-- Filtros de status -->
   <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center">
     <button class="port-flt active" data-flt="all" onclick="setPortFilter('all')">📁 Todos</button>
-    <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>In Progress</button>
-    <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Completed</button>
-    <button class="port-flt" data-flt="rehab_completed" onclick="setPortFilter('rehab_completed')">🔧 Rehab Completed</button>
-    <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ For Sale</button>
-    <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.9 3.2 2 4.2V18a2 2 0 0 0 4 0v-1.8c.6.1 1.3.2 2 .2 2.2 0 4.1-.5 5.5-1.4l1.5 1.5a1 1 0 0 0 1.7-.7V12c1.1-.5 2-1.5 2-3 0-2.2-1.5-4-3.7-4Z"/></svg>Sold</button>
-    <button class="port-flt" data-flt="cancelled" onclick="setPortFilter('cancelled')">⛔ Cancelled</button>
+    <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Em andamento</button>
+    <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Concluído</button>
+    <button class="port-flt" data-flt="rehab_completed" onclick="setPortFilter('rehab_completed')">🔧 Reforma concluída</button>
+    <button class="port-flt" data-flt="for_sale" onclick="setPortFilter('for_sale')">🏷️ À venda</button>
+    <button class="port-flt" data-flt="sold" onclick="setPortFilter('sold')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8.9 3.2 2 4.2V18a2 2 0 0 0 4 0v-1.8c.6.1 1.3.2 2 .2 2.2 0 4.1-.5 5.5-1.4l1.5 1.5a1 1 0 0 0 1.7-.7V12c1.1-.5 2-1.5 2-3 0-2.2-1.5-4-3.7-4Z"/></svg>Vendido</button>
+    <button class="port-flt" data-flt="cancelled" onclick="setPortFilter('cancelled')">⛔ Cancelado</button>
     <div style="width:1px;height:24px;background:var(--gray2);margin:0 4px"></div>
     <label for="port-client-filter" style="font-size:12px;color:var(--gray3);font-weight:600">👥 Cliente:</label>
     <select id="port-client-filter" onchange="setPortClientFilter(this.value)" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;background:#fff;font-family:inherit;cursor:pointer;min-width:180px">
@@ -476,7 +476,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
     <div class="proj-content">
       <div class="page active" id="page-dash">
-        <div class="page-title">Project Dashboard</div><div class="page-sub" id="dash-sub"></div>
+        <div class="page-title">Painel do projeto</div><div class="page-sub" id="dash-sub"></div>
         <div id="d-baseline"></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:16px">
           <div class="kpi"><label>Schedule</label><div class="val" id="d-sched">0%</div></div>
@@ -485,11 +485,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div class="kpi" id="d-var-kpi"><label><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Variance</label><div class="val" id="d-var">$0</div><small id="d-var-lbl"></small></div>
         </div>
         <div class="two-col">
-          <div class="card"><div class="card-title">Schedule by Phase</div><div id="d-phases"></div></div>
-          <div class="card"><div class="card-title">Budget Overview</div><div class="chart-wrap"><canvas id="d-chart"></canvas></div></div>
+          <div class="card"><div class="card-title">Cronograma por fase</div><div id="d-phases"></div></div>
+          <div class="card"><div class="card-title">Visão do orçamento</div><div class="chart-wrap"><canvas id="d-chart"></canvas></div></div>
         </div>
         <div class="two-col">
-          <div class="card"><div class="card-title">Over-Budget Phases</div><div id="d-over"></div></div>
+          <div class="card"><div class="card-title">Fases acima do orçamento</div><div id="d-over"></div></div>
           <div class="card"><div class="card-title">Timeline</div><div id="d-timeline"></div></div>
         </div>
       </div>
@@ -500,7 +500,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       </div>
 
       <div class="page" id="page-est">
-        <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;color:var(--dec-gold)"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Estimate (Budget)</span><span style="font-size:15px;color:var(--gray3);font-weight:700">Total estimado: <span id="est-grand-total" style="color:var(--gold);font-weight:800">$0</span></span></div><div class="page-sub">Enter estimated cost per item</div>
+        <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;color:var(--dec-gold)"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Orçado</span><span style="font-size:15px;color:var(--gray3);font-weight:700">Total estimado: <span id="est-grand-total" style="color:var(--gold);font-weight:800">$0</span></span></div><div class="page-sub">Enter estimated cost per item</div>
         <div id="est-rooms"></div>
       </div>
 
@@ -545,8 +545,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <div class="page-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;color:var(--dec-gold)"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>Orçado × Realizado</div><div class="page-sub">Estimated vs. real cost comparison</div>
         <div class="no-print" style="margin:10px 0 6px"><button onclick="window.print()" style="padding:9px 18px;background:#9B7535;color:#fff;border:0;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>Imprimir esta página</button></div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:16px">
-          <div class="kpi kp"><label>📋 Total Estimated</label><div class="val" id="cmp-est">$0</div></div>
-          <div class="kpi ko"><label>💰 Total Actual</label><div class="val" id="cmp-actual">$0</div></div>
+          <div class="kpi kp"><label>📋 Total orçado</label><div class="val" id="cmp-est">$0</div></div>
+          <div class="kpi ko"><label>💰 Total realizado</label><div class="val" id="cmp-actual">$0</div></div>
           <div class="kpi" id="cmp-var-kpi"><label>📊 Variance</label><div class="val" id="cmp-var">$0</div><small id="cmp-var-lbl"></small></div>
         </div>
         <div class="two-col">
@@ -559,10 +559,10 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <div class="page" id="page-ph1"><div class="pb1"><h3 style="color:var(--p1)">Phase 1 — Demolition</h3><span style="font-size:12px;color:var(--p1);opacity:.7"> Site preparation</span> <span style="float:right;font-weight:700;color:var(--p1)" id="pb-1">0%</span></div><div id="tasks-ph1"></div></div>
       <div class="page" id="page-ph2"><div class="pb2"><h3 style="color:var(--p2)">Phase 2 — Preparation</h3><span style="font-size:12px;color:var(--p2);opacity:.7"> Structural work</span><span style="float:right;font-weight:700;color:var(--p2)" id="pb-2">0%</span></div><div id="tasks-ph2"></div></div>
       <div class="page" id="page-ph3"><div class="pb3"><h3 style="color:var(--p3)">Phase 3 — Installation</h3><span style="font-size:12px;color:var(--p3);opacity:.7"> Major installations</span><span style="float:right;font-weight:700;color:var(--p3)" id="pb-3">0%</span></div><div id="tasks-ph3"></div></div>
-      <div class="page" id="page-ph4"><div class="pb4"><h3 style="color:var(--p4)">Phase 4 — Finishing</h3><span style="font-size:12px;color:var(--p4);opacity:.7"> Final touches</span><span style="float:right;font-weight:700;color:var(--p4)" id="pb-4">0%</span></div><div id="tasks-ph4"></div></div>
+      <div class="page" id="page-ph4"><div class="pb4"><h3 style="color:var(--p4)">Phase 4 — Finishing</h3><span style="font-size:12px;color:var(--p4);opacity:.7"> Acabamento</span><span style="float:right;font-weight:700;color:var(--p4)" id="pb-4">0%</span></div><div id="tasks-ph4"></div></div>
 
       <div class="page" id="page-info">
-        <div class="page-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;color:var(--dec-gold)"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Dados do projeto</div><div class="page-sub">Edit project details · Changes save automatically</div>
+        <div class="page-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:8px;color:var(--dec-gold)"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Dados do projeto</div><div class="page-sub">Editar dados do projeto · As mudanças salvam automaticamente</div>
         <div class="card">
           <div class="card-title">Foto de capa / fachada</div>
           <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
@@ -578,15 +578,15 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         </div>
         <div class="card">
           <div class="card-title">Details</div>
-          <div class="fgrid"><div class="fg"><label>Project Name <span style="font-size:10px;color:var(--gray3)">— synced from Address (auto)</span></label><input id="pf-name" readonly style="background:#FAF7F3;color:var(--gray3);cursor:not-allowed"></div><div class="fg"><label>Customer *</label>
+          <div class="fgrid"><div class="fg"><label>Project Name <span style="font-size:10px;color:var(--gray3)">— sincronizado do Endereço (auto)</span></label><input id="pf-name" readonly style="background:#FAF7F3;color:var(--gray3);cursor:not-allowed"></div><div class="fg"><label>Customer *</label>
             <div style="display:flex;gap:6px">
               <select id="pf-customer" onchange="debouncePF()" style="flex:1"></select>
               <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;white-space:nowrap" onclick="openClientModal()">+ New</button>
             </div>
           </div></div>
-          <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="pf-pm" oninput="debouncePF()"></div><div class="fg"><label>Address</label><input id="pf-address" oninput="debouncePF()"></div></div>
+          <div class="fgrid"><div class="fg"><label>Gerente do projeto</label><input id="pf-pm" oninput="debouncePF()"></div><div class="fg"><label>Address</label><input id="pf-address" oninput="debouncePF()"></div></div>
           <div class="fgrid">
-            <div class="fg"><label>Type of Project <span style="font-size:10px;color:var(--gray3)">— defines what fields show</span></label>
+            <div class="fg"><label>Tipo de projeto <span style="font-size:10px;color:var(--gray3)">— defines what fields show</span></label>
               <select id="pf-type" onchange="savePF()">
                 <option value="">— Select —</option>
                 <option value="single_family">Single Family</option>
@@ -600,7 +600,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             </div>
             <div class="fg"></div>
           </div>
-          <div class="fgrid"><div class="fg"><label>Start Date</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>End Date</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
+          <div class="fgrid"><div class="fg"><label>Data de início</label><input id="pf-start" type="date" oninput="savePF()"></div><div class="fg"><label>Data de término</label><input id="pf-end" type="date" oninput="savePF()"></div></div>
           <div style="margin-top:13px"><div class="fg"><label>Notes</label><textarea id="pf-notes" rows="2" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" oninput="debouncePF()"></textarea></div></div>
           <div style="margin-top:13px"><div class="fg"><label>📁 Pasta de documentos (Google Drive) <span style="font-size:10px;color:var(--gray3)">— aparece como botão no portal do investidor</span></label><input id="pf-drive" type="url" placeholder="https://drive.google.com/drive/folders/..." oninput="debouncePF()"></div></div>
           <div id="pf-research" style="margin-top:14px"></div>
@@ -609,7 +609,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg" style="background:#FDF2F0;padding:12px 14px;border-radius:8px;border:1px dashed #C62B2B">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
                 <input id="pf-cancelled" type="checkbox" onchange="onCancelledToggle()" style="width:18px;height:18px;cursor:pointer;accent-color:#C62B2B">
-                <span style="font-weight:700;color:#C62B2B">⛔ Cancel this project</span>
+                <span style="font-weight:700;color:#C62B2B">⛔ Cancelar este projeto</span>
               </label>
               <div style="font-size:11px;color:#655A4E;margin-top:4px;margin-left:28px">Cancelled projects are flagged but costs continue to appear in Financial reports.</div>
               <div id="pf-cancelled-details" style="display:none;margin-top:10px;margin-left:28px">
@@ -625,11 +625,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div class="fgrid"><div class="fg"><label>ZIP Code</label><input id="pf-zip" placeholder="e.g. 34711" oninput="debouncePF()"></div><div class="fg"><label>County</label><input id="pf-county" placeholder="e.g. Lake County" oninput="debouncePF()"></div></div>
           <div class="fgrid"><div class="fg"><label>Permit</label><input id="pf-permit" placeholder="e.g. BR2026-1234" oninput="debouncePF()"></div><div class="fg"></div></div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
-            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Water Utility <span style="font-size:10px;font-weight:500;color:var(--gray3);text-transform:none;letter-spacing:0">— company name moved to Listing Checklist</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">💧 Concessionária de água <span style="font-size:10px;font-weight:500;color:var(--gray3);text-transform:none;letter-spacing:0">— nome da empresa movido para o Checklist de venda</span></div>
             <div class="fgrid"><div class="fg"><label>Account number</label><input id="pf-water-acc" placeholder="e.g. 12345-6789" oninput="debouncePF()"></div><div class="fg"></div></div>
           </div>
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid #F0EAE2">
-            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility <span style="font-size:10px;font-weight:500;color:var(--gray3);text-transform:none;letter-spacing:0">— company name moved to Listing Checklist</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px">⚡ Electric Utility <span style="font-size:10px;font-weight:500;color:var(--gray3);text-transform:none;letter-spacing:0">— nome da empresa movido para o Checklist de venda</span></div>
             <div class="fgrid"><div class="fg"><label>Account number</label><input id="pf-power-acc" placeholder="e.g. 987654321" oninput="debouncePF()"></div><div class="fg"></div></div>
           </div>
         </div>
@@ -688,11 +688,11 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <div class="card">
           <div class="card-title">💰 Acquisition (Purchase)</div>
 
-          <!-- Wholesaler price (auto-calc) — EMD + Cash + Hard Money -->
+          <!-- Preço do atacadista (auto-calc) — EMD + Cash + Hard Money -->
           <div style="margin-bottom:18px">
             <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Wholesaler price <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Commission</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Preço do atacadista <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Commission</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
@@ -718,21 +718,21 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 4: Sale & Profit -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>Sale &amp; Profit</div>
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>Venda &amp; Lucro</div>
           <div class="fgrid">
             <div class="fg"><label>After Repair Value ($) <span style="font-size:10px;color:var(--gray3)">— ARV</span></label><input id="pi-arv" type="number" min="0" step="0.01" placeholder="e.g. 320000.00" oninput="debouncePI()"></div>
-            <div class="fg"><label>Final sale price ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
+            <div class="fg"><label>Preço final de venda ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Sale date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-sale-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="_maskDate(this)" onchange="savePI()"></div>
-            <div class="fg"><label>Selling costs ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Custos de venda ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="debouncePI()"></div>
-            <div class="fg"><label>Lender costs ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Custos do credor ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Total Invested <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Total investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
         </div>
@@ -744,13 +744,13 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           </div>
           <div id="ec-dec-list"></div>
           <div style="margin-top:10px;display:flex;justify-content:flex-end">
-            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addExtraCost('dec_invoice')">+ Add item</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addExtraCost('dec_invoice')">+ Adicionar item</button>
           </div>
-          <!-- Operational Invoices — info only, already counted in Total Invested -->
+          <!-- Operational Invoices — info only, already counted in Total investido -->
           <div id="ec-op-invoices-block" style="margin-top:14px;padding-top:14px;border-top:1.5px dashed var(--gray2);display:none">
             <div style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg>Operational Invoices
-              <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3);margin-left:6px">— info only · already counted in Total Invested</span>
+              <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3);margin-left:6px">— só informativo · já contabilizado no Total investido</span>
             </div>
             <div id="ec-op-invoices-list"></div>
             <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:6px;border-top:1px solid #F0EAE2;font-size:12px;font-weight:700;color:var(--gray3)">
@@ -787,22 +787,22 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 10: Profit Summary + Distribution -->
         <div class="card" style="margin-top:16px">
-          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Profit Summary &amp; Distribution</div>
+          <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>Resumo &amp; Distribuição de lucro</div>
 
           <!-- Profit summary -->
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Summary</div>
+            <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Resumo de lucro</div>
             <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px">
-              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Estimated Profit</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Wholesaler − Sales total − Estimated</div></div>
-              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Gross Profit</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Lender(sale)</div></div>
-              <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Actual Profit</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total Invested − Selling − Lender(sale)</div></div>
-              <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total Invested × 100</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Lucro estimado</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Wholesaler − Sales total − Estimated</div></div>
+              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Lucro bruto</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Lender(sale)</div></div>
+              <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Lucro real</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total investido − Selling − Lender(sale)</div></div>
+              <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total investido × 100</div></div>
             </div>
           </div>
 
           <!-- Profit distribution -->
           <div style="margin-top:24px;padding-top:18px;border-top:2px solid #F0EAE2">
-            <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Profit Distribution</div>
+            <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Distribuição de lucro</div>
             <div class="fgrid">
               <div class="fg"><label>% Client</label>
                 <input id="pi-pct-client" type="number" min="0" max="100" step="0.1" placeholder="50" value="50" oninput="onPctChange('client')">
@@ -812,17 +812,17 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
               </div>
             </div>
             <div class="dgrid" style="grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px">
-              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Client receives</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Client of profit</div></div>
+              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Cliente recebe</div><div class="kpi-v" id="pft-client">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% Client of profit</div></div>
               <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>DEC receives</div><div class="kpi-v" id="pft-dec">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">% DEC of profit</div></div>
               <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>Refund</div><div class="kpi-v" id="pft-refund">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">From Refund invoices · info only (not summed)</div></div>
             </div>
             <div style="margin-top:14px;padding:12px 14px;background:#FAF7F3;border-left:3px solid var(--gray3);border-radius:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <span style="color:var(--navy);font-weight:700;font-size:13px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>DEC Invoice #:</span>
+              <span style="color:var(--navy);font-weight:700;font-size:13px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Fatura DEC nº:</span>
               <input id="pi-dec-invoice" type="text" placeholder="INV-2025-001" oninput="debouncePI()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:180px">
               <span style="color:var(--gray3);font-size:11px;font-style:italic">— número da invoice emitida (faturada separadamente)</span>
             </div>
             <div style="margin-top:24px;padding-top:18px;border-top:2px solid #F0EAE2;display:flex;justify-content:flex-end;gap:10px">
-              <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Generate Report (PDF)</button>
+              <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Gerar relatório (PDF)</button>
             </div>
           </div>
         </div>
@@ -1245,13 +1245,13 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             </div>
             <div class="fg"></div>
           </div>
-          <div style="font-size:11px;color:var(--gray3);margin-top:8px;font-style:italic"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>Quando marcar "Sim", o projeto aparece na seção <strong>"For Sale"</strong> do Portfolio</div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:8px;font-style:italic"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>Quando marcar "Sim", o projeto aparece na seção <strong>"À venda"</strong> do Portfolio</div>
         </div>
       </div>
 
       <!-- Recurring Costs Detail (CEO ONLY) -->
       <div class="page" id="page-recurring">
-        <div class="page-title">🔄 Recurring Costs <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
+        <div class="page-title">🔄 Contas recorrentes <span style="font-size:11px;background:#F5EBDA;color:#7A5A28;padding:3px 9px;border-radius:10px;margin-left:8px;font-weight:700">CEO ONLY</span></div>
         <div class="page-sub">Lance os custos mensais por item · Mudanças salvam automaticamente</div>
 
         <!-- Vendor filter — search for a specific vendor's notes -->
@@ -1455,16 +1455,16 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- HOME -->
 <div id="view-home">
-  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Home — Overview</h2><p style="color:var(--gray3);margin-top:4px">Executive dashboard · all projects consolidated</p></div></div>
+  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Início — Visão geral</h2><p style="color:var(--gray3);margin-top:4px">Executive dashboard · all projects consolidated</p></div></div>
   <div class="home-grid" id="home-kpis"></div>
   <div class="card" style="margin-top:6px">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
       <div class="card-title" style="margin:0;border:0;padding:0">🗺️ DEC Group USA — Atuação na Flórida</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:600">
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9B7535;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9B7535"></span>In Progress</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#5C7A3F;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #5C7A3F"></span>Completed</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#3D271A;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #3D271A"></span>For Sale</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9B7535;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9B7535"></span>Sold</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9B7535;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9B7535"></span>Em andamento</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#5C7A3F;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #5C7A3F"></span>Concluído</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#3D271A;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #3D271A"></span>À venda</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9B7535;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9B7535"></span>Vendido</span>
       </div>
     </div>
     <div id="home-map" style="height:420px;border-radius:8px;background:#F0EAE2;overflow:hidden"></div>
@@ -1538,7 +1538,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- FORNECEDORES (global) -->
 <div id="view-vendors">
-  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Fornecedores</h2><p style="color:var(--gray3);margin-top:4px">Supplier base · contracts and insurance</p></div></div>
+  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Fornecedores</h2><p style="color:var(--gray3);margin-top:4px">Base de fornecedores · contratos e seguro</p></div></div>
   <div id="ins-alert-panel"></div>
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:14px">
@@ -1554,7 +1554,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="__none__">— sem categoria —</option>
         </select>
         <input id="vn-search" type="text" placeholder="🔍 Buscar..." oninput="renderVendors()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
-        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openVendorModal()">+ New Supplier</button>
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openVendorModal()">+ Novo fornecedor</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -1615,7 +1615,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- INVOICES (global) -->
 <div id="view-invoices">
-  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>Faturas</h2><p style="color:var(--gray3);margin-top:4px">Invoice generation and management</p></div></div>
+  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>Faturas</h2><p style="color:var(--gray3);margin-top:4px">Geração e gestão de faturas</p></div></div>
   <div class="card" style="border-left:4px solid #9B7535;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <div style="font-size:13px;font-weight:800;color:#3D271A">🔔 Lembrete de invoices em aberto</div>
@@ -1636,7 +1636,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="">Todos os status</option>
           <option value="open">Pending</option>
           <option value="paid">Paid</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="cancelled">Cancelado</option>
         </select>
         <select id="iv-flt-kind" onchange="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
           <option value="">Todas as categorias</option>
@@ -1646,7 +1646,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="third_party_asset_manager">Third Party (TPAM)</option>
         </select>
         <input id="iv-search" type="text" placeholder="🔍 Buscar..." oninput="renderInvoices()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
-        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openInvoiceModal()">+ New Invoice</button>
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openInvoiceModal()">+ Nova fatura</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -1707,7 +1707,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <input id="fc-flt-month" type="month" onchange="renderFixedCosts()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
         <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="document.getElementById('fc-flt-month').value='';renderFixedCosts()">Clear</button>
         <input id="fc-search" type="text" placeholder="🔍 Buscar..." oninput="renderFixedCosts()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:200px">
-        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openFixedCostModal()">+ New Entry</button>
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="openFixedCostModal()">+ Novo lançamento</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -1740,8 +1740,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <div style="font-weight:700;font-size:13px;color:#3D271A">🏢 Overhead rateado por projeto</div>
       <label style="font-size:12px;color:var(--gray3)">Base:
         <select id="fin-oh-base" style="margin-left:5px;padding:6px 9px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
-          <option value="total_invested">Total Invested</option>
-          <option value="actual">Custo (Actual)</option>
+          <option value="total_invested">Total investido</option>
+          <option value="actual">Custo realizado</option>
           <option value="faturamento">Faturamento DEC</option>
         </select>
       </label>
@@ -1761,10 +1761,10 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <select id="fin-flt-status" onchange="renderFinancial()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none">
           <option value="">Todos os status</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="for_sale">For Sale</option>
-          <option value="sold">Sold</option>
+          <option value="in_progress">Em andamento</option>
+          <option value="completed">Concluído</option>
+          <option value="for_sale">À venda</option>
+          <option value="sold">Vendido</option>
         </select>
         <input id="fin-search" type="text" placeholder="🔍 Buscar projeto..." oninput="renderFinancial()" style="padding:7px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:220px">
       </div>
@@ -1779,7 +1779,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Operacional</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:100px">ROI Final</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Faturamento DEC</th>
-            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Custo (Actual)</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Custo realizado</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Overhead</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Lucro DEC</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:80px">Margem %</th>
@@ -1892,7 +1892,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div class="modal">
     <h2>➕ New Project</h2>
     <div class="fgrid">
-      <div class="fg"><label>Property Address * <span style="font-size:10px;color:var(--gray3)">— this will also be the project name</span></label><input id="np-address" placeholder="e.g. 4479 Weldon Pl, Orlando, FL, 32811"></div>
+      <div class="fg"><label>Endereço do imóvel * <span style="font-size:10px;color:var(--gray3)">— this will also be the project name</span></label><input id="np-address" placeholder="e.g. 4479 Weldon Pl, Orlando, FL, 32811"></div>
       <div class="fg"><label>Customer *</label>
         <div style="display:flex;gap:6px">
           <select id="np-customer" style="flex:1"></select>
@@ -1900,8 +1900,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         </div>
       </div>
     </div>
-    <div class="fgrid"><div class="fg"><label>Project Manager</label><input id="np-pm"></div><div class="fg"></div></div>
-    <div class="fgrid"><div class="fg"><label>Start Date</label><input id="np-start" type="date"></div><div class="fg"><label>End Date</label><input id="np-end" type="date"></div></div>
+    <div class="fgrid"><div class="fg"><label>Gerente do projeto</label><input id="np-pm"></div><div class="fg"></div></div>
+    <div class="fgrid"><div class="fg"><label>Data de início</label><input id="np-start" type="date"></div><div class="fg"><label>Data de término</label><input id="np-end" type="date"></div></div>
     <div class="mactions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="createProject()">Create →</button></div>
   </div>
 </div>
@@ -1909,10 +1909,10 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- CLIENT MODAL (create / edit) -->
 <div class="modal-overlay" id="modal-client">
   <div class="modal">
-    <h2 id="cm-title">➕ Novo Client</h2>
+    <h2 id="cm-title">➕ Novo cliente</h2>
     <input type="hidden" id="cm-id">
-    <div class="fgrid"><div class="fg"><label>Name / Legal name *</label><input id="cm-name" placeholder="e.g. Avena Investments LLC"></div></div>
-    <div class="fgrid"><div class="fg"><label>Address (Bill To)</label><input id="cm-address" placeholder="e.g. 2365 Rapollo Dr, Kissimmee, FL 34741"></div></div>
+    <div class="fgrid"><div class="fg"><label>Nome / Razão social *</label><input id="cm-name" placeholder="e.g. Avena Investments LLC"></div></div>
+    <div class="fgrid"><div class="fg"><label>Endereço (cobrança)</label><input id="cm-address" placeholder="e.g. 2365 Rapollo Dr, Kissimmee, FL 34741"></div></div>
     <div class="fgrid"><div class="fg"><label>Email</label><input id="cm-email" type="email" placeholder="email@example.com"></div><div class="fg"><label>Phone</label><input id="cm-phone" placeholder="(407) 000-0000"></div></div>
     <div class="fgrid"><div class="fg"><label>EIN / Imposto</label><input id="cm-tax" placeholder="00-0000000"></div><div class="fg"></div></div>
     <div class="fg"><label>Notes</label><textarea id="cm-notes" rows="3" style="border:1.5px solid var(--gray2);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%;resize:vertical" placeholder="Additional notes..."></textarea></div>
@@ -1923,9 +1923,9 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- VENDOR MODAL (create / edit) -->
 <div class="modal-overlay" id="modal-vendor">
   <div class="modal">
-    <h2 id="vm-title">➕ New Supplier</h2>
+    <h2 id="vm-title">➕ Novo fornecedor</h2>
     <input type="hidden" id="vm-id">
-    <div class="fgrid"><div class="fg"><label>Name / Legal name *</label><input id="vm-name" placeholder="e.g. JR Duran Painting"></div><div class="fg"><label>Specialty</label><input id="vm-specialty" placeholder="e.g. Pintor, Encanador, Elétrico..."></div></div>
+    <div class="fgrid"><div class="fg"><label>Nome / Razão social *</label><input id="vm-name" placeholder="e.g. JR Duran Painting"></div><div class="fg"><label>Specialty</label><input id="vm-specialty" placeholder="e.g. Pintor, Encanador, Elétrico..."></div></div>
     <div class="fgrid"><div class="fg"><label>Category</label>
       <select id="vm-category">
         <option value="">— select —</option>
@@ -1950,7 +1950,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- VENDOR DOCS MODAL (contracts + insurance uploads) -->
 <div class="modal-overlay" id="modal-vendor-docs">
   <div class="modal" style="max-width:720px">
-    <h2 id="vdm-title">📄 Vendor Documents</h2>
+    <h2 id="vdm-title">📄 Documentos do fornecedor</h2>
     <input type="hidden" id="vdm-vendor-id">
     <input type="hidden" id="vdm-doc-type">
     <div id="vdm-subtitle" style="color:var(--gray3);font-size:13px;margin-bottom:12px"></div>
@@ -1973,7 +1973,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- INVOICE MODAL (create / edit) -->
 <div class="modal-overlay" id="modal-invoice">
   <div class="modal" style="max-width:720px">
-    <h2 id="im-title">➕ New Invoice</h2>
+    <h2 id="im-title">➕ Nova fatura</h2>
     <input type="hidden" id="im-id">
     <!-- Parent invoice selector (optional — for subcategories) -->
     <div class="fg" style="background:#F5EBDA;padding:10px 12px;border-radius:7px;border:1px dashed #7A5A28">
@@ -2004,7 +2004,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="operational">Operacional (durante a obra)</option>
           <option value="final_roi">ROI Final (após a venda)</option>
           <option value="refund">Reembolso (repasse de adiantamento)</option>
-          <option value="third_party_asset_manager">Third Party Asset Manager</option>
+          <option value="third_party_asset_manager">Gestor de ativos (terceiro)</option>
         </select>
       </div>
       <div class="fg"></div>
@@ -2015,7 +2015,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <div style="margin-top:6px;border:1.5px solid var(--gray2);border-radius:8px;padding:14px;background:#FAF7F3">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px">📋 Items *</div>
-        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addInvoiceItem()">+ Add item</button>
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:11px" onclick="addInvoiceItem()">+ Adicionar item</button>
       </div>
       <div id="im-items"></div>
       <div id="im-op-overhead-wrap" style="display:none;justify-content:flex-end;align-items:center;gap:10px;padding-top:8px;margin-top:6px;border-top:1px dashed var(--gray2)">
@@ -2037,7 +2037,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <option value="open">Pending</option>
           <option value="partial_paid">Partial Paid</option>
           <option value="paid">Paid</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="cancelled">Cancelado</option>
         </select>
       </div>
       <div class="fg"></div>
@@ -2097,7 +2097,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- FIXED COST MODAL (create / edit) -->
 <div class="modal-overlay" id="modal-fixed">
   <div class="modal">
-    <h2 id="fcm-title">➕ New Cost</h2>
+    <h2 id="fcm-title">➕ Novo custo</h2>
     <input type="hidden" id="fcm-id">
     <div class="fgrid">
       <div class="fg"><label>Date *</label><input id="fcm-date" type="date"></div>
@@ -2320,7 +2320,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 <!-- ADD TASK MODAL -->
 <div class="modal-overlay" id="modal-add-task">
   <div class="modal" style="max-width:440px">
-    <h2>➕ Add Task</h2>
+    <h2>➕ Adicionar tarefa</h2>
     <div id="add-task-phase-label" style="color:var(--gray3);font-size:13px;margin-bottom:16px"></div>
     <div class="fg"><label>Task name</label>
       <input id="add-task-name" placeholder="e.g. Remove kitchen cabinets, Install flooring..." autocomplete="off">
@@ -2466,7 +2466,7 @@ function applyCEOVisibility(){
       });
     }
   }
-  // Hide + New Project button for supervisor
+  // Hide + Novo projeto button for supervisor
   const newProjBtn=document.querySelector('button[onclick="openNewModal()"]');
   if(newProjBtn) newProjBtn.style.display=sup&&!ceo?'none':'';
   // Hide delete project button for supervisor (delBtn is hidden by default, this just makes sure)
@@ -2800,7 +2800,7 @@ async function _fetchInvestorBundle(clientData){
   let recurringDetailByProj={}; // lista das parcelas por projeto
   let extraCostsByProj={}; // Property & Finance "Costs" (categoria dec_invoice = card "Costs" do P&F)
   let extraCostsItemsByProj={}; // itens dec_invoice (só para tooltip de auditoria)
-  let listingByProj={}; // listing_checklist por projeto (status "For Sale")
+  let listingByProj={}; // listing_checklist por projeto (status "À venda")
   if(projIds.length>0){
     const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes, lcRes] = await Promise.all([
       fetchAllRows('invoices',{build:q=>q.eq('visible_to_investor',true).in('project_id',projIds),order:[{col:'date',asc:false}]}),
@@ -3023,7 +3023,7 @@ async function showInvestorPortal(token){
       ]);
       if(invRes.error) throw invRes.error;
       invData=invRes.data||[];
-      // Listing checklist por projeto (status "For Sale")
+      // Listing checklist por projeto (status "À venda")
       const listingByProj={};
       if(lcRes && !lcRes.error){ (lcRes.data||[]).forEach(l=>{ listingByProj[l.project_id]=l; }); }
       window._listingByProj = listingByProj;
@@ -3224,7 +3224,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     const pr=propertyByProj[p.id]||{};
     const progress=gradeFor(p.id);
     if(pr.sale_date) return 'sold';
-    // For Sale: listing_checklist.listed === 'yes' (espelha a lógica do CEO)
+    // À venda: listing_checklist.listed === 'yes' (espelha a lógica do CEO)
     const lc=(window._listingByProj||{})[p.id]||{};
     if(lc.listed==='yes') return 'for_sale';
     if(p.project_type==='rehab' && progress===100) return 'rehab_completed';
@@ -3569,13 +3569,13 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     const lenderSale=+pr.lender_costs_sale||0;
     const pctClient=+pr.pct_client||0;
     const pctDec=+pr.pct_dec||0;
-    // Total Invested = purchase + paid invoices (operational only; refunds excluded)
+    // Total investido = purchase + paid invoices (operational only; refunds excluded)
     const projectInvested=purchase+totalPaid;
     // Gross Profit = Final Sale - Selling Costs - Lender(sale)
     const grossProfit=projectSale-sellingCosts-lenderSale;
-    // Net Profit = Gross Profit - Total Invested
+    // Net Profit = Gross Profit - Total investido
     const netProfit=grossProfit-projectInvested;
-    // ROI = Net Profit / Total Invested * 100
+    // ROI = Net Profit / Total investido * 100
     const roiTotal=projectInvested>0?(netProfit/projectInvested*100):0;
     const lucroClient=netProfit*pctClient/100;
     const lucroDec=netProfit*pctDec/100;
@@ -3796,7 +3796,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Cash</th>
           <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Hard Money</th>
           <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Costs</th>
-          <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Gross Profit</th>
+          <th style="padding:9px 10px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">Lucro bruto</th>
           <th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:800;color:#9B7535;letter-spacing:.8px;text-transform:uppercase">ROI / Lucro</th>
         </tr>`;
         const rows=sortedProjects.map(p=>{
@@ -3885,9 +3885,9 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           }
 
           // ─── COLUNA ROI / LUCRO ──────────────────────────────────
-          // ROI Cliente = (Actual Profit × pct_client) / Total Invested × 100
-          // Actual Profit = Final Sale - Total Invested - Selling - Lender(sale)
-          // Total Invested = CASH + INVOICES
+          // ROI Cliente = (Actual Profit × pct_client) / Total investido × 100
+          // Actual Profit = Final Sale - Total investido - Selling - Lender(sale)
+          // Total investido = CASH + INVOICES
           let roiHTML = `<span style="color:#999">—</span>`;
           const totalInvested = purchase + invoicesTotal;
           const actualProfit = saleForCalc - totalInvested - sellingCosts - lenderCostsSale;
@@ -3949,7 +3949,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Cash</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Hard Money</th>
                   <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Costs</th>
-                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Gross Profit</th>
+                  <th style="padding:12px 10px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">Lucro bruto</th>
                   <th style="padding:12px 14px;text-align:right;font-size:10px;font-weight:800;color:#655A4E;letter-spacing:1px;text-transform:uppercase">ROI / Lucro</th>
                 </tr>
               </thead>
@@ -5078,7 +5078,7 @@ function projectStatus(pid){
   if(proj && proj.cancelled) return 'cancelled';
   const isRehab=proj && proj.project_type==='rehab';
   // For REHAB projects: simplified lifecycle (no purchase/sale)
-  //   In Progress  →  Rehab Completed (when Gantt = 100%)
+  //   Em andamento  →  Rehab Completed (when Gantt = 100%)
   if(isRehab){
     if(calcSched(pid)===100) return 'rehab_completed';
     return 'in_progress';
@@ -5097,10 +5097,10 @@ function projectStatus(pid){
 }
 
 const STATUS_META={
-  in_progress:      {label:'In Progress',     icon:'🔄', color:'#9B7535', bg:'#F5EBDA'},
+  in_progress:      {label:'Em andamento',     icon:'🔄', color:'#9B7535', bg:'#F5EBDA'},
   completed:        {label:'Completed',       icon:'✅', color:'#5C7A3F', bg:'#ECEFE3'},
   rehab_completed:  {label:'Rehab Completed', icon:'🔧', color:'#7B5E8B', bg:'#EDE5F1'},
-  for_sale:         {label:'For Sale',        icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
+  for_sale:         {label:'À venda',        icon:'🏷️', color:'#3D271A', bg:'#FAF7F3'},
   sold:             {label:'Sold',            icon:'💰', color:'#9B7535', bg:'#FAF3E0'},
   cancelled:        {label:'Cancelled',       icon:'⛔', color:'#C62B2B', bg:'#FDF2F0'},
 };
@@ -7593,8 +7593,8 @@ function renderPhaseTasks(phaseId){
       </div>
       <div class="trb">
         <div class="fg"><label>Task Owner</label><input id="to-${tid}" placeholder="Assign..." oninput="debounceTask('${tid}')"></div>
-        <div class="fg"><label>Start Date</label><input id="ts-${tid}" type="date" onchange="saveTask('${tid}')"></div>
-        <div class="fg"><label>End Date</label><input id="te-${tid}" type="date" onchange="saveTask('${tid}')"></div>
+        <div class="fg"><label>Data de início</label><input id="ts-${tid}" type="date" onchange="saveTask('${tid}')"></div>
+        <div class="fg"><label>Data de término</label><input id="te-${tid}" type="date" onchange="saveTask('${tid}')"></div>
         <div class="fg"><label>% Complete — <span id="tpl-${tid}" style="color:var(--blue);font-weight:800">${pct}%</span></label>
           <div class="rw"><input type="range" min="0" max="100" step="5" id="tp-${tid}" oninput="onPC('${tid}',this.value)" value="${pct}">
           <span style="font-size:13px;font-weight:800;color:var(--blue);min-width:36px" id="tpv-${tid}">${pct}%</span></div></div>
@@ -8066,7 +8066,7 @@ async function savePI(){
 }
 
 function recalcAcquisition(){
-  // Wholesaler price = EMD + Cash + Hard money + Other costs + Commission
+  // Preço do atacadista = EMD + Cash + Hard money + Other costs + Commission
   const emd=parseFloat(v('pi-emd-cash'))||0;
   const cash=parseFloat(v('pi-cash'))||0;
   const hard=parseFloat(v('pi-hard-money'))||0;
@@ -8119,10 +8119,10 @@ function renderExtraCosts(category){
   }
   // Mostra só itens COM custo (amount > 0) + itens custom (is_extra) que você está
   // preenchendo. Esconde os campos padrão zerados/duplicados, deixando o card limpo.
-  // (O "+ Add item" continua disponível para lançar novos custos.)
+  // (O "+ Adicionar item" continua disponível para lançar novos custos.)
   const items=getExtraCosts(category).filter(it=> (+it.amount||0) > 0 || it.is_extra===true);
   if(items.length===0){
-    list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum custo lançado. Use "+ Add item" para adicionar.</div>`;
+    list.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum custo lançado. Use "+ Adicionar item" para adicionar.</div>`;
   } else {
     list.innerHTML=items.map(it=>{
       // User-added items (is_extra=true): editable name + delete button
@@ -8233,7 +8233,7 @@ async function deleteExtraCost(id){
 }
 
 // Render the Operational Invoices info-only view inside the Costs card
-// (these invoices are already counted in Total Invested — do not sum into Costs subtotal)
+// (these invoices are already counted in Total investido — do not sum into Costs subtotal)
 function renderOperationalInvoicesView(){
   const block=document.getElementById('ec-op-invoices-block');
   const list=document.getElementById('ec-op-invoices-list');
@@ -8362,7 +8362,7 @@ function recalcProfit(){
   const docTotal=calcExtraSubtotal('documents');
   const heTotal=calcExtraSubtotal('high_end');
   const extraTotal=decTotal+recTotal+docTotal+heTotal;
-  // Total Invested = EMD + Cash + Other Costs + Commission + INVOICES OPERACIONAIS + Costs + Recurring + Documents + High End
+  // Total investido = EMD + Cash + Other Costs + Commission + INVOICES OPERACIONAIS + Costs + Recurring + Documents + High End
   // (mudou de "Actual Spent" para soma das invoices Operacionais emitidas ao cliente)
   const emd=+p.emd_cash||0;
   const cash=+p.cash||0;
@@ -8388,12 +8388,12 @@ function recalcProfit(){
     grossEl.textContent=sale?(grossProfit>=0?'':'-')+fmt(Math.abs(grossProfit)):'—';
     grossEl.style.color=sale?(grossProfit>=0?'var(--gold)':'var(--p1)'):'var(--gray3)';
   }
-  // Actual profit = Final Sale - Total Invested - Selling - Lender(sale)
+  // Actual profit = Final Sale - Total investido - Selling - Lender(sale)
   const actProfit=sale?(sale-totalInvested-selling-lenderSale):0;
   const actEl=document.getElementById('pft-act');
   actEl.textContent=sale?(actProfit>=0?'':'-')+fmt(Math.abs(actProfit)):'—';
   actEl.style.color=sale?(actProfit>=0?'var(--p3)':'var(--p1)'):'var(--gray3)';
-  // ROI = Actual Profit / Total Invested
+  // ROI = Actual Profit / Total investido
   const totalInvest=totalInvested;
   const roiEl=document.getElementById('pft-roi');
   if(sale && totalInvest>0){
@@ -8496,20 +8496,20 @@ function generateReport(){
   const sale=+p.final_sale_price||0;
   const refund=calcProjectInvoicesRefund(CID);
   const sellingCosts=+p.selling_costs||0;
-  // Total Invested = EMD + Cash + Other Costs + Commission + Operational Invoices + Costs (DEC Invoice) + Recurring + Documents + High End
+  // Total investido = EMD + Cash + Other Costs + Commission + Operational Invoices + Costs (DEC Invoice) + Recurring + Documents + High End
   // (same formula used on screen — uses client-paid invoices, not Actual Spent)
   const invoicesOp=calcProjectInvoicesOperational(CID);
   const totalInvestido=emd+cash+otherAcq+commission+invoicesOp+decExtraTotal+recTotal+docTotal+heTotal;
   // Gross Profit = Final Sale − Selling − Lender(sale)
   const grossProfit=sale-sellingCosts-lenderSale;
-  // Net Profit = Gross Profit − Total Invested (= Actual Profit)
+  // Net Profit = Gross Profit − Total investido (= Actual Profit)
   const lucroLiquido=grossProfit-totalInvestido;
   const pctClient=+p.pct_client||0;
   const pctDec=+p.pct_dec||0;
   const lucroClient=lucroLiquido*pctClient/100;
   const lucroDec=lucroLiquido*pctDec/100;
   const pagarADec=lucroDec; // DEC receives = % DEC of profit only (refund is no longer added)
-  // ROI = Net Profit / Total Invested × 100 (dividido proporcionalmente entre Client e DEC)
+  // ROI = Net Profit / Total investido × 100 (dividido proporcionalmente entre Client e DEC)
   const roiTotal=totalInvestido>0?(lucroLiquido/totalInvestido*100):0;
   const roiClient=roiTotal*pctClient/100;
   const roiDec=roiTotal*pctDec/100;
@@ -8657,8 +8657,8 @@ function generateReport(){
   </table>
 
   <div class="summary">
-    <div class="summary-row"><strong>Total Invested</strong><span>${$$(totalInvestido)}</span></div>
-    <div class="summary-row"><strong>Gross Profit</strong><span>${$$(grossProfit)}</span></div>
+    <div class="summary-row"><strong>Total investido</strong><span>${$$(totalInvestido)}</span></div>
+    <div class="summary-row"><strong>Lucro bruto</strong><span>${$$(grossProfit)}</span></div>
     <div class="summary-row highlight"><strong>Net Profit Total</strong><span>${$$(lucroLiquido)}</span></div>
     <div class="summary-row"><strong>ROI Total</strong><span>${$pct(roiTotal)}</span></div>
     <div class="summary-row"><strong>${pctClient}% Client</strong><span>${$$(lucroClient)}</span></div>
@@ -9308,7 +9308,7 @@ function calcProjectFinancials(pid){
   const sale=+prop.final_sale_price||0;
   const selling=+prop.selling_costs||0;
   const lenderSale=+prop.lender_costs_sale||0;
-  // Total Invested (client's perspective): EMD + Cash + Other Costs + Commission + Invoices Op + Costs + Recurring + Docs + High End
+  // Total investido (client's perspective): EMD + Cash + Other Costs + Commission + Invoices Op + Costs + Recurring + Docs + High End
   const totalInvested=emd+cash+otherAcq+commission+invoicesOp+dec+doc+he+rec;
   const grossProfit=sale-selling-lenderSale;
   const netProfit=sale>0?(grossProfit-totalInvested):0;
@@ -9916,7 +9916,7 @@ function renderFinancial(){
     kpisEl.innerHTML=`
       <div class="home-card"><div class="lbl">📁 Projects</div><div class="val">${list.length}</div></div>
       <div class="home-card gold"><div class="lbl">💵 Faturamento DEC</div><div class="val">${fmt(totRev)}</div><div class="sub">Op ${fmt(totOp)} · ROI ${fmt(totRoi)}</div></div>
-      <div class="home-card"><div class="lbl">🔨 Custos (Actual)</div><div class="val">${fmt(totCost)}</div></div>
+      <div class="home-card"><div class="lbl">🔨 Custos realizados</div><div class="val">${fmt(totCost)}</div></div>
       <div class="home-card"><div class="lbl">🏢 Overhead (${(+appConfig.overhead_rate_pct||0)}%)</div><div class="val">${fmt(totOh)}</div></div>
       <div class="home-card green"><div class="lbl">📈 Lucro DEC</div><div class="val" style="color:${totProfit>=0?'var(--p3)':'var(--p1)'}">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</div><div class="sub">Margem ${totMargin.toFixed(1)}%</div></div>
       <div class="home-card"><div class="lbl">💳 Caixa do mês <span style="font-size:9px;color:var(--gray3)">(Livros)</span></div><div class="val" id="fin-kpi-caixa-val" style="color:var(--gray3)">…</div><div class="sub" id="fin-kpi-caixa-sub"></div></div>`;
@@ -10008,29 +10008,29 @@ function renderHome(){
   if(kpisEl){
     kpisEl.innerHTML=`
       <div class="home-card gold">
-        <div class="lbl">💰 Total Revenue</div>
+        <div class="lbl">💰 Receita total</div>
         <div class="val">${fmt(totalPaid)}</div>
         <div class="sub">${paidInv.length} paid invoice(s)</div>
       </div>
       <div class="home-card orange">
-        <div class="lbl">🧾 Pending invoices</div>
+        <div class="lbl">🧾 Faturas pendentes</div>
         <div class="val">${fmt(totalOpen)}</div>
         <div class="sub">${openInv.length} pending</div>
       </div>
       <div class="home-card">
-        <div class="lbl">🔄 Projects in progress</div>
+        <div class="lbl">🔄 Projetos em andamento</div>
         <div class="val">${groups.in_progress.length}</div>
       </div>
       <div class="home-card green">
-        <div class="lbl">✅ Completed projects</div>
+        <div class="lbl">✅ Concluído projects</div>
         <div class="val">${groups.completed.length}</div>
       </div>
       <div class="home-card">
-        <div class="lbl">🏷️ Projects for sale</div>
+        <div class="lbl">🏷️ Projetos à venda</div>
         <div class="val">${groups.for_sale.length}</div>
       </div>
       <div class="home-card gold">
-        <div class="lbl">💵 Sold projects</div>
+        <div class="lbl">💵 Projetos vendidos</div>
         <div class="val">${groups.sold.length}</div>
       </div>
       <div class="home-card green">
@@ -10039,7 +10039,7 @@ function renderHome(){
         <div class="sub">sold · invest. ${fmt(totalInvested)}</div>
       </div>
       <div class="home-card red">
-        <div class="lbl">📁 Total projects</div>
+        <div class="lbl">📁 Total de projetos</div>
         <div class="val">${projects.length}</div>
         <div class="sub">${clients.length} cliente(s) · ${vendors.length} fornecedor(es)</div>
       </div>`;
@@ -10434,7 +10434,7 @@ function renderFixedCosts(){
   const tbody=document.getElementById('fc-tbody');
   document.getElementById('fc-count').textContent='— '+list.length+' entries';
   if(list.length===0){
-    tbody.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No entries. Click on <strong>+ New Entry</strong> to start.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No entries. Click on <strong>+ Novo lançamento</strong> to start.</td></tr>`;
     document.getElementById('fc-tfoot').innerHTML='';
     return;
   }
@@ -10483,7 +10483,7 @@ function openFixedCostModal(id){
     document.getElementById('fcm-notes').value=f.notes||'';
     document.getElementById('fcm-paid-from-wc').checked=!!f.paid_from_wc;
   } else {
-    title.textContent='➕ New Cost';
+    title.textContent='➕ Novo custo';
     document.getElementById('fcm-date').value=new Date().toISOString().slice(0,10);
     document.getElementById('fcm-type').value='fixed';
     document.getElementById('fcm-category').value='';
@@ -10736,7 +10736,7 @@ function renderInvoices(){
   }
   document.getElementById('iv-count').textContent='— '+list.length+' invoice(s)';
   if(list.length===0){
-    tbody.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No invoices. Click on <strong>+ New Invoice</strong> to start.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">No invoices. Click on <strong>+ Nova fatura</strong> to start.</td></tr>`;
     return;
   }
   tbody.innerHTML=list.map(i=>{
@@ -10754,7 +10754,7 @@ function renderInvoices(){
       :i.kind==='refund'
         ?'<span title="Reembolso" style="display:inline-block;background:#FFE5D9;color:#C62B2B;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💸 REEMB</span>'
       :i.kind==='third_party_asset_manager'
-        ?'<span title="Third Party Asset Manager" style="display:inline-block;background:#E8E1F5;color:#5B3B8C;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🏦 TPAM</span>'
+        ?'<span title="Gestor de ativos (terceiro)" style="display:inline-block;background:#E8E1F5;color:#5B3B8C;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">🏦 TPAM</span>'
       :i.kind==='working_capital'
         ?'<span title="Working Capital" style="display:inline-block;background:#DCEFE6;color:#2D7D5F;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px">💰 WC</span>'
         :'<span title="Operational" style="display:inline-block;background:#FAF7F3;color:#655A4E;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:3px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>OP</span>';
@@ -10924,7 +10924,7 @@ function renderInvoiceItemsEditor(){
   const wrap=document.getElementById('im-items');
   if(!wrap) return;
   if(_imItems.length===0){
-    wrap.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic;background:#fff;border:1px dashed var(--gray2);border-radius:6px">No items yet. Click <strong>+ Add item</strong> to start.</div>`;
+    wrap.innerHTML=`<div style="padding:14px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic;background:#fff;border:1px dashed var(--gray2);border-radius:6px">No items yet. Click <strong>+ Adicionar item</strong> to start.</div>`;
     document.getElementById('im-items-total').textContent='$0.00';
     return;
   }
@@ -11030,7 +11030,7 @@ function openInvoiceModal(id){
       }));
     }
   } else {
-    title.textContent='➕ New Invoice';
+    title.textContent='➕ Nova fatura';
     const today=new Date().toISOString().slice(0,10);
     const currentYear=new Date().getFullYear();
     document.getElementById('im-number').value=_suggestNextInvoiceNumber(currentYear);
@@ -11673,7 +11673,7 @@ function _showInvoiceDoc(inv, client, items){
     :`INVOICE #${inv.invoice_number}`;
   const kindLabel=kind==='refund'?'Refund (REF)'
     :kind==='final_roi'?'Final ROI'
-    :kind==='third_party_asset_manager'?'Third Party Asset Manager (TPAM)'
+    :kind==='third_party_asset_manager'?'Gestor de ativos (terceiro) (TPAM)'
     :kind==='working_capital'?'Working Capital (WC)'
     :'Operational (OP)';
   const html=`<!DOCTYPE html>
@@ -12518,7 +12518,7 @@ function renderVendors(){
   list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
   document.getElementById('vn-count').textContent='— '+list.length+' supplier(s)';
   if(list.length===0){
-    tbody.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">Nenhum supplier encontrado. Clique em <strong>+ New Supplier</strong> para começar.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--gray3);font-style:italic">Nenhum supplier encontrado. Clique em <strong>+ Novo fornecedor</strong> para começar.</td></tr>`;
     return;
   }
   tbody.innerHTML=list.map(v=>{
@@ -13368,7 +13368,7 @@ function openClientModal(id){
     document.getElementById('cm-tax').value=c.tax_id||'';
     document.getElementById('cm-notes').value=c.notes||'';
   } else {
-    title.textContent='➕ Novo Client';
+    title.textContent='➕ Novo cliente';
     ['cm-name','cm-address','cm-email','cm-phone','cm-tax','cm-notes'].forEach(k=>{
       const el=document.getElementById(k);if(el) el.value='';
     });
