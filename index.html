@@ -15069,9 +15069,16 @@ async function lancarSubmit(){
   const nm=desc||vendor||'Lançamento';
   if(!date){toast('Informe a data',false);return;}
   if(!(amount>0)){toast('Informe um valor válido',false);return;}
-  // alerta de duplicidade (valor igual na fila de pendentes ou em outra pendente)
-  const pd=(pendingAll||[]).filter(n=>Math.abs((+n.extracted_total||0)-amount)<0.01);
-  if(pd.length && !confirm('⚠ Já existe '+pd.length+' pendente(s) com esse mesmo valor ($'+amount.toFixed(2)+').\n\nLançar mesmo assim?')) return;
+  // ── Alerta de duplicidade: checa PENDENTES + JÁ LANÇADOS (por destino) ──
+  const _pidChk=(document.getElementById('lc-proj')||{}).value;
+  let dupN=(pendingAll||[]).filter(n=>Math.abs((+n.extracted_total||0)-amount)<0.01).length;
+  let dupWhere='na fila de pendentes';
+  try{
+    if(dest==='obra' && _pidChk){ const q=await sb.from('budget_items').select('id').eq('project_id',_pidChk).gte('actual',amount-0.01).lte('actual',amount+0.01); const n=(q.data||[]).length; if(n){dupN+=n; dupWhere='nos Custos realizados desta obra';} }
+    else if(dest==='utilities' && _pidChk){ const q=await sb.from('recurring_detail_months').select('project_id').eq('project_id',_pidChk).gte('amount',amount-0.01).lte('amount',amount+0.01); const n=(q.data||[]).length; if(n){dupN+=n; dupWhere='nas Contas recorrentes desta obra';} }
+    else if(dest==='overhead'){ const q=await sb.from('fixed_costs').select('id').gte('amount',amount-0.01).lte('amount',amount+0.01); const n=(q.data||[]).length; if(n){dupN+=n; dupWhere='nos Custos da empresa';} }
+  }catch(_){}
+  if(dupN>0 && !confirm('⚠ Já existe '+dupN+' lançamento(s) com o valor $'+amount.toFixed(2)+' '+dupWhere+'.\n\nÉ a mesma conta? Se for, cancele. Lançar mesmo assim?')) return;
   const btn=document.getElementById('lc-submit'); if(btn){btn.disabled=true;btn.textContent='⏳ Lançando...';}
   const done=(msg)=>{ toast(msg,true); document.getElementById('lancar-modal').classList.remove('open'); renderLancar(); };
   const fail=(msg)=>{ toast(msg,false); if(btn){btn.disabled=false;btn.textContent='Lançar';} };
