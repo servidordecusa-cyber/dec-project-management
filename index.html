@@ -14919,9 +14919,37 @@ function renderLancar(){
     <div style="font-size:10px;color:var(--gray3);margin-top:8px">Fundo laranja = valor repetido na fila ou nota sem valor (pode ser um documento que não é nota de compra, ex.: seguro/COI). <strong>Revisar no projeto</strong> te leva pro Actual Costs daquele projeto pra conferir e aprovar; <strong>🗑</strong> descarta a pendente.</div>`;
   });
 }
-// ── "＋ Lançar conta": entrada manual com destino (Fase 2, passo 1) ────────
+// ── "＋ Lançar conta": entrada manual + upload com destino (Fase 2) ────────
+let _lcUpload=null;
+async function lancarUploadFile(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const st=document.getElementById('lc-file-status'); if(st){st.textContent='🤖 lendo a nota…';st.style.color='var(--gray3)';}
+  _lcUpload=null;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const token=session&&session.access_token;
+    const b64=await _fileToBase64(f);
+    const resp=await fetch(VN_EDGE_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},body:JSON.stringify({file_base64:b64,file_type:f.type,vendors:(vendors||[]).map(v=>({id:v.id,name:v.name})),groups:[]})});
+    if(!resp.ok) throw new Error('IA '+resp.status);
+    const r=await resp.json(); if(!r.success) throw new Error(r.message||'falhou');
+    const d=r.data||{};
+    if(d.total!=null && document.getElementById('lc-amount')) document.getElementById('lc-amount').value=d.total;
+    if(d.vendor && document.getElementById('lc-vendor')) document.getElementById('lc-vendor').value=d.vendor;
+    if(d.date && document.getElementById('lc-date')) document.getElementById('lc-date').value=d.date;
+    if(d.suggested_item_name && document.getElementById('lc-desc')) document.getElementById('lc-desc').value=d.suggested_item_name;
+    // sobe pro storage pra poder anexar no destino "obra"
+    try{
+      const ext=(f.name.split('.').pop()||'bin').toLowerCase();
+      const path='lancar/'+crypto.randomUUID()+'.'+ext;
+      const up=await sb.storage.from('vendor-notes').upload(path,f,{contentType:f.type,upsert:false});
+      _lcUpload=up.error?null:{storage_path:path,filename:f.name,size:f.size,type:f.type};
+    }catch(_){ _lcUpload=null; }
+    if(st){st.textContent='✓ lido: '+(d.vendor||'—')+' · '+fmtc(d.total);st.style.color='#5C7A3F';}
+  }catch(e){ if(st){st.textContent='⚠ não consegui ler — preencha manual';st.style.color='#C0392B';} _lcUpload=null; }
+}
 async function openLancarModal(){
   if(!isCEO()) return;
+  _lcUpload=null;
   try{ await loadFinData(); }catch(e){}
   let m=document.getElementById('lancar-modal');
   if(!m){ m=document.createElement('div'); m.id='lancar-modal'; m.className='modal-overlay'; document.body.appendChild(m); }
@@ -14934,6 +14962,12 @@ async function openLancarModal(){
       <button onclick="document.getElementById('lancar-modal').classList.remove('open')" style="background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer">×</button>
     </div>
     <div style="padding:20px 22px;max-height:calc(100vh - 200px);overflow-y:auto">
+      <div style="border:1.5px dashed var(--gray2);border-radius:8px;padding:12px;margin-bottom:14px;background:#FAF7F3">
+        <div style="font-size:12px;font-weight:700;color:#3D271A;margin-bottom:6px">📎 Tem a nota? (opcional)</div>
+        <input id="lc-file" type="file" accept="application/pdf,image/*" onchange="lancarUploadFile(this)" style="font-size:12px">
+        <span id="lc-file-status" style="font-size:11px;color:var(--gray3);margin-left:8px"></span>
+        <div style="font-size:10px;color:var(--gray3);margin-top:4px">A IA lê e preenche valor, fornecedor e data. Você confere e escolhe o destino. (No destino "Custo de obra" a nota fica anexada.)</div>
+      </div>
       <label style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Destino</label>
       <select id="lc-dest" onchange="_lancarDestChange()" style="width:100%;padding:9px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;margin-bottom:14px;font-family:inherit">
         <option value="obra">🏠 Custo de obra (Actual Cost)</option>
@@ -14996,6 +15030,15 @@ async function lancarSubmit(){
       const islug=(slug(nm)||'nota')+'-'+(Date.now().toString(36)+Math.random().toString(36).slice(2,6));
       const r=await sb.from('budget_items').insert({project_id:pid,room_id:gid,item_slug:islug,item_name:nm,est:0,actual:amount,est_note:'',actual_note:vendor?('Fornecedor: '+vendor):'',est_supplier:'',actual_supplier:vendor||'',est_qty:0,actual_qty:1,est_unit_cost:amount,actual_unit_cost:amount,category:cat});
       if(r.error) return fail('Erro (obra): '+r.error.message);
+      // anexa a nota, se veio do upload
+      if(_lcUpload && _lcUpload.storage_path){ try{
+        const dl=await sb.storage.from('vendor-notes').download(_lcUpload.storage_path);
+        if(!dl.error&&dl.data){
+          const attPath=pid+'/'+gid+'/'+islug+'/'+Date.now()+'_'+((_lcUpload.filename||'nota').replace(/[^a-zA-Z0-9._-]/g,'_'));
+          const re=await sb.storage.from('budget-attachments').upload(attPath,dl.data,{contentType:_lcUpload.type,upsert:false});
+          if(!re.error){ await sb.from('budget_attachments').insert({project_id:pid,room_id:gid,item_slug:islug,item_name:nm,name:_lcUpload.filename,size:_lcUpload.size,mime:_lcUpload.type,storage_path:attPath}); }
+        }
+      }catch(_){} }
       if(CID===pid) buildBudgetRooms();
       return done('Lançado no Actual Costs ✓');
     }
