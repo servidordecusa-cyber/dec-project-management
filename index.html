@@ -14879,7 +14879,7 @@ function renderLancar(){
     const dupCount=pendingAll.filter(n=>(+n.extracted_total||0)>0 && _c[(+n.extracted_total||0).toFixed(2)]>1).length;
     const zeroCount=pendingAll.filter(n=>!(+n.extracted_total>0)).length;
     const somaP=pendingAll.reduce((s,n)=>s+(+n.extracted_total||0),0);
-    const header=`<div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Lançar — Central de Lançamentos</h2><p style="color:var(--gray3);margin-top:4px">Todas as notas pendentes de revisão, de todos os projetos, num lugar só. Elas não contam no total até serem aprovadas.</p></div></div>`;
+    const header=`<div class="port-hdr" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Lançar — Central de Lançamentos</h2><p style="color:var(--gray3);margin-top:4px">Todas as notas pendentes de revisão, de todos os projetos, num lugar só. Elas não contam no total até serem aprovadas.</p></div><button onclick="openLancarModal()" style="background:#9B7535;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap">＋ Lançar conta</button></div>`;
     if(!total){ el.innerHTML=header+'<div class="card" style="text-align:center;color:var(--gray3);padding:30px">✅ Nenhuma nota pendente. Tudo revisado!</div>'; return; }
     const kpis=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
       <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px">Pendentes</div><div style="font-size:24px;font-weight:800;color:#3D271A">${total}</div></div>
@@ -14918,6 +14918,117 @@ function renderLancar(){
     </div>
     <div style="font-size:10px;color:var(--gray3);margin-top:8px">Fundo laranja = valor repetido na fila ou nota sem valor (pode ser um documento que não é nota de compra, ex.: seguro/COI). <strong>Revisar no projeto</strong> te leva pro Actual Costs daquele projeto pra conferir e aprovar; <strong>🗑</strong> descarta a pendente.</div>`;
   });
+}
+// ── "＋ Lançar conta": entrada manual com destino (Fase 2, passo 1) ────────
+async function openLancarModal(){
+  if(!isCEO()) return;
+  try{ await loadFinData(); }catch(e){}
+  let m=document.getElementById('lancar-modal');
+  if(!m){ m=document.createElement('div'); m.id='lancar-modal'; m.className='modal-overlay'; document.body.appendChild(m); }
+  const projOpts='<option value="">— escolher obra —</option>'+(projects||[]).slice().sort((a,b)=>(a.address||a.name||'').localeCompare(b.address||b.name||'')).map(p=>`<option value="${p.id}">${((p.address||p.name||'')).replace(/</g,'&lt;')}</option>`).join('');
+  const acctOpts='<option value="">— escolher conta —</option>'+((typeof finAccounts!=='undefined'?finAccounts:[])||[]).map(a=>`<option value="${a.id}">${(a.name||'').replace(/</g,'&lt;')}</option>`).join('');
+  const today=new Date().toISOString().slice(0,10);
+  m.innerHTML=`<div class="modal" style="max-width:560px;padding:0">
+    <div style="background:linear-gradient(135deg,#3D271A,#655A4E);padding:16px 22px;color:#fff;display:flex;justify-content:space-between;align-items:center;border-radius:13px 13px 0 0">
+      <div style="font-size:16px;font-weight:800">＋ Lançar conta</div>
+      <button onclick="document.getElementById('lancar-modal').classList.remove('open')" style="background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer">×</button>
+    </div>
+    <div style="padding:20px 22px;max-height:calc(100vh - 200px);overflow-y:auto">
+      <label style="font-size:11px;font-weight:700;color:#655A4E;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Destino</label>
+      <select id="lc-dest" onchange="_lancarDestChange()" style="width:100%;padding:9px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;margin-bottom:14px;font-family:inherit">
+        <option value="obra">🏠 Custo de obra (Actual Cost)</option>
+        <option value="utilities">💡 Utilities / Recorrente</option>
+        <option value="overhead">🏢 Overhead da empresa</option>
+        <option value="repasse">🔁 Repasse ao cliente (trânsito)</option>
+        <option value="socio">👤 Sócio (saque/despesa)</option>
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:11px;font-weight:700;color:#655A4E">Data</label><input id="lc-date" type="date" value="${today}" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#655A4E">Valor ($)</label><input id="lc-amount" type="number" step="0.01" min="0" placeholder="0.00" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+      </div>
+      <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Fornecedor</label><input id="lc-vendor" type="text" placeholder="ex: Home Depot" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+      <div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Descrição / item</label><input id="lc-desc" type="text" placeholder="ex: Piso vinílico" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+      <div id="lc-f-proj" style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Projeto (obra)</label><select id="lc-proj" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit">${projOpts}</select></div>
+      <div id="lc-f-cat" style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#655A4E">Categoria</label><select id="lc-cat" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"><option value="material">Material</option><option value="labor">Mão de obra</option></select></div>
+      <div id="lc-f-conta" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Nome da conta (ex: Energia, Água, HOA)</label><input id="lc-conta" type="text" placeholder="ex: Energia" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+      <div id="lc-f-ohcat" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Categoria do overhead</label><input id="lc-ohcat" type="text" placeholder="ex: Contador, Combustível, Software" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit"></div>
+      <div id="lc-f-acct" style="margin-bottom:12px;display:none"><label style="font-size:11px;font-weight:700;color:#655A4E">Conta bancária (de onde saiu)</label><select id="lc-acct" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-family:inherit">${acctOpts}</select></div>
+      <div id="lc-hint" style="font-size:11px;color:var(--gray3);background:#FAF7F3;border-left:3px solid var(--gold);padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:14px"></div>
+      <button onclick="lancarSubmit()" id="lc-submit" style="width:100%;padding:12px;background:#3D271A;color:#fff;border:0;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">Lançar</button>
+    </div>
+  </div>`;
+  m.classList.add('open');
+  _lancarDestChange();
+}
+function _lancarDestChange(){
+  const d=(document.getElementById('lc-dest')||{}).value;
+  const show=(id,on)=>{const e=document.getElementById(id); if(e) e.style.display=on?'':'none';};
+  show('lc-f-proj', d==='obra'||d==='utilities'||d==='repasse');
+  show('lc-f-cat', d==='obra');
+  show('lc-f-conta', d==='utilities');
+  show('lc-f-ohcat', d==='overhead');
+  show('lc-f-acct', d==='repasse'||d==='socio');
+  const hints={obra:'Vai pro Actual Costs do projeto como 1 linha (material ou mão de obra).',utilities:'Vai pro Recurring do projeto, no mês da data.',overhead:'Vai pro Costs (custos fixos da empresa) — não é de obra.',repasse:'Vai pros Livros como saída de trânsito (fora do DRE).',socio:'Vai pros Livros como saída de sócio (fora do DRE).'};
+  const h=document.getElementById('lc-hint'); if(h) h.textContent=hints[d]||'';
+}
+function _finCatIdByCode(code){ const c=((typeof finCategories!=='undefined'?finCategories:[])||[]).find(x=>x.code===code); return c?c.id:null; }
+async function lancarSubmit(){
+  if(!isCEO()) return;
+  const dest=(document.getElementById('lc-dest')||{}).value;
+  const date=(document.getElementById('lc-date')||{}).value;
+  const amount=Math.round((parseFloat((document.getElementById('lc-amount')||{}).value)||0)*100)/100;
+  const vendor=((document.getElementById('lc-vendor')||{}).value||'').trim();
+  const desc=((document.getElementById('lc-desc')||{}).value||'').trim();
+  const nm=desc||vendor||'Lançamento';
+  if(!date){toast('Informe a data',false);return;}
+  if(!(amount>0)){toast('Informe um valor válido',false);return;}
+  // alerta de duplicidade (valor igual na fila de pendentes ou em outra pendente)
+  const pd=(pendingAll||[]).filter(n=>Math.abs((+n.extracted_total||0)-amount)<0.01);
+  if(pd.length && !confirm('⚠ Já existe '+pd.length+' pendente(s) com esse mesmo valor ($'+amount.toFixed(2)+').\n\nLançar mesmo assim?')) return;
+  const btn=document.getElementById('lc-submit'); if(btn){btn.disabled=true;btn.textContent='⏳ Lançando...';}
+  const done=(msg)=>{ toast(msg,true); document.getElementById('lancar-modal').classList.remove('open'); renderLancar(); };
+  const fail=(msg)=>{ toast(msg,false); if(btn){btn.disabled=false;btn.textContent='Lançar';} };
+  try{
+    if(dest==='obra'){
+      const pid=(document.getElementById('lc-proj')||{}).value; if(!pid) return fail('Escolha a obra');
+      const cat=(document.getElementById('lc-cat')||{}).value||'material';
+      const gid=(typeof GROUPS!=='undefined'&&GROUPS[0])?GROUPS[0].id:null;
+      const islug=(slug(nm)||'nota')+'-'+(Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+      const r=await sb.from('budget_items').insert({project_id:pid,room_id:gid,item_slug:islug,item_name:nm,est:0,actual:amount,est_note:'',actual_note:vendor?('Fornecedor: '+vendor):'',est_supplier:'',actual_supplier:vendor||'',est_qty:0,actual_qty:1,est_unit_cost:amount,actual_unit_cost:amount,category:cat});
+      if(r.error) return fail('Erro (obra): '+r.error.message);
+      if(CID===pid) buildBudgetRooms();
+      return done('Lançado no Actual Costs ✓');
+    }
+    if(dest==='overhead'){
+      const cat=((document.getElementById('lc-ohcat')||{}).value||'').trim()||nm;
+      const r=await sb.from('fixed_costs').insert({date,category:cat,description:nm,cost_type:'fixed',amount,notes:vendor?('Fornecedor: '+vendor):'',paid_from_wc:false});
+      if(r.error) return fail('Erro (overhead): '+r.error.message);
+      return done('Lançado em Costs (overhead) ✓');
+    }
+    if(dest==='utilities'){
+      const pid=(document.getElementById('lc-proj')||{}).value; if(!pid) return fail('Escolha a obra');
+      const conta=((document.getElementById('lc-conta')||{}).value||'').trim()||nm;
+      const month=parseInt(date.slice(5,7),10);
+      const proj=(projects||[]).find(p=>p.id===pid)||{};
+      const cy=(new Date()).getFullYear();
+      const years=[proj.rcd_year1||cy,proj.rcd_year2||(cy+1),proj.rcd_year3||(cy+2),proj.rcd_year4||(cy+3)];
+      const dy=parseInt(date.slice(0,4),10);
+      let yoff=years.indexOf(dy); if(yoff<0) yoff=0;
+      const r=await sb.from('recurring_detail_months').upsert({project_id:pid,item_name:conta,year_offset:yoff,month,amount,paid_from_wc:false,updated_at:new Date().toISOString()},{onConflict:'project_id,item_name,year_offset,month'});
+      if(r.error) return fail('Erro (utilities): '+r.error.message);
+      await sb.from('recurring_detail_meta').upsert({project_id:pid,item_name:conta,company:vendor||'',account:'',notes:''},{onConflict:'project_id,item_name'});
+      return done('Lançado em Recurring ✓');
+    }
+    if(dest==='repasse'||dest==='socio'){
+      const acct=(document.getElementById('lc-acct')||{}).value; if(!acct) return fail('Escolha a conta bancária');
+      const pid=dest==='repasse'?((document.getElementById('lc-proj')||{}).value||null):null;
+      const catId=_finCatIdByCode(dest==='repasse'?'TR-CLITR':'OH-SOCIO');
+      const r=await sb.from('fin_transactions').insert({account_id:acct,txn_date:date,description:nm+(vendor?(' · '+vendor):''),amount,direction:'out',category_id:catId,project_id:pid,is_transfer:(dest==='repasse'),status:'confirmed',classified_by:'manual',fingerprint:'manual|'+dest+'|'+Date.now()+'|'+amount.toFixed(2)});
+      if(r.error) return fail('Erro ('+dest+'): '+r.error.message);
+      return done('Lançado nos Livros ✓');
+    }
+    fail('Destino inválido');
+  }catch(e){ fail('Erro: '+(e.message||e)); }
 }
 function renderImportQueue(){
   const el=document.getElementById('act-import-queue'); if(!el||!CID) return;
