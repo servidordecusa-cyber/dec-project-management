@@ -6190,73 +6190,55 @@ async function approveVendorNote() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Lançando...'; }
 
   try {
-    const islug = slug(itemName);
+    // ── 1 NOTA = 1 LANÇAMENTO ─────────────────────────────────────────────
+    // Sempre cria uma linha NOVA e ÚNICA (nunca soma no item existente).
+    // O valor da linha é o valor TOTAL da nota. Slug único também evita que
+    // excluir uma linha apague "irmãs" com o mesmo nome.
+    const islugBase = slug(itemName) || 'nota';
+    const uniq = (_vnCurrent && _vnCurrent.note_id)
+      ? String(_vnCurrent.note_id).replace(/-/g,'').slice(0,12)
+      : (Date.now().toString(36) + Math.random().toString(36).slice(2,6));
+    const islug = islugBase + '-' + uniq;
 
     if (!itemsMap[CID]) itemsMap[CID] = {};
     if (!itemsMap[CID][gid]) itemsMap[CID][gid] = [];
+    itemsMap[CID][gid].push({ slug: islug, name: itemName });
+    if (!budgetMap[CID]) budgetMap[CID] = {};
+    if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
+    budgetMap[CID][gid][islug] = {
+      est: 0, actual: total,
+      est_note: '', actual_note: notes,
+      est_supplier: '', actual_supplier: vendorId,
+      est_qty: 1, actual_qty: 1,
+      est_unit_cost: 0, actual_unit_cost: total,
+      category: category || '',
+      paid_from_wc: paidFromWC,
+    };
+    const upRes = await sb.from('budget_items').insert({
+      project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+      est: 0, actual: total,
+      est_note: '', actual_note: notes,
+      est_supplier: '', actual_supplier: vendorId,
+      est_qty: 0, actual_qty: 1,
+      est_unit_cost: total, actual_unit_cost: total,
+      category: category || '',
+      paid_from_wc: paidFromWC,
+    });
+    if (upRes.error) throw new Error('Failed to save item: ' + upRes.error.message);
 
-    const existingItem = itemsMap[CID][gid].find(x => x.slug === islug);
-
-    if (!existingItem) {
-      // Create new item
-      itemsMap[CID][gid].push({ slug: islug, name: itemName });
-      if (!budgetMap[CID]) budgetMap[CID] = {};
-      if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
-      budgetMap[CID][gid][islug] = {
-        est: 0, actual: total,
-        est_note: '', actual_note: notes,
-        est_supplier: '', actual_supplier: vendorId,
-        est_qty: 0, actual_qty: 1,
-        est_unit_cost: 0, actual_unit_cost: total,
-        category: category || '',
-        paid_from_wc: paidFromWC,
-      };
-      const upRes = await sb.from('budget_items').upsert({
-        project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
-        est: 0, actual: total,
-        est_note: '', actual_note: notes,
-        est_supplier: '', actual_supplier: vendorId,
-        est_qty: 0, actual_qty: 1,
-        est_unit_cost: 0, actual_unit_cost: total,
-        category: category || '',
-        paid_from_wc: paidFromWC,
-      }, { onConflict: 'project_id,room_id,item_slug' });
-      if (upRes.error) throw new Error('Failed to save item: ' + upRes.error.message);
-    } else {
-      // Add to existing item (don't overwrite)
-      if (!budgetMap[CID]) budgetMap[CID] = {};
-      if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
-      if (!budgetMap[CID][gid][islug]) budgetMap[CID][gid][islug] = {
-        est: 0, actual: 0, est_note: '', actual_note: '',
-        est_supplier: '', actual_supplier: '',
-        est_qty: 0, actual_qty: 0, est_unit_cost: 0, actual_unit_cost: 0, category: ''
-      };
-      const cur = budgetMap[CID][gid][islug];
-      const newActual = (+cur.actual || 0) + total;
-      const newNote = cur.actual_note ? (cur.actual_note + ' · ' + notes) : notes;
-      const newSupplier = cur.actual_supplier || vendorId;   // mantém o primeiro fornecedor
-      cur.actual = newActual;
-      cur.actual_note = newNote;
-      cur.actual_supplier = newSupplier;
-      if (!cur.category && category) cur.category = category;
-      // OR the WC flag — if any payment was from WC, keep it true
-      if (paidFromWC) cur.paid_from_wc = true;
-      const upRes = await sb.from('budget_items').upsert({
-        project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
-        actual: newActual, actual_note: newNote, actual_supplier: newSupplier,
-        category: cur.category || category || '',
-        paid_from_wc: !!cur.paid_from_wc,
-      }, { onConflict: 'project_id,room_id,item_slug' });
-      if (upRes.error) throw new Error('Failed to update item: ' + upRes.error.message);
-    }
-
-    // Copy the file from vendor-notes bucket to budget-attachments bucket
-    // (so it shows up natively in the item's  list)
+    // Anexa a nota ao lançamento (funciona tanto no upload novo quanto na
+    // aprovação de uma pendente — nesse caso baixa do bucket vendor-notes).
     try {
+      let fileBlob = _vnCurrent.file || null;
+      let fileType = _vnCurrent.file_type || '';
+      if (!fileBlob && _vnCurrent.storage_path) {
+        const dl = await sb.storage.from('vendor-notes').download(_vnCurrent.storage_path);
+        if (!dl.error && dl.data) { fileBlob = dl.data; fileType = fileType || dl.data.type || ''; }
+      }
       const attPath = `${CID}/${gid}/${islug}/${Date.now()}_${(_vnCurrent.original_filename||'invoice').replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-      const reupload = await sb.storage.from('budget-attachments').upload(
-        attPath, _vnCurrent.file, { contentType: _vnCurrent.file_type, upsert: false }
-      );
+      const reupload = fileBlob ? await sb.storage.from('budget-attachments').upload(
+        attPath, fileBlob, { contentType: fileType, upsert: false }
+      ) : { error: 'no-file' };
       if (!reupload.error) {
         const attIns = await sb.from('budget_attachments').insert({
           project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
@@ -6393,44 +6375,27 @@ async function approveVendorNoteItemized(){
 
 // Cria ou soma um item no grupo; retorna o slug do item
 async function _vnUpsertLineItem(gid, category, itemName, amount, notes, vendorName, paidFromWC){
-  const islug = slug(itemName);
+  // 1 linha de nota = 1 lançamento único (nunca soma em item existente)
+  const islug = (slug(itemName)||'nota') + '-' + (Date.now().toString(36) + Math.random().toString(36).slice(2,6));
   if (!itemsMap[CID]) itemsMap[CID] = {};
   if (!itemsMap[CID][gid]) itemsMap[CID][gid] = [];
   if (!budgetMap[CID]) budgetMap[CID] = {};
   if (!budgetMap[CID][gid]) budgetMap[CID][gid] = {};
-  const existingItem = itemsMap[CID][gid].find(x => x.slug === islug);
-  if (!existingItem) {
-    itemsMap[CID][gid].push({ slug: islug, name: itemName });
-    budgetMap[CID][gid][islug] = {
-      est: 0, actual: amount, est_note: '', actual_note: notes,
-      est_supplier: '', actual_supplier: vendorName,
-      est_qty: 0, actual_qty: 1, est_unit_cost: 0, actual_unit_cost: amount,
-      category: category || '', paid_from_wc: paidFromWC,
-    };
-    const up = await sb.from('budget_items').upsert({
-      project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
-      est: 0, actual: amount, est_note: '', actual_note: notes,
-      est_supplier: '', actual_supplier: vendorName,
-      est_qty: 0, actual_qty: 1, est_unit_cost: 0, actual_unit_cost: amount,
-      category: category || '', paid_from_wc: paidFromWC,
-    }, { onConflict: 'project_id,room_id,item_slug' });
-    if (up.error) throw new Error('Falha ao salvar item: ' + up.error.message);
-  } else {
-    const cur = budgetMap[CID][gid][islug] || { actual:0, actual_note:'', actual_supplier:'', category:'' };
-    const newActual = (+cur.actual||0) + amount;
-    const newNote = cur.actual_note ? (cur.actual_note + ' · ' + notes) : notes;
-    const newSupplier = cur.actual_supplier || vendorName;   // vendorName aqui já é o id; mantém o primeiro
-    cur.actual = newActual; cur.actual_note = newNote; cur.actual_supplier = newSupplier;
-    if (!cur.category && category) cur.category = category;
-    if (paidFromWC) cur.paid_from_wc = true;
-    budgetMap[CID][gid][islug] = cur;
-    const up = await sb.from('budget_items').upsert({
-      project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
-      actual: newActual, actual_note: newNote, actual_supplier: newSupplier,
-      category: cur.category || category || '', paid_from_wc: !!cur.paid_from_wc,
-    }, { onConflict: 'project_id,room_id,item_slug' });
-    if (up.error) throw new Error('Falha ao atualizar item: ' + up.error.message);
-  }
+  itemsMap[CID][gid].push({ slug: islug, name: itemName });
+  budgetMap[CID][gid][islug] = {
+    est: 0, actual: amount, est_note: '', actual_note: notes,
+    est_supplier: '', actual_supplier: vendorName,
+    est_qty: 1, actual_qty: 1, est_unit_cost: 0, actual_unit_cost: amount,
+    category: category || '', paid_from_wc: paidFromWC,
+  };
+  const up = await sb.from('budget_items').insert({
+    project_id: CID, room_id: gid, item_slug: islug, item_name: itemName,
+    est: 0, actual: amount, est_note: '', actual_note: notes,
+    est_supplier: '', actual_supplier: vendorName,
+    est_qty: 0, actual_qty: 1, est_unit_cost: amount, actual_unit_cost: amount,
+    category: category || '', paid_from_wc: paidFromWC,
+  });
+  if (up.error) throw new Error('Falha ao salvar item: ' + up.error.message);
   return islug;
 }
 // ═══ END VENDOR NOTES ASSISTANT ═══════════════════════════════════════
