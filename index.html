@@ -6025,10 +6025,27 @@ function _vnUpdateLinesSum(){
     (total>0 ? (ok?' <span style="color:#5C7A3F">✓ bate</span>':` <span style="color:#B85450">≠ total (${f(total)})</span>`) : '');
 }
 
+// Resolve o fornecedor da nota: id já casado → id sugerido pela IA → casa pelo NOME
+// (exato, e depois "contém", case-insensitive). Fecha o bug do fornecedor em branco
+// que travava o "Aprovar e Lançar" nas notas do agente/importadas.
+function _vnResolveVendorId() {
+  const ex = _vnCurrent.extracted || {};
+  if (_vnCurrent.vendor_id_to_use) return _vnCurrent.vendor_id_to_use;
+  if (ex.vendor_match_id) return ex.vendor_match_id;
+  // normaliza: minúsculas, tira acento/pontuação (Lowe's = Lowes), colapsa espaços
+  const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'').trim();
+  const en = norm(ex.vendor);
+  if (!en) return '';
+  const list = vendors || [];
+  let hit = list.find(v => norm(v.name) === en);
+  if (!hit && en.length >= 4) hit = list.find(v => { const vn = norm(v.name); return vn && (vn.includes(en) || en.includes(vn)); });
+  return hit ? hit.id : '';
+}
 function _vnPopulateVendors() {
   const sel = document.getElementById('vn-vendor-select');
   const ex = _vnCurrent.extracted || {};
-  const matchId = _vnCurrent.vendor_id_to_use;
+  const matchId = _vnResolveVendorId();
+  if (matchId) _vnCurrent.vendor_id_to_use = matchId; // fixa a seleção pro approve
   let html = '<option value="">— select —</option>';
   (vendors || []).forEach(v => {
     html += `<option value="${v.id}">${(v.name||'').replace(/</g,'&lt;')}</option>`;
@@ -15316,17 +15333,23 @@ async function renderProjectSupplierSummary(){
   if(!items.length){ el.innerHTML=''; return; }
   const at=await sb.from('budget_attachments').select('item_slug,room_id,storage_path,name').eq('project_id',pid);
   const attBy={}; (at.data||[]).forEach(a=>{const k=(a.room_id||'')+'|'+(a.item_slug||''); (attBy[k]=attBy[k]||[]).push(a);});
-  items.sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')) || (+b.actual||0)-(+a.actual||0));
+  // Data real da compra: puxa da nota original (por nome do arquivo)
+  const vnd=await sb.from('vendor_notes').select('original_filename,extracted_date').eq('project_id',pid).eq('status','approved');
+  const dateByFile={}; (vnd.data||[]).forEach(n=>{ if(n.original_filename&&n.extracted_date) dateByFile[n.original_filename]=n.extracted_date; });
+  // Ordena por FORNECEDOR (agrupa notas do mesmo fornecedor); sem fornecedor vai pro fim; dentro de cada, maior valor primeiro
+  const _supKey=x=>{ const s=(x.actual_supplier||'').trim(); if(!s) return '￿'; return (vendorName(s)||s).toLowerCase(); };
+  items.sort((a,b)=> _supKey(a).localeCompare(_supKey(b)) || (+b.actual||0)-(+a.actual||0));
   const grand=items.reduce((s,x)=>s+(+x.actual||0),0);
   const supName=s=>{ s=(s||'').trim(); if(!s) return '<span style="color:#B85450">(sem fornecedor)</span>'; return (vendorName(s)||s).replace(/</g,'&lt;'); };
   const rows=items.map(x=>{
     const k=(x.room_id||'')+'|'+(x.item_slug||'');
     const atts=attBy[k]||[];
+    const dt=(atts.length && dateByFile[atts[0].name]) ? dateByFile[atts[0].name] : String(x.updated_at||'').slice(0,10);
     const arq=atts.length
       ? `<a href="javascript:void(0)" onclick="_openNotaPath('${(atts[0].storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:12px">abrir</a>`
       : '<span style="color:#c9c0b3;font-size:11px">—</span>';
     return `<tr style="border-bottom:1px solid #F0EAE2">
-      <td style="padding:8px 10px;font-size:12px;white-space:nowrap">${String(x.updated_at||'').slice(0,10)}</td>
+      <td style="padding:8px 10px;font-size:12px;white-space:nowrap">${dt}</td>
       <td style="padding:8px 10px;font-size:12px">${supName(x.actual_supplier)}</td>
       <td style="padding:8px 10px;font-size:12px">${(x.item_name||'').replace(/</g,'&lt;')}</td>
       <td style="padding:8px 10px;text-align:right;font-weight:700;color:#9B7535;white-space:nowrap">${fmtc(x.actual)}</td>
