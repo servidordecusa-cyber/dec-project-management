@@ -1677,6 +1677,10 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div id="lancar-root"></div>
 </div>
 
+<div id="view-auditoria" style="padding:26px;display:none">
+  <div id="auditoria-root"></div>
+</div>
+
 <!-- FIXED COSTS -->
 <div id="view-fixed">
   <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Custos da empresa</h2><p style="color:var(--gray3);margin-top:4px">Despesas administrativas da empresa (overhead) · não são de obra. <a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← voltar ao Financeiro</a></p></div></div>
@@ -1723,7 +1727,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- FINANCIAL -->
 <div id="view-financial">
-  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financeiro (resumo)</h2><p style="color:var(--gray3);margin-top:4px">Resumo financeiro · <strong>lucro por projeto</strong> (regime de competência). Para o caixa veja a aba <strong>Fluxo de Caixa</strong>; para o resultado da empresa, o <strong>DRE</strong>.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-self:center"><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('livros')">📖 Livros</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('dre')">📈 DRE</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fluxo')">📊 Fluxo de Caixa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fixed')">🏢 Custos da empresa</button></div></div>
+  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financeiro (resumo)</h2><p style="color:var(--gray3);margin-top:4px">Resumo financeiro · <strong>lucro por projeto</strong> (regime de competência). Para o caixa veja a aba <strong>Fluxo de Caixa</strong>; para o resultado da empresa, o <strong>DRE</strong>.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-self:center"><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('livros')">📖 Livros</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('dre')">📈 DRE</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fluxo')">📊 Fluxo de Caixa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fixed')">🏢 Custos da empresa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('auditoria')">🔍 Auditoria de recibos</button></div></div>
   <div class="home-grid" id="fin-kpis"></div>
 
   <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD">
@@ -4310,7 +4314,7 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets'];
+const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets','auditoria'];
 
 // ─── Memória de navegação: lembra a última tela no refresh ───────────────
 function _saveNav(o){ try{ localStorage.setItem('dec_nav', JSON.stringify(o)); }catch(e){} }
@@ -4318,14 +4322,14 @@ function _readNav(){ try{ return JSON.parse(localStorage.getItem('dec_nav')||'nu
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets'];
+  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets','auditoria'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-lancar','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-lancar','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets','view-auditoria'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -4357,6 +4361,7 @@ function goView(view){
   else if(view==='working-capital' && isCEO()) renderWorkingCapitalCashFlow();
   else if(view==='dre' && isCEO()) renderDRE();
   else if(view==='budgets' && isCEO()) renderBudgets();
+  else if(view==='auditoria' && isCEO()) renderAuditoria();
   _saveNav({t:'view',view});
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -14944,6 +14949,79 @@ async function _lcBatchOne(file,vendorsCtx,token){
   const ins=await sb.from('vendor_notes').insert(row);
   if(ins.error) throw new Error('salvar: '+ins.error.message);
   return {project_id:row.project_id};
+}
+// ═══ AUDITORIA DE RECIBOS ══════════════════════════════════════════════════
+// Dashboard (só leitura) por linha: valor da linha × soma dos recibos anexados,
+// sinaliza falta/sobra de recibo e duplicação. Não altera nada.
+let _audData=null;
+async function renderAuditoria(){
+  if(!isCEO()) return;
+  const el=document.getElementById('auditoria-root'); if(!el) return;
+  el.innerHTML='<div style="color:var(--gray3);padding:20px">🔍 Auditando recibos de todos os projetos…</div>';
+  const _norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'');
+  const pr=await sb.from('projects').select('id,name,address'); const pn={};(pr.data||[]).forEach(p=>pn[p.id]=(p.address||p.name||''));
+  let bi=[],a=0;while(true){const r=await sb.from('budget_items').select('id,project_id,room_id,item_slug,item_name,actual').range(a,a+999);if(r.error)break;bi=bi.concat(r.data||[]);if((r.data||[]).length<1000)break;a+=1000;}
+  let att=[],b=0;while(true){const r=await sb.from('budget_attachments').select('project_id,room_id,item_slug,name').range(b,b+999);if(r.error)break;att=att.concat(r.data||[]);if((r.data||[]).length<1000)break;b+=1000;}
+  let vn=[],c=0;while(true){const r=await sb.from('vendor_notes').select('project_id,original_filename,extracted_total,extracted_vendor,extracted_date,target_type').eq('status','approved').range(c,c+999);if(r.error)break;vn=vn.concat(r.data||[]);if((r.data||[]).length<1000)break;c+=1000;}
+  const vnByPF={};vn.filter(n=>(n.target_type||'actual_costs')==='actual_costs'&&n.original_filename).forEach(n=>{const k=n.project_id+'|'+n.original_filename;if(!vnByPF[k])vnByPF[k]=n;});
+  const attBy={};att.forEach(x=>{(attBy[x.project_id+'|'+x.room_id+'|'+x.item_slug]=attBy[x.project_id+'|'+x.room_id+'|'+x.item_slug]||[]).push(x);});
+  // duplicação restante por projeto (mesma compra: valor+fornecedor+data)
+  const buyCount={};att.forEach(x=>{const n=vnByPF[x.project_id+'|'+x.name];if(n){const bk=x.project_id+'|'+(+n.extracted_total||0).toFixed(2)+'|'+_norm(n.extracted_vendor)+'|'+(n.extracted_date||'');buyCount[bk]=(buyCount[bk]||0)+1;}});
+  const rows=[];
+  bi.forEach(l=>{
+    const as=attBy[l.project_id+'|'+l.room_id+'|'+l.item_slug]||[];
+    if(!as.length) return;
+    let soma=0,sem=0,dup=0; as.forEach(x=>{const n=vnByPF[x.project_id+'|'+x.name];if(n){soma+=(+n.extracted_total||0);const bk=x.project_id+'|'+(+n.extracted_total||0).toFixed(2)+'|'+_norm(n.extracted_vendor)+'|'+(n.extracted_date||'');if(buyCount[bk]>1)dup++;}else sem++;});
+    const val=+l.actual||0; const diff=+(val-soma).toFixed(2);
+    const status = Math.abs(diff)<0.02 ? 'ok' : (diff>0?'falta':'sobra');
+    if(status==='ok' && dup===0 && sem===0) return; // só mostra o que precisa de atenção
+    rows.push({projeto:pn[l.project_id]||l.project_id,fase:l.room_id,item:l.item_name||'',val,soma:+soma.toFixed(2),diff,n:as.length,sem,dup,status});
+  });
+  rows.sort((x,y)=>String(x.projeto).localeCompare(String(y.projeto))||Math.abs(y.diff)-Math.abs(x.diff));
+  _audData=rows;
+  const nFalta=rows.filter(r=>r.status==='falta').length, nSobra=rows.filter(r=>r.status==='sobra').length;
+  const nDup=rows.filter(r=>r.dup>0).length;
+  const faltaTotal=rows.filter(r=>r.diff>0).reduce((s,r)=>s+r.diff,0);
+  const projOpts=[...new Set(rows.map(r=>r.projeto))].sort((x,y)=>x.localeCompare(y));
+  const header=`<div class="port-hdr"><div><h2>🔍 Auditoria de recibos</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Confere, por linha, se os recibos anexados batem com o valor. <strong>Só leitura</strong> — não altera valor nenhum.</p></div></div>`;
+  const kpis=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Linhas p/ revisar</div><div style="font-size:24px;font-weight:800;color:#3D271A">${rows.length}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Falta recibo</div><div style="font-size:24px;font-weight:800;color:#C0392B">${nFalta}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Sobra recibo</div><div style="font-size:24px;font-weight:800;color:#9B7535">${nSobra}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Com duplicação</div><div style="font-size:24px;font-weight:800;color:${nDup?'#C0392B':'#5C7A3F'}">${nDup}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Valor sem recibo</div><div style="font-size:20px;font-weight:800;color:#9B7535">${fmtc(faltaTotal)}</div></div>
+  </div>`;
+  const filtro=`<div style="margin-bottom:12px"><select id="aud-proj" onchange="_audRender()" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px"><option value="">Todos os projetos (${projOpts.length})</option>${projOpts.map(p=>`<option value="${p.replace(/"/g,'&quot;')}">${p.replace(/</g,'&lt;')}</option>`).join('')}</select></div>`;
+  el.innerHTML=header+kpis+filtro+'<div id="aud-table"></div>';
+  _audRender();
+}
+function _audBadge(s){
+  if(s==='falta') return '<span style="background:#FDECEA;color:#C0392B;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">falta recibo</span>';
+  if(s==='sobra') return '<span style="background:#FFF4E0;color:#9B7535;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">sobra recibo</span>';
+  return '<span style="background:#EAF3E4;color:#5C7A3F;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">ok</span>';
+}
+function _audRender(){
+  const el=document.getElementById('aud-table'); if(!el||!_audData) return;
+  const flt=(document.getElementById('aud-proj')||{}).value||'';
+  const rows=flt?_audData.filter(r=>r.projeto===flt):_audData;
+  const body=rows.map(r=>`<tr style="border-bottom:1px solid #F0EAE2;background:${r.status==='ok'?'#fff':'#FFF9F2'}">
+    <td style="padding:8px 10px;font-size:12px">${String(r.projeto).replace(/</g,'&lt;')}</td>
+    <td style="padding:8px 10px;font-size:11px">${r.fase||''}</td>
+    <td style="padding:8px 10px;font-size:12px">${String(r.item).replace(/</g,'&lt;')}</td>
+    <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(r.val)}</td>
+    <td style="padding:8px 10px;text-align:right;white-space:nowrap;color:#655A4E">${fmtc(r.soma)}</td>
+    <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap;color:${Math.abs(r.diff)<0.02?'#5C7A3F':(r.diff>0?'#C0392B':'#9B7535')}">${r.diff>0?'+':''}${fmtc(r.diff)}</td>
+    <td style="padding:8px 10px;text-align:center;font-size:12px">${r.n}${r.sem?` <span style="color:#C0392B;font-size:10px">(${r.sem} s/ nota)</span>`:''}</td>
+    <td style="padding:8px 10px;text-align:center">${_audBadge(r.status)}${r.dup?' <span style="background:#FDECEA;color:#C0392B;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:700">dup</span>':''}</td>
+  </tr>`).join('');
+  el.innerHTML=`<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
+    <thead><tr style="background:#3D271A;color:#fff">
+      <th style="padding:9px 10px;text-align:left">Projeto</th><th style="padding:9px 10px;text-align:left">Fase</th><th style="padding:9px 10px;text-align:left">Item</th>
+      <th style="padding:9px 10px;text-align:right">Valor linha</th><th style="padding:9px 10px;text-align:right">Soma recibos</th><th style="padding:9px 10px;text-align:right">Diferença</th>
+      <th style="padding:9px 10px;text-align:center">Recibos</th><th style="padding:9px 10px;text-align:center">Status</th>
+    </tr></thead><tbody>${body||'<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--gray3)">Nada a revisar 🎉</td></tr>'}</tbody>
+  </table></div></div>
+  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>Falta recibo</strong> = a soma dos recibos é menor que o valor da linha (ou falta anexar). <strong>Sobra recibo</strong> = os recibos somam mais que a linha. <strong>dup</strong> = há compra duplicada anexada. Nada aqui altera valores.</div>`;
 }
 function renderLancar(){
   if(!isCEO()) return;
