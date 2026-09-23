@@ -15030,7 +15030,9 @@ function _panoRender(){
       cli:(typeof customerName==='function')?customerName(p.customer):'',
       status:(typeof projectStatus==='function')?projectStatus(p.id):'',
       compra:prop.purchase_date||'',
-      precoCompra:+prop.wholesale_price||0,
+      // Preço de compra = "preço do atacadista" (mesma fórmula da tela Imóvel & Finanças):
+      // EMD + Cash + Hard money + Other costs + Commission
+      precoCompra:(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.hard_money||0)+(+prop.other_costs||0)+(+prop.commission||0),
       investido:+f.totalInvested||0,
       vendaData:prop.sale_date||'',
       valorVenda: sold ? (+f.sale||+prop.final_sale_price||0) : null,
