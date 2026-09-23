@@ -398,6 +398,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   </div>
   <!-- Filtros de status -->
   <div id="port-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px;align-items:center">
+    <input id="port-search" type="text" placeholder="🔍 Buscar (ex.: 5013, endereço, cliente)" oninput="setPortSearch(this.value)" style="padding:8px 12px;font-size:13px;border:1.5px solid var(--gray2);border-radius:7px;outline:none;font-family:inherit;min-width:280px">
     <button class="port-flt active" data-flt="all" onclick="setPortFilter('all')">📁 Todos</button>
     <button class="port-flt" data-flt="in_progress" onclick="setPortFilter('in_progress')"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Em andamento</button>
     <button class="port-flt" data-flt="completed" onclick="setPortFilter('completed')">✅ Concluído</button>
@@ -4814,6 +4815,8 @@ function _fluxoExport(){
 let _portFilter='all';
 let _portClientFilter=''; // empty string = all clients; can be a client.id OR 'group:joel'
 let _portTypeFilter='';   // empty = all types; value can be type key OR '__none__' for missing type
+let _portSearch='';       // busca por endereço/nome/cliente
+function setPortSearch(v){ _portSearch=(v||''); renderPortfolio(); }
 
 // Client groups: visually combine multiple client companies under one "owner"
 // (does NOT change anything in the database — just affects the Projects filter)
@@ -4940,6 +4943,14 @@ function renderPortfolio(){
     } else {
       filteredProjects=filteredProjects.filter(p=>p.project_type===_portTypeFilter);
     }
+  }
+  // Busca livre por endereço / nome / cliente (ex.: "5013")
+  const _q=(_portSearch||'').toLowerCase().trim();
+  if(_q){
+    filteredProjects=filteredProjects.filter(p=>{
+      const hay=((p.address||'')+' '+(p.name||'')+' '+(typeof customerName==='function'?customerName(p.customer):'')).toLowerCase();
+      return hay.includes(_q);
+    });
   }
   // Group filtered projects by status
   const groups={in_progress:[],completed:[],rehab_completed:[],for_sale:[],sold:[],cancelled:[]};
