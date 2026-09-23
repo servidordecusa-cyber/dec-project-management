@@ -2195,7 +2195,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <option value="other">Outros</option>
           </select>
         </div>
-        <div class="fg">
+        <div class="fg" style="display:none">
           <label>Phase</label>
           <select id="vn-group" onchange="onVendorNoteGroupChange()">
             <option value="">— select —</option>
@@ -5957,7 +5957,8 @@ function openVendorNoteModal() {
   document.getElementById('vn-total').value = ex.total || '';
   document.getElementById('vn-category').value = ex.category || '';
   _vnPopulateGroups();
-  document.getElementById('vn-group').value = ex.suggested_group_id || '';
+  // Fase agora é automática (campo escondido): usa a sugerida pela IA ou a primeira fase
+  document.getElementById('vn-group').value = ex.suggested_group_id || ((typeof GROUPS!=='undefined'&&GROUPS[0])?GROUPS[0].id:'');
   _vnPopulateItemSuggestions();
   document.getElementById('vn-item-name').value = ex.suggested_item_name || '';
   document.getElementById('vn-notes').value = ex.notes || '';
@@ -6192,12 +6193,14 @@ async function approveVendorNote() {
   const totalStr = document.getElementById('vn-total').value;
   const total = parseFloat(totalStr);
   const category = document.getElementById('vn-category').value;
-  const gid = document.getElementById('vn-group').value;
+  let gid = document.getElementById('vn-group').value;
   const itemName = (document.getElementById('vn-item-name').value || '').trim();
   const notes = document.getElementById('vn-notes').value || '';
   const paidFromWC = !!document.getElementById('vn-paid-from-wc').checked;
 
-  if (!gid) { toast('Selecione a phase', false); return; }
+  // Fase automática: se por algum motivo estiver vazia, usa a primeira fase
+  if (!gid && typeof GROUPS!=='undefined' && GROUPS[0]) gid = GROUPS[0].id;
+  if (!gid) { toast('Nenhuma fase configurada no projeto', false); return; }
   if (!itemName) { toast('Informe o nome do item', false); return; }
   if (isNaN(total) || total <= 0) { toast('Total inválido', false); return; }
   if (!vendorId) {
