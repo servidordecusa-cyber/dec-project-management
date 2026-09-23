@@ -1776,12 +1776,12 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px">Projeto</th>
             <th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--gray2);font-size:11px">Cliente</th>
             <th style="padding:10px 12px;text-align:center;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Status</th>
-            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Operacional</th>
-            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:100px">ROI Final</th>
-            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Faturamento DEC</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px" title="Faturamento da reforma cobrado do cliente">Operacional</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px">Custo realizado</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px" title="Operacional − Custos realizados">Margem reforma</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px" title="Lucro final (invoices de ROI)">ROI (lucro final)</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Overhead</th>
-            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:110px">Lucro DEC</th>
+            <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:120px" title="Margem reforma + ROI − Overhead">Lucro DEC</th>
             <th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--gray2);font-size:11px;width:80px">Margem %</th>
           </tr>
         </thead>
@@ -9918,6 +9918,18 @@ async function _finFillCaixaKPI(){
   }catch(e){ el.textContent='—'; el.style.color='var(--gray3)'; }
 }
 
+// Lucro REAL da DEC por projeto = mesmo cálculo do relatório (PAID TO DEC):
+//   flip: lucro líquido × %DEC  ·  rehab (serviço): lucro do serviço (100% DEC)
+//   menos o overhead do projeto (descontado UMA vez).
+function _decProfitForProject(pid){
+  const op=calcProjectInvoices(pid,'operational');   // faturamento da reforma
+  const roi=calcProjectInvoices(pid,'final_roi');    // lucro final (invoices de ROI)
+  const cost=calcRoomTotal(pid,'actual');            // custos realizados do projeto
+  const oh=(typeof overheadForProject==='function')?overheadForProject(pid):0;
+  const margemReforma=op-cost;                        // fonte 1: sobra da reforma
+  // Lucro DEC = margem da reforma + ROI (lucro final) − overhead (uma vez)
+  return { op, roi, cost, oh, margemReforma, lucro: margemReforma + roi - oh };
+}
 function renderFinancial(){
   if(!isCEO()) return;
   const q=(document.getElementById('fin-search')?.value||'').toLowerCase().trim();
@@ -9932,15 +9944,15 @@ function renderFinancial(){
   // Sincroniza os controles de overhead com a config salva
   const ohBaseEl=document.getElementById('fin-oh-base'); if(ohBaseEl && ohBaseEl.value!==appConfig.overhead_base) ohBaseEl.value=appConfig.overhead_base||'total_invested';
   const ohRateEl=document.getElementById('fin-oh-rate'); if(ohRateEl && document.activeElement!==ohRateEl) ohRateEl.value=(+appConfig.overhead_rate_pct||0);
-  let totOp=0,totRoi=0,totCost=0,totOh=0;
+  let totOp=0,totRoi=0,totCost=0,totOh=0,totProfit=0;
   list.forEach(p=>{
     totOp+=calcProjectInvoices(p.id,'operational');
     totRoi+=calcProjectInvoices(p.id,'final_roi');
     totCost+=calcRoomTotal(p.id,'actual');
     totOh+=overheadForProject(p.id);
+    totProfit+=_decProfitForProject(p.id).lucro;   // Lucro DEC = split %DEC − overhead (conta do relatório)
   });
   const totRev=totOp+totRoi;
-  const totProfit=totRev-totCost-totOh;      // Lucro DEC = Faturamento − Custo Actual − Overhead
   const totMargin=totRev>0?(totProfit/totRev*100):0;
   // Render KPIs
   const kpisEl=document.getElementById('fin-kpis');
@@ -9950,7 +9962,7 @@ function renderFinancial(){
       <div class="home-card gold"><div class="lbl">💵 Faturamento DEC</div><div class="val">${fmt(totRev)}</div><div class="sub">Op ${fmt(totOp)} · ROI ${fmt(totRoi)}</div></div>
       <div class="home-card"><div class="lbl">🔨 Custos realizados</div><div class="val">${fmt(totCost)}</div></div>
       <div class="home-card"><div class="lbl">🏢 Overhead (${(+appConfig.overhead_rate_pct||0)}%)</div><div class="val">${fmt(totOh)}</div></div>
-      <div class="home-card green"><div class="lbl">📈 Lucro DEC</div><div class="val" style="color:${totProfit>=0?'var(--p3)':'var(--p1)'}">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</div><div class="sub">Margem ${totMargin.toFixed(1)}%</div></div>
+      <div class="home-card green"><div class="lbl">📈 Lucro DEC</div><div class="val" style="color:${totProfit>=0?'var(--p3)':'var(--p1)'}">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</div><div class="sub">Reforma ${fmt(totOp-totCost)} · ROI ${fmt(totRoi)} · −OH ${fmt(totOh)}</div></div>
       <div class="home-card"><div class="lbl">💳 Caixa do mês <span style="font-size:9px;color:var(--gray3)">(Livros)</span></div><div class="val" id="fin-kpi-caixa-val" style="color:var(--gray3)">…</div><div class="sub" id="fin-kpi-caixa-sub"></div></div>`;
     _finFillCaixaKPI();
   }
@@ -9963,26 +9975,24 @@ function renderFinancial(){
     return;
   }
   tbody.innerHTML=list.map(p=>{
-    const op=calcProjectInvoices(p.id,'operational');
-    const roi=calcProjectInvoices(p.id,'final_roi');
+    const d=_decProfitForProject(p.id);
+    const op=d.op, roi=d.roi, cost=d.cost, oh=d.oh, mrf=d.margemReforma, profit=d.lucro;
     const rev=op+roi;
-    const cost=calcRoomTotal(p.id,'actual');
-    const oh=overheadForProject(p.id);
-    const profit=rev-cost-oh;
     const margin=rev>0?(profit/rev*100):0;
     const st=projectStatus(p.id);
     const meta=STATUS_META[st];
     const profitColor=profit>=0?'var(--p3)':'var(--p1)';
+    const hasAny=(op>0||roi>0||cost>0||oh>0);
     return `<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer" onclick="openProject('${p.id}')">
       <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${p.name||''}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:11px">${customerName(p.customer)||'—'}</td>
       <td style="padding:10px 12px;text-align:center"><span style="background:${meta.bg};color:${meta.color};padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700">${meta.icon} ${meta.label}</span></td>
       <td style="padding:10px 12px;text-align:right;font-weight:600">${op>0?fmt(op):'—'}</td>
-      <td style="padding:10px 12px;text-align:right;font-weight:600;color:var(--gold)">${roi>0?fmt(roi):'—'}</td>
-      <td style="padding:10px 12px;text-align:right;font-weight:700">${rev>0?fmt(rev):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:600">${cost>0?fmt(cost):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${mrf>=0?'var(--p3)':'var(--p1)'}">${(op>0||cost>0)?(mrf>=0?'':'-')+fmt(Math.abs(mrf)):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600;color:var(--gold)">${roi>0?fmt(roi):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:600;color:#8A7B68">${oh>0?fmt(oh):'—'}</td>
-      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${(rev>0||cost>0||oh>0)?profitColor:'var(--gray3)'}">${(rev>0||cost>0||oh>0)?(profit>=0?'':'-')+fmt(Math.abs(profit)):'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;color:${hasAny?profitColor:'var(--gray3)'}">${hasAny?(profit>=0?'':'-')+fmt(Math.abs(profit)):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700;color:${rev>0?profitColor:'var(--gray3)'}">${rev>0?margin.toFixed(1)+'%':'—'}</td>
     </tr>`;
   }).join('');
@@ -9991,9 +10001,9 @@ function renderFinancial(){
     <tr style="background:#3D271A;color:#D5C9BC">
       <td colspan="3" style="padding:11px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:11px">TOTALS (${list.length} project(s))</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totOp)}</td>
-      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totRoi)}</td>
-      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totRev)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totCost)}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totOp-totCost)}</td>
+      <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totRoi)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700">${fmt(totOh)}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${totProfit>=0?'':'-'}${fmt(Math.abs(totProfit))}</td>
       <td style="padding:11px 12px;text-align:right;font-weight:700;color:#9B7535">${totMargin.toFixed(1)}%</td>
