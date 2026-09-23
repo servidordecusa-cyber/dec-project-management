@@ -14980,16 +14980,14 @@ async function _lcBatchOne(file,vendorsCtx,token){
 // ═══ PANORAMA DE PROJETOS ══════════════════════════════════════════════════
 // Dashboard de portfólio com filtro por data de compra e de venda.
 // Datas/prazo + financeiro (custo de obra × venda) + status/cliente. Só leitura.
-let _panoInfo=null;
 async function renderPanorama(){
   if(!isCEO()) return;
   const el=document.getElementById('panorama-root'); if(!el) return;
   el.innerHTML='<div style="color:var(--gray3);padding:20px">📅 Carregando panorama…</div>';
-  if(!_panoInfo){
-    let pi=[],a=0;while(true){const r=await sb.from('property_info').select('project_id,purchase_date,sale_date,final_sale_price');pi=r.data||[];break;}
-    _panoInfo={}; pi.forEach(x=>_panoInfo[x.project_id]=x);
+  // Garante que a ficha de imóvel (propertyMap) está carregada pra calcular investido/ROI
+  if(typeof propertyMap==='undefined' || !propertyMap || Object.keys(propertyMap).length===0){
+    try{ const r=await sb.from('property_info').select('*'); if(r.data){ if(typeof propertyMap==='undefined') window.propertyMap={}; r.data.forEach(x=>propertyMap[x.project_id]=x); } }catch(_){}
   }
-  const hoje=new Date().toISOString().slice(0,10);
   el.innerHTML=`<div class="port-hdr"><div><h2>📅 Panorama de projetos</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Todos os projetos, com filtro por data de compra e de venda. <strong>Só leitura.</strong></p></div></div>
   <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
     <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">🛒 Data de compra</div>
@@ -15012,57 +15010,66 @@ function _panoRender(){
   const vd1=(document.getElementById('pano-vd1')||{}).value||'', vd2=(document.getElementById('pano-vd2')||{}).value||'';
   const st=(document.getElementById('pano-st')||{}).value||'';
   const cli=(document.getElementById('pano-cli')||{}).value||'';
-  const hoje=new Date();
   let rows=(projects||[]).map(p=>{
-    const pi=_panoInfo[p.id]||{};
-    const custo=(typeof calcRoomTotal==='function')?calcRoomTotal(p.id,'actual'):0;
-    const venda=+pi.final_sale_price||0;
-    const status=(typeof projectStatus==='function')?projectStatus(p.id):'';
-    let dias=null;
-    if(pi.purchase_date){ const ini=new Date(pi.purchase_date+'T00:00:00'); const fim=pi.sale_date?new Date(pi.sale_date+'T00:00:00'):hoje; dias=Math.max(0,Math.round((fim-ini)/86400000)); }
-    return {p, cli:(typeof customerName==='function')?customerName(p.customer):'', status, compra:pi.purchase_date||'', venda_data:pi.sale_date||'', dias, custo, venda, resultado:venda>0?(venda-custo):null};
+    const prop=(typeof propertyMap!=='undefined'&&propertyMap[p.id])?propertyMap[p.id]:{};
+    const f=(typeof calcProjectFinancials==='function')?calcProjectFinancials(p.id):{};
+    const sold=!!prop.sale_date;
+    return {
+      p,
+      cli:(typeof customerName==='function')?customerName(p.customer):'',
+      status:(typeof projectStatus==='function')?projectStatus(p.id):'',
+      compra:prop.purchase_date||'',
+      precoCompra:+prop.wholesale_price||0,
+      investido:+f.totalInvested||0,
+      vendaData:prop.sale_date||'',
+      valorVenda: sold ? (+f.sale||+prop.final_sale_price||0) : null,
+      roi: sold ? (+f.roi||0) : null,
+      lucro: sold ? (+f.netProfit||0) : null,
+      sold
+    };
   });
-  // filtros de data (só aplica quando o campo relevante existe)
   rows=rows.filter(r=>{
     if(cd1 && !(r.compra && r.compra>=cd1)) return false;
     if(cd2 && !(r.compra && r.compra<=cd2)) return false;
-    if(vd1 && !(r.venda_data && r.venda_data>=vd1)) return false;
-    if(vd2 && !(r.venda_data && r.venda_data<=vd2)) return false;
+    if(vd1 && !(r.vendaData && r.vendaData>=vd1)) return false;
+    if(vd2 && !(r.vendaData && r.vendaData<=vd2)) return false;
     if(st && r.status!==st) return false;
     if(cli && r.cli!==cli) return false;
     return true;
   });
-  rows.sort((a,b)=> String(b.venda_data||b.compra||'').localeCompare(String(a.venda_data||a.compra||'')));
-  const totCusto=rows.reduce((s,r)=>s+r.custo,0), totVenda=rows.reduce((s,r)=>s+r.venda,0);
-  const vendidos=rows.filter(r=>r.venda>0); const totRes=vendidos.reduce((s,r)=>s+(r.resultado||0),0);
-  const diasMed=(()=>{const d=rows.filter(r=>r.dias!=null).map(r=>r.dias);return d.length?Math.round(d.reduce((s,x)=>s+x,0)/d.length):null;})();
+  rows.sort((a,b)=> String(b.vendaData||b.compra||'').localeCompare(String(a.vendaData||a.compra||'')));
+  const vendidos=rows.filter(r=>r.sold);
+  const totInvest=rows.reduce((s,r)=>s+r.investido,0);
+  const totVenda=vendidos.reduce((s,r)=>s+(r.valorVenda||0),0);
+  const totLucro=vendidos.reduce((s,r)=>s+(r.lucro||0),0);
+  const roiMed=vendidos.length?(vendidos.reduce((s,r)=>s+(r.roi||0),0)/vendidos.length):null;
   const k=document.getElementById('pano-kpis');
   if(k) k.innerHTML=`
     <div class="home-card"><div class="lbl">📁 Projetos</div><div class="val">${rows.length}</div></div>
-    <div class="home-card"><div class="lbl">🔨 Custo de obra</div><div class="val">${fmt(totCusto)}</div></div>
-    <div class="home-card gold"><div class="lbl">🏁 Vendas (${vendidos.length})</div><div class="val">${fmt(totVenda)}</div></div>
-    <div class="home-card green"><div class="lbl">📈 Venda − obra</div><div class="val">${fmt(totRes)}</div></div>
-    <div class="home-card"><div class="lbl">⏱️ Dias médios</div><div class="val">${diasMed!=null?diasMed:'—'}</div></div>`;
+    <div class="home-card"><div class="lbl">💵 Investido (clientes)</div><div class="val">${fmt(totInvest)}</div></div>
+    <div class="home-card gold"><div class="lbl">🏁 Vendidos (${vendidos.length})</div><div class="val">${fmt(totVenda)}</div></div>
+    <div class="home-card green"><div class="lbl">📈 Lucro (vendidos)</div><div class="val">${fmt(totLucro)}</div></div>
+    <div class="home-card"><div class="lbl">📊 ROI médio (vendidos)</div><div class="val">${roiMed!=null?roiMed.toFixed(1)+'%':'—'}</div></div>`;
   const meta=s=>(typeof STATUS_META!=='undefined'&&STATUS_META[s])?STATUS_META[s]:{bg:'#eee',color:'#555',icon:'',label:s||'—'};
   const body=rows.map(r=>{const m=meta(r.status);return `<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer" onclick="openProject('${r.p.id}')">
     <td style="padding:9px 10px;font-weight:600;font-size:12px">${(r.p.address||r.p.name||'').replace(/</g,'&lt;')}</td>
     <td style="padding:9px 10px;font-size:11px">${(r.cli||'—').replace(/</g,'&lt;')}</td>
     <td style="padding:9px 10px;text-align:center"><span style="background:${m.bg};color:${m.color};padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700">${m.icon} ${m.label}</span></td>
     <td style="padding:9px 10px;text-align:center;font-size:12px;white-space:nowrap">${r.compra?_fmtDate(r.compra):'—'}</td>
-    <td style="padding:9px 10px;text-align:center;font-size:12px;white-space:nowrap">${r.venda_data?_fmtDate(r.venda_data):'—'}</td>
-    <td style="padding:9px 10px;text-align:center;font-size:12px;white-space:nowrap">${r.dias!=null?r.dias+' d':'—'}</td>
-    <td style="padding:9px 10px;text-align:right;font-weight:600;white-space:nowrap">${r.custo>0?fmt(r.custo):'—'}</td>
-    <td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--gold);white-space:nowrap">${r.venda>0?fmt(r.venda):'—'}</td>
-    <td style="padding:9px 10px;text-align:right;font-weight:700;white-space:nowrap;color:${r.resultado==null?'var(--gray3)':(r.resultado>=0?'#5C7A3F':'#C0392B')}">${r.resultado==null?'—':(r.resultado>=0?'':'-')+fmt(Math.abs(r.resultado))}</td>
+    <td style="padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap">${r.precoCompra>0?fmt(r.precoCompra):'—'}</td>
+    <td style="padding:9px 10px;text-align:right;font-weight:600;white-space:nowrap">${r.investido>0?fmt(r.investido):'—'}</td>
+    <td style="padding:9px 10px;text-align:center;font-size:12px;white-space:nowrap">${r.vendaData?_fmtDate(r.vendaData):'—'}</td>
+    <td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--gold);white-space:nowrap">${r.valorVenda!=null?fmt(r.valorVenda):'—'}</td>
+    <td style="padding:9px 10px;text-align:right;font-weight:700;white-space:nowrap;color:${r.roi==null?'var(--gray3)':(r.roi>=0?'#5C7A3F':'#C0392B')}">${r.roi==null?'—':(r.roi>=0?'':'')+r.roi.toFixed(1)+'%'}</td>
   </tr>`;}).join('');
-  el.innerHTML=`<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1000px">
+  el.innerHTML=`<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px">
     <thead><tr style="background:#3D271A;color:#fff">
-      <th style="padding:9px 10px;text-align:left">Projeto</th><th style="padding:9px 10px;text-align:left">Cliente</th><th style="padding:9px 10px;text-align:center">Status</th>
-      <th style="padding:9px 10px;text-align:center">Compra</th><th style="padding:9px 10px;text-align:center">Venda</th><th style="padding:9px 10px;text-align:center">Dias</th>
-      <th style="padding:9px 10px;text-align:right">Custo obra</th><th style="padding:9px 10px;text-align:right">Preço venda</th><th style="padding:9px 10px;text-align:right">Venda − obra</th>
+      <th style="padding:9px 10px;text-align:left">Endereço</th><th style="padding:9px 10px;text-align:left">Cliente</th><th style="padding:9px 10px;text-align:center">Status</th>
+      <th style="padding:9px 10px;text-align:center">Data compra</th><th style="padding:9px 10px;text-align:right">Preço compra</th><th style="padding:9px 10px;text-align:right">Investido (cliente)</th>
+      <th style="padding:9px 10px;text-align:center">Data venda</th><th style="padding:9px 10px;text-align:right">Valor venda</th><th style="padding:9px 10px;text-align:right">ROI</th>
     </tr></thead><tbody>${body||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--gray3)">Nenhum projeto no filtro.</td></tr>'}</tbody>
   </table></div></div>
-  <div style="font-size:10px;color:var(--gray3);margin-top:8px">"Venda − obra" = preço de venda menos o custo de obra realizado. <strong>Não</strong> inclui o preço de compra do imóvel (esse campo está vazio no sistema) nem custos de fechamento/holding — então não é o lucro líquido final. Filtros de data mostram só projetos que têm a data preenchida.</div>`;
+  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>Valor de venda</strong> e <strong>ROI</strong> só aparecem quando o projeto foi de fato vendido (tem data de venda). <strong>ROI</strong> = lucro líquido ÷ investido do cliente (mesma conta do Imóvel & Finanças). <strong>Preço de compra</strong> vem da ficha do imóvel (preencha em Imóvel & Finanças pra popular a coluna).</div>`;
 }
 // ═══ AUDITORIA DE RECIBOS ══════════════════════════════════════════════════
 // Dashboard (só leitura) por linha: valor da linha × soma dos recibos anexados,
