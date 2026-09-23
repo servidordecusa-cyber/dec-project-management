@@ -15035,8 +15035,8 @@ function _panoRender(){
       precoCompra:(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.hard_money||0)+(+prop.other_costs||0)+(+prop.commission||0),
       investido:+f.totalInvested||0,
       vendaData:prop.sale_date||'',
-      valorVenda: sold ? (+f.sale||+prop.final_sale_price||0) : null,
-      roi: sold ? (+f.roi||0) : null,
+      valorVenda: ((+f.sale||+prop.final_sale_price||0)>0) ? (+f.sale||+prop.final_sale_price||0) : null,
+      roi: ((+f.sale||+prop.final_sale_price||0)>0) ? (+f.roi||0) : null,
       lucro: sold ? (+f.netProfit||0) : null,
       sold
     };
@@ -15073,8 +15073,8 @@ function _panoRender(){
     <td style="padding:9px 10px;text-align:right;font-size:12px;white-space:nowrap">${r.precoCompra>0?fmt(r.precoCompra):'—'}</td>
     <td style="padding:9px 10px;text-align:right;font-weight:600;white-space:nowrap">${r.investido>0?fmt(r.investido):'—'}</td>
     <td style="padding:9px 10px;text-align:center;font-size:12px;white-space:nowrap">${r.vendaData?_fmtDate(r.vendaData):'—'}</td>
-    <td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--gold);white-space:nowrap">${r.valorVenda!=null?fmt(r.valorVenda):'—'}</td>
-    <td style="padding:9px 10px;text-align:right;font-weight:700;white-space:nowrap;color:${r.roi==null?'var(--gray3)':(r.roi>=0?'#5C7A3F':'#C0392B')}">${r.roi==null?'—':(r.roi>=0?'':'')+r.roi.toFixed(1)+'%'}</td>
+    <td style="padding:9px 10px;text-align:right;font-weight:600;white-space:nowrap;color:${r.valorVenda==null?'var(--gray3)':(r.sold?'var(--gold)':'#B0A79A')}">${r.valorVenda==null?'—':fmt(r.valorVenda)+(r.sold?'':'<div style="font-size:9px;color:#B0A79A;font-style:italic">previsto</div>')}</td>
+    <td style="padding:9px 10px;text-align:right;font-weight:700;white-space:nowrap;color:${r.roi==null?'var(--gray3)':(!r.sold?'#B0A79A':(r.roi>=0?'#5C7A3F':'#C0392B'))}">${r.roi==null?'—':r.roi.toFixed(1)+'%'+(r.sold?'':'<div style="font-size:9px;color:#B0A79A;font-style:italic">previsto</div>')}</td>
   </tr>`;}).join('');
   el.innerHTML=`<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px">
     <thead><tr style="background:#3D271A;color:#fff">
