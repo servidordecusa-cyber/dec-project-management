@@ -1686,6 +1686,10 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   <div id="panorama-root"></div>
 </div>
 
+<div id="view-piso" style="padding:26px;display:none">
+  <div id="piso-root"></div>
+</div>
+
 <!-- FIXED COSTS -->
 <div id="view-fixed">
   <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Custos da empresa</h2><p style="color:var(--gray3);margin-top:4px">Despesas administrativas da empresa (overhead) · não são de obra. <a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← voltar ao Financeiro</a></p></div></div>
@@ -1732,7 +1736,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
 <!-- FINANCIAL -->
 <div id="view-financial">
-  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financeiro (resumo)</h2><p style="color:var(--gray3);margin-top:4px">Resumo financeiro · <strong>lucro por projeto</strong> (regime de competência). Para o caixa veja a aba <strong>Fluxo de Caixa</strong>; para o resultado da empresa, o <strong>DRE</strong>.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-self:center"><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('livros')">📖 Livros</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('dre')">📈 DRE</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fluxo')">📊 Fluxo de Caixa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fixed')">🏢 Custos da empresa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('panorama')">📅 Panorama de projetos</button></div></div>
+  <div class="port-hdr"><div><h2><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:10px;color:var(--dec-gold)"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Financeiro (resumo)</h2><p style="color:var(--gray3);margin-top:4px">Resumo financeiro · <strong>lucro por projeto</strong> (regime de competência). Para o caixa veja a aba <strong>Fluxo de Caixa</strong>; para o resultado da empresa, o <strong>DRE</strong>.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-self:center"><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('livros')">📖 Livros</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('dre')">📈 DRE</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fluxo')">📊 Fluxo de Caixa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('fixed')">🏢 Custos da empresa</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('panorama')">📅 Panorama de projetos</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="goView('piso')">🏷️ Piso de venda</button></div></div>
   <div class="home-grid" id="fin-kpis"></div>
 
   <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD">
@@ -4319,7 +4323,7 @@ async function loadAllData(){
 }
 
 // ═══ NAVIGATION (Global Views) ═══════════════════════════════════════
-const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets','auditoria','panorama'];
+const GLOBAL_VIEWS=['home','portfolio','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets','auditoria','panorama','piso'];
 
 // ─── Memória de navegação: lembra a última tela no refresh ───────────────
 function _saveNav(o){ try{ localStorage.setItem('dec_nav', JSON.stringify(o)); }catch(e){} }
@@ -4327,14 +4331,14 @@ function _readNav(){ try{ return JSON.parse(localStorage.getItem('dec_nav')||'nu
 function goView(view){
   if(!GLOBAL_VIEWS.includes(view)) view='portfolio';
   // CEO check for restricted views
-  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets','auditoria','panorama'];
+  const ceoOnly=['home','clients','client-detail','vendors','invoices','fixed','lancar','financial','livros','fluxo','working-capital','dre','budgets','auditoria','panorama','piso'];
   if(ceoOnly.includes(view) && !isCEO()){
     toast('CEO only access',false);
     view='portfolio';
   }
   CID=null;
   // Hide ALL views
-  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-lancar','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets','view-auditoria','view-panorama'].forEach(v=>{
+  ['view-portfolio','view-project','view-home','view-clients','view-client-detail','view-vendors','view-invoices','view-fixed','view-lancar','view-financial','view-livros','view-fluxo','view-working-capital','view-dre','view-budgets','view-auditoria','view-panorama','view-piso'].forEach(v=>{
     const el=document.getElementById(v);
     if(el) el.style.display='none';
   });
@@ -4368,6 +4372,7 @@ function goView(view){
   else if(view==='budgets' && isCEO()) renderBudgets();
   else if(view==='auditoria' && isCEO()) renderAuditoria();
   else if(view==='panorama' && isCEO()) renderPanorama();
+  else if(view==='piso' && isCEO()) renderPiso();
   _saveNav({t:'view',view});
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -15001,6 +15006,71 @@ async function _lcBatchOne(file,vendorsCtx,token){
 // ═══ PANORAMA DE PROJETOS ══════════════════════════════════════════════════
 // Dashboard de portfólio com filtro por data de compra e de venda.
 // Datas/prazo + financeiro (custo de obra × venda) + status/cliente. Só leitura.
+// ═══ PISO DE VENDA (break-even) ════════════════════════════════════════════
+// Preço mínimo pra não perder dinheiro nas casas à venda, + custo de carregamento/mês.
+// Piso = Compra (inclui hard money) + Custos (obra/projeto) + Custos de venda.
+// Carregamento/mês = loan + utilities + (taxas/seguro anuais ÷ 12).
+async function renderPiso(){
+  if(!isCEO()) return;
+  const el=document.getElementById('piso-root'); if(!el) return;
+  el.innerHTML='<div style="color:var(--gray3);padding:20px">🏷️ Calculando piso de venda…</div>';
+  if(typeof propertyMap==='undefined' || !propertyMap || Object.keys(propertyMap).length===0){
+    try{ const r=await sb.from('property_info').select('*'); if(r.data){ if(typeof propertyMap==='undefined') window.propertyMap={}; r.data.forEach(x=>propertyMap[x.project_id]=x); } }catch(_){}
+  }
+  const aVenda=(projects||[]).filter(p=>projectStatus(p.id)==='for_sale');
+  const rows=aVenda.map(p=>{
+    const prop=propertyMap[p.id]||{};
+    const f=(typeof calcProjectFinancials==='function')?calcProjectFinancials(p.id):{};
+    const acqCash=(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.other_costs||0)+(+prop.commission||0);
+    const hard=+prop.hard_money||0;
+    const compra=acqCash+hard;                          // aquisição total (inclui hard money a quitar)
+    const custos=Math.max(0,(+f.totalInvested||0)-acqCash); // obra + projeto (parte não-aquisição)
+    const custosVenda=(+prop.selling_costs||0)+(+prop.lender_costs_sale||0);
+    const piso=compra+custos+custosVenda;
+    // carregamento mensal (recorrentes; anuais ÷12)
+    const rc=(typeof recurringMap!=='undefined'&&recurringMap[p.id])?recurringMap[p.id]:{};
+    let carry=0;
+    Object.keys(rc).forEach(item=>{ const months=(rc[item]||{}).months||{}; const vals=Object.values(months).map(v=>+v||0).filter(v=>v>0); if(!vals.length)return; const avg=vals.reduce((s,v)=>s+v,0)/vals.length; carry += /tax|imposto|insurance|seguro/i.test(item)?avg/12:avg; });
+    const pedido=+prop.final_sale_price||0;
+    const folga=pedido>0?(pedido-piso):null;
+    const suspeito=(piso<=0)||(compra<=0)||(custos<0)||(custosVenda<0)||(custosVenda>Math.max(pedido,piso));
+    return {p, compra, custos, hard, custosVenda, piso, carry, pedido, folga, suspeito};
+  });
+  rows.sort((a,b)=>(a.folga==null?1:0)-(b.folga==null?1:0) || (a.folga||0)-(b.folga||0));
+  const totPiso=rows.reduce((s,r)=>s+r.piso,0), totCarry=rows.reduce((s,r)=>s+r.carry,0);
+  const abaixo=rows.filter(r=>r.folga!=null&&r.folga<0).length;
+  el.innerHTML=`<div class="port-hdr"><div><h2>🏷️ Piso de venda</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Preço mínimo pra não perder dinheiro nas casas à venda. <strong>Só leitura.</strong></p></div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Casas à venda</div><div style="font-size:24px;font-weight:800;color:#3D271A">${rows.length}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Piso somado</div><div style="font-size:22px;font-weight:800;color:#9B7535">${fmt(totPiso)}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Carregamento/mês</div><div style="font-size:22px;font-weight:800;color:#C0392B">${fmt(totCarry)}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Abaixo do piso</div><div style="font-size:24px;font-weight:800;color:${abaixo?'#C0392B':'#5C7A3F'}">${abaixo}</div></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1080px">
+    <thead><tr style="background:#3D271A;color:#fff">
+      <th style="padding:9px 10px;text-align:left">Casa</th>
+      <th style="padding:9px 10px;text-align:right" title="Aquisição total, inclui hard money">Compra</th>
+      <th style="padding:9px 10px;text-align:right" title="Obra + custos do projeto">Custos</th>
+      <th style="padding:9px 10px;text-align:right" title="Comissão, taxas e juros na venda">Custos venda</th>
+      <th style="padding:9px 10px;text-align:right" title="Compra + Custos + Custos de venda">PISO HOJE</th>
+      <th style="padding:9px 10px;text-align:right" title="Loan + utilities + taxas/seguro ÷12">Carreg./mês</th>
+      <th style="padding:9px 10px;text-align:right" title="Piso hoje + 3× carregamento">Piso +3m</th>
+      <th style="padding:9px 10px;text-align:right">Pedido</th>
+      <th style="padding:9px 10px;text-align:right">Folga</th>
+    </tr></thead><tbody>${rows.map(r=>`<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer;${r.suspeito?'background:#FDECEA':''}" onclick="openProject('${r.p.id}')">
+      <td style="padding:9px 10px;font-weight:600;font-size:12px">${(r.p.address||r.p.name||'').replace(/</g,'&lt;')}${r.suspeito?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ conferir ficha</div>':''}</td>
+      <td style="padding:9px 10px;text-align:right">${fmt(r.compra)}${r.hard>0?`<div style="font-size:9px;color:var(--gray3)">hard $${Math.round(r.hard).toLocaleString('en-US')}</div>`:''}</td>
+      <td style="padding:9px 10px;text-align:right">${fmt(r.custos)}</td>
+      <td style="padding:9px 10px;text-align:right">${fmt(r.custosVenda)}</td>
+      <td style="padding:9px 10px;text-align:right;font-weight:800;color:#3D271A">${fmt(r.piso)}</td>
+      <td style="padding:9px 10px;text-align:right;color:#C0392B">${r.carry>0?fmt(r.carry):'—'}</td>
+      <td style="padding:9px 10px;text-align:right;color:#8A7B68">${fmt(r.piso+r.carry*3)}</td>
+      <td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--gold)">${r.pedido>0?fmt(r.pedido):'—'}</td>
+      <td style="padding:9px 10px;text-align:right;font-weight:700;color:${r.folga==null?'var(--gray3)':(r.folga>=0?'#5C7A3F':'#C0392B')}">${r.folga==null?'—':(r.folga>=0?'🟢 ':'🔴 ')+(r.folga>=0?'':'-')+fmt(Math.abs(r.folga))}</td>
+    </tr>`).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--gray3)">Nenhuma casa à venda.</td></tr>'}</tbody>
+  </table></div></div>
+  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>Piso hoje</strong> = Compra (inclui hard money a quitar) + Custos (obra/projeto) + Custos de venda. Vender abaixo disso = prejuízo. <strong>Carreg./mês</strong> = quanto a casa custa parada por mês (loan + utilities + taxas/seguro ÷12); o piso sobe por esse valor a cada mês. <strong>Folga</strong> = preço pedido − piso. Linha vermelha = dado da ficha a conferir.</div>`;
+}
 async function renderPanorama(){
   if(!isCEO()) return;
   const el=document.getElementById('panorama-root'); if(!el) return;
