@@ -15018,6 +15018,7 @@ async function renderPiso(){
     try{ const r=await sb.from('property_info').select('*'); if(r.data){ if(typeof propertyMap==='undefined') window.propertyMap={}; r.data.forEach(x=>propertyMap[x.project_id]=x); } }catch(_){}
   }
   const aVenda=(projects||[]).filter(p=>projectStatus(p.id)==='for_sale');
+  let lucroPct=parseFloat(localStorage.getItem('dec_piso_lucro_pct')); if(isNaN(lucroPct)) lucroPct=10;
   const rows=aVenda.map(p=>{
     const prop=propertyMap[p.id]||{};
     const f=(typeof calcProjectFinancials==='function')?calcProjectFinancials(p.id):{};
@@ -15025,23 +15026,29 @@ async function renderPiso(){
     const quitacao=(+prop.lender_costs_sale||+prop.hard_money||0);   // quitação do hard money na venda (conta 1x)
     const custos=Math.max(0,(+f.totalInvested||0)-compraCash);       // obra + projeto
     const custosVenda=(+prop.selling_costs||0);                      // comissão + taxas
-    const piso=compraCash+custos+quitacao+custosVenda;
+    const piso=compraCash+custos+quitacao+custosVenda;   // zero-a-zero
+    const pisoMin=piso*(1+lucroPct/100);                  // piso com lucro mínimo alvo
     // carregamento mensal (recorrentes; anuais ÷12)
     const rc=(typeof recurringMap!=='undefined'&&recurringMap[p.id])?recurringMap[p.id]:{};
     let carry=0;
     Object.keys(rc).forEach(item=>{ const months=(rc[item]||{}).months||{}; const vals=Object.values(months).map(v=>+v||0).filter(v=>v>0); if(!vals.length)return; const avg=vals.reduce((s,v)=>s+v,0)/vals.length; carry += /tax|imposto|insurance|seguro/i.test(item)?avg/12:avg; });
     const pedido=+prop.final_sale_price||0;
-    const folga=pedido>0?(pedido-piso):null;
+    const folga=pedido>0?(pedido-pisoMin):null;   // folga = pedido − piso COM lucro mínimo
     const suspeito=(piso<=0)||(compraCash<0)||(custos<0)||(custosVenda<0)||(pedido>0&&custosVenda>0.2*pedido);
-    return {p, compraCash, custos, quitacao, custosVenda, piso, carry, pedido, folga, suspeito};
+    return {p, compraCash, custos, quitacao, custosVenda, piso, pisoMin, carry, pedido, folga, suspeito};
   });
   rows.sort((a,b)=>(a.folga==null?1:0)-(b.folga==null?1:0) || (a.folga||0)-(b.folga||0));
-  const totPiso=rows.reduce((s,r)=>s+r.piso,0), totCarry=rows.reduce((s,r)=>s+r.carry,0);
+  const totPiso=rows.reduce((s,r)=>s+r.pisoMin,0), totCarry=rows.reduce((s,r)=>s+r.carry,0);
   const abaixo=rows.filter(r=>r.folga!=null&&r.folga<0).length;
-  el.innerHTML=`<div class="port-hdr"><div><h2>🏷️ Piso de venda</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Preço mínimo pra não perder dinheiro nas casas à venda. <strong>Só leitura.</strong></p></div></div>
+  el.innerHTML=`<div class="port-hdr"><div><h2>🏷️ Piso de venda</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Preço mínimo de venda garantindo <strong>${lucroPct}% de lucro</strong> nas casas à venda. <strong>Só leitura.</strong></p></div></div>
+  <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <div style="font-weight:700;font-size:13px;color:#3D271A">🎯 Lucro mínimo alvo</div>
+    <input id="piso-pct" type="number" min="0" step="0.5" value="${lucroPct}" onchange="localStorage.setItem('dec_piso_lucro_pct',this.value);renderPiso()" style="width:80px;padding:6px 9px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none"> %
+    <span style="font-size:11px;color:var(--gray3);font-style:italic">Piso mínimo = custo total (zero-a-zero) + ${lucroPct}% de lucro. Mude a % e recalcula.</span>
+  </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
     <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Casas à venda</div><div style="font-size:24px;font-weight:800;color:#3D271A">${rows.length}</div></div>
-    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Piso somado</div><div style="font-size:22px;font-weight:800;color:#9B7535">${fmt(totPiso)}</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Piso mín. somado (c/ ${lucroPct}%)</div><div style="font-size:22px;font-weight:800;color:#9B7535">${fmt(totPiso)}</div></div>
     <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Carregamento/mês</div><div style="font-size:22px;font-weight:800;color:#C0392B">${fmt(totCarry)}</div></div>
     <div class="card" style="text-align:center"><div style="font-size:11px;color:var(--gray3);text-transform:uppercase">Abaixo do piso</div><div style="font-size:24px;font-weight:800;color:${abaixo?'#C0392B':'#5C7A3F'}">${abaixo}</div></div>
   </div>
@@ -15052,9 +15059,9 @@ async function renderPiso(){
       <th style="padding:9px 10px;text-align:right" title="Obra + custos do projeto">Custos</th>
       <th style="padding:9px 10px;text-align:right" title="Quitação do hard money na venda (vai pro lender)">Quitação loan</th>
       <th style="padding:9px 10px;text-align:right" title="Comissão + taxas na venda">Custos venda</th>
-      <th style="padding:9px 10px;text-align:right" title="Compra + Custos + Quitação loan + Custos de venda">PISO HOJE</th>
+      <th style="padding:9px 10px;text-align:right" title="Custo total (zero-a-zero) + ${lucroPct}% de lucro">PISO MÍN (c/ ${lucroPct}%)</th>
       <th style="padding:9px 10px;text-align:right" title="Loan + utilities + taxas/seguro ÷12">Carreg./mês</th>
-      <th style="padding:9px 10px;text-align:right" title="Piso hoje + 3× carregamento">Piso +3m</th>
+      <th style="padding:9px 10px;text-align:right" title="Piso mínimo + 3× carregamento">Piso +3m</th>
       <th style="padding:9px 10px;text-align:right">Pedido</th>
       <th style="padding:9px 10px;text-align:right">Folga</th>
     </tr></thead><tbody>${rows.map(r=>`<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer;${r.suspeito?'background:#FDECEA':''}" onclick="openProject('${r.p.id}')">
@@ -15063,14 +15070,14 @@ async function renderPiso(){
       <td style="padding:9px 10px;text-align:right">${fmt(r.custos)}</td>
       <td style="padding:9px 10px;text-align:right;color:#8A7B68">${r.quitacao>0?fmt(r.quitacao):'—'}</td>
       <td style="padding:9px 10px;text-align:right">${fmt(r.custosVenda)}</td>
-      <td style="padding:9px 10px;text-align:right;font-weight:800;color:#3D271A">${fmt(r.piso)}</td>
+      <td style="padding:9px 10px;text-align:right;font-weight:800;color:#3D271A">${fmt(r.pisoMin)}<div style="font-size:9px;color:var(--gray3);font-weight:400">zero-a-zero ${fmt(r.piso)}</div></td>
       <td style="padding:9px 10px;text-align:right;color:#C0392B">${r.carry>0?fmt(r.carry):'—'}</td>
-      <td style="padding:9px 10px;text-align:right;color:#8A7B68">${fmt(r.piso+r.carry*3)}</td>
+      <td style="padding:9px 10px;text-align:right;color:#8A7B68">${fmt(r.pisoMin+r.carry*3)}</td>
       <td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--gold)">${r.pedido>0?fmt(r.pedido):'—'}</td>
       <td style="padding:9px 10px;text-align:right;font-weight:700;color:${r.folga==null?'var(--gray3)':(r.folga>=0?'#5C7A3F':'#C0392B')}">${r.folga==null?'—':(r.folga>=0?'🟢 ':'🔴 ')+(r.folga>=0?'':'-')+fmt(Math.abs(r.folga))}</td>
     </tr>`).join('')||'<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--gray3)">Nenhuma casa à venda.</td></tr>'}</tbody>
   </table></div></div>
-  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>Piso hoje</strong> = Compra (cash) + Custos (obra/projeto) + Quitação do loan + Custos de venda. Vender abaixo disso = prejuízo. <strong>Carreg./mês</strong> = quanto a casa custa parada por mês (loan + utilities + taxas/seguro ÷12); o piso sobe por esse valor a cada mês. <strong>Folga</strong> = preço pedido − piso. Linha vermelha = dado da ficha a conferir.</div>`;
+  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>PISO MÍN</strong> = custo total zero-a-zero (Compra cash + Custos + Quitação do loan + Custos de venda) <strong>+ ${lucroPct}% de lucro</strong>. É o mínimo pra vender já garantindo esse lucro; abaixo do zero-a-zero (mostrado embaixo) é prejuízo. <strong>Carreg./mês</strong> = quanto a casa custa parada por mês (loan + utilities + taxas/seguro ÷12); o piso sobe por esse valor a cada mês. <strong>Folga</strong> = preço pedido − piso mín. Linha vermelha = dado da ficha a conferir.</div>`;
 }
 async function renderPanorama(){
   if(!isCEO()) return;
