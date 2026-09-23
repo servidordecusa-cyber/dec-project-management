@@ -15021,20 +15021,19 @@ async function renderPiso(){
   const rows=aVenda.map(p=>{
     const prop=propertyMap[p.id]||{};
     const f=(typeof calcProjectFinancials==='function')?calcProjectFinancials(p.id):{};
-    const acqCash=(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.other_costs||0)+(+prop.commission||0);
-    const hard=+prop.hard_money||0;
-    const compra=acqCash+hard;                          // aquisição total (inclui hard money a quitar)
-    const custos=Math.max(0,(+f.totalInvested||0)-acqCash); // obra + projeto (parte não-aquisição)
-    const custosVenda=(+prop.selling_costs||0)+(+prop.lender_costs_sale||0);
-    const piso=compra+custos+custosVenda;
+    const compraCash=(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.other_costs||0)+(+prop.commission||0); // aquisição em cash (o loan é quitado na venda, não é dinheiro do cliente)
+    const quitacao=(+prop.lender_costs_sale||+prop.hard_money||0);   // quitação do hard money na venda (conta 1x)
+    const custos=Math.max(0,(+f.totalInvested||0)-compraCash);       // obra + projeto
+    const custosVenda=(+prop.selling_costs||0);                      // comissão + taxas
+    const piso=compraCash+custos+quitacao+custosVenda;
     // carregamento mensal (recorrentes; anuais ÷12)
     const rc=(typeof recurringMap!=='undefined'&&recurringMap[p.id])?recurringMap[p.id]:{};
     let carry=0;
     Object.keys(rc).forEach(item=>{ const months=(rc[item]||{}).months||{}; const vals=Object.values(months).map(v=>+v||0).filter(v=>v>0); if(!vals.length)return; const avg=vals.reduce((s,v)=>s+v,0)/vals.length; carry += /tax|imposto|insurance|seguro/i.test(item)?avg/12:avg; });
     const pedido=+prop.final_sale_price||0;
     const folga=pedido>0?(pedido-piso):null;
-    const suspeito=(piso<=0)||(compra<=0)||(custos<0)||(custosVenda<0)||(custosVenda>Math.max(pedido,piso));
-    return {p, compra, custos, hard, custosVenda, piso, carry, pedido, folga, suspeito};
+    const suspeito=(piso<=0)||(compraCash<0)||(custos<0)||(custosVenda<0)||(pedido>0&&custosVenda>0.2*pedido);
+    return {p, compraCash, custos, quitacao, custosVenda, piso, carry, pedido, folga, suspeito};
   });
   rows.sort((a,b)=>(a.folga==null?1:0)-(b.folga==null?1:0) || (a.folga||0)-(b.folga||0));
   const totPiso=rows.reduce((s,r)=>s+r.piso,0), totCarry=rows.reduce((s,r)=>s+r.carry,0);
@@ -15049,27 +15048,29 @@ async function renderPiso(){
   <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1080px">
     <thead><tr style="background:#3D271A;color:#fff">
       <th style="padding:9px 10px;text-align:left">Casa</th>
-      <th style="padding:9px 10px;text-align:right" title="Aquisição total, inclui hard money">Compra</th>
+      <th style="padding:9px 10px;text-align:right" title="Aquisição paga em cash (o hard money aparece na coluna Quitação)">Compra (cash)</th>
       <th style="padding:9px 10px;text-align:right" title="Obra + custos do projeto">Custos</th>
-      <th style="padding:9px 10px;text-align:right" title="Comissão, taxas e juros na venda">Custos venda</th>
-      <th style="padding:9px 10px;text-align:right" title="Compra + Custos + Custos de venda">PISO HOJE</th>
+      <th style="padding:9px 10px;text-align:right" title="Quitação do hard money na venda (vai pro lender)">Quitação loan</th>
+      <th style="padding:9px 10px;text-align:right" title="Comissão + taxas na venda">Custos venda</th>
+      <th style="padding:9px 10px;text-align:right" title="Compra + Custos + Quitação loan + Custos de venda">PISO HOJE</th>
       <th style="padding:9px 10px;text-align:right" title="Loan + utilities + taxas/seguro ÷12">Carreg./mês</th>
       <th style="padding:9px 10px;text-align:right" title="Piso hoje + 3× carregamento">Piso +3m</th>
       <th style="padding:9px 10px;text-align:right">Pedido</th>
       <th style="padding:9px 10px;text-align:right">Folga</th>
     </tr></thead><tbody>${rows.map(r=>`<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer;${r.suspeito?'background:#FDECEA':''}" onclick="openProject('${r.p.id}')">
       <td style="padding:9px 10px;font-weight:600;font-size:12px">${(r.p.address||r.p.name||'').replace(/</g,'&lt;')}${r.suspeito?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ conferir ficha</div>':''}</td>
-      <td style="padding:9px 10px;text-align:right">${fmt(r.compra)}${r.hard>0?`<div style="font-size:9px;color:var(--gray3)">hard $${Math.round(r.hard).toLocaleString('en-US')}</div>`:''}</td>
+      <td style="padding:9px 10px;text-align:right">${fmt(r.compraCash)}</td>
       <td style="padding:9px 10px;text-align:right">${fmt(r.custos)}</td>
+      <td style="padding:9px 10px;text-align:right;color:#8A7B68">${r.quitacao>0?fmt(r.quitacao):'—'}</td>
       <td style="padding:9px 10px;text-align:right">${fmt(r.custosVenda)}</td>
       <td style="padding:9px 10px;text-align:right;font-weight:800;color:#3D271A">${fmt(r.piso)}</td>
       <td style="padding:9px 10px;text-align:right;color:#C0392B">${r.carry>0?fmt(r.carry):'—'}</td>
       <td style="padding:9px 10px;text-align:right;color:#8A7B68">${fmt(r.piso+r.carry*3)}</td>
       <td style="padding:9px 10px;text-align:right;font-weight:600;color:var(--gold)">${r.pedido>0?fmt(r.pedido):'—'}</td>
       <td style="padding:9px 10px;text-align:right;font-weight:700;color:${r.folga==null?'var(--gray3)':(r.folga>=0?'#5C7A3F':'#C0392B')}">${r.folga==null?'—':(r.folga>=0?'🟢 ':'🔴 ')+(r.folga>=0?'':'-')+fmt(Math.abs(r.folga))}</td>
-    </tr>`).join('')||'<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--gray3)">Nenhuma casa à venda.</td></tr>'}</tbody>
+    </tr>`).join('')||'<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--gray3)">Nenhuma casa à venda.</td></tr>'}</tbody>
   </table></div></div>
-  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>Piso hoje</strong> = Compra (inclui hard money a quitar) + Custos (obra/projeto) + Custos de venda. Vender abaixo disso = prejuízo. <strong>Carreg./mês</strong> = quanto a casa custa parada por mês (loan + utilities + taxas/seguro ÷12); o piso sobe por esse valor a cada mês. <strong>Folga</strong> = preço pedido − piso. Linha vermelha = dado da ficha a conferir.</div>`;
+  <div style="font-size:10px;color:var(--gray3);margin-top:8px"><strong>Piso hoje</strong> = Compra (cash) + Custos (obra/projeto) + Quitação do loan + Custos de venda. Vender abaixo disso = prejuízo. <strong>Carreg./mês</strong> = quanto a casa custa parada por mês (loan + utilities + taxas/seguro ÷12); o piso sobe por esse valor a cada mês. <strong>Folga</strong> = preço pedido − piso. Linha vermelha = dado da ficha a conferir.</div>`;
 }
 async function renderPanorama(){
   if(!isCEO()) return;
