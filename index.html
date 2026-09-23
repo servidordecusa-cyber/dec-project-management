@@ -14974,9 +14974,11 @@ async function renderPanorama(){
       <div style="display:flex;gap:6px;align-items:center"><input type="date" id="pano-cd1" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"> a <input type="date" id="pano-cd2" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"></div></div>
     <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">🏁 Data de venda</div>
       <div style="display:flex;gap:6px;align-items:center"><input type="date" id="pano-vd1" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"> a <input type="date" id="pano-vd2" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"></div></div>
+    <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">Cliente</div>
+      <select id="pano-cli" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;max-width:220px"><option value="">Todos</option>${[...new Set((projects||[]).map(p=>(typeof customerName==='function'?customerName(p.customer):'')||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c.replace(/</g,'&lt;')}</option>`).join('')}</select></div>
     <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">Status</div>
       <select id="pano-st" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"><option value="">Todos</option><option value="in_progress">Em andamento</option><option value="for_sale">À venda</option><option value="sold">Vendido</option><option value="completed">Concluído</option></select></div>
-    <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="['pano-cd1','pano-cd2','pano-vd1','pano-vd2','pano-st'].forEach(i=>document.getElementById(i).value='');_panoRender()">Limpar filtros</button>
+    <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="['pano-cd1','pano-cd2','pano-vd1','pano-vd2','pano-st','pano-cli'].forEach(i=>document.getElementById(i).value='');_panoRender()">Limpar filtros</button>
   </div>
   <div id="pano-kpis" class="home-grid" style="margin:14px 0"></div>
   <div id="pano-table"></div>`;
@@ -14987,6 +14989,7 @@ function _panoRender(){
   const cd1=(document.getElementById('pano-cd1')||{}).value||'', cd2=(document.getElementById('pano-cd2')||{}).value||'';
   const vd1=(document.getElementById('pano-vd1')||{}).value||'', vd2=(document.getElementById('pano-vd2')||{}).value||'';
   const st=(document.getElementById('pano-st')||{}).value||'';
+  const cli=(document.getElementById('pano-cli')||{}).value||'';
   const hoje=new Date();
   let rows=(projects||[]).map(p=>{
     const pi=_panoInfo[p.id]||{};
@@ -15004,6 +15007,7 @@ function _panoRender(){
     if(vd1 && !(r.venda_data && r.venda_data>=vd1)) return false;
     if(vd2 && !(r.venda_data && r.venda_data<=vd2)) return false;
     if(st && r.status!==st) return false;
+    if(cli && r.cli!==cli) return false;
     return true;
   });
   rows.sort((a,b)=> String(b.venda_data||b.compra||'').localeCompare(String(a.venda_data||a.compra||'')));
