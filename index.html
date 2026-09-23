@@ -14990,15 +14990,15 @@ async function renderPanorama(){
   }
   el.innerHTML=`<div class="port-hdr"><div><h2>📅 Panorama de projetos</h2><p style="color:var(--gray3);margin-top:4px"><a href="javascript:void(0)" onclick="goView('financial')" style="color:#9B7535">← Financeiro</a> · Todos os projetos, com filtro por data de compra e de venda. <strong>Só leitura.</strong></p></div></div>
   <div class="card" style="background:#FBF8F3;border:1px solid #EADFCD;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
-    <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">🛒 Data de compra</div>
-      <div style="display:flex;gap:6px;align-items:center"><input type="date" id="pano-cd1" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"> a <input type="date" id="pano-cd2" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"></div></div>
-    <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">🏁 Data de venda</div>
-      <div style="display:flex;gap:6px;align-items:center"><input type="date" id="pano-vd1" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"> a <input type="date" id="pano-vd2" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"></div></div>
+    <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">📅 Período</div>
+      <div style="display:flex;gap:6px;align-items:center"><input type="date" id="pano-d1" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"> a <input type="date" id="pano-d2" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"></div></div>
+    <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">Filtrar data por</div>
+      <select id="pano-dcat" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"><option value="compra">Data de compra</option><option value="venda">Data de venda</option></select></div>
     <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">Cliente</div>
       <select id="pano-cli" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px;max-width:220px"><option value="">Todos</option>${[...new Set((projects||[]).map(p=>(typeof customerName==='function'?customerName(p.customer):'')||'').filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c.replace(/</g,'&lt;')}</option>`).join('')}</select></div>
     <div><div style="font-size:11px;color:var(--gray3);font-weight:700;margin-bottom:4px">Status</div>
       <select id="pano-st" onchange="_panoRender()" style="padding:6px 8px;font-size:12px;border:1.5px solid var(--gray2);border-radius:6px"><option value="">Todos</option><option value="in_progress">Em andamento</option><option value="for_sale">À venda</option><option value="sold">Vendido</option><option value="completed">Concluído</option></select></div>
-    <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="['pano-cd1','pano-cd2','pano-vd1','pano-vd2','pano-st','pano-cli'].forEach(i=>document.getElementById(i).value='');_panoRender()">Limpar filtros</button>
+    <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px" onclick="['pano-d1','pano-d2','pano-st','pano-cli'].forEach(i=>document.getElementById(i).value='');document.getElementById('pano-dcat').value='compra';_panoRender()">Limpar filtros</button>
   </div>
   <div id="pano-kpis" class="home-grid" style="margin:14px 0"></div>
   <div id="pano-table"></div>`;
@@ -15006,8 +15006,8 @@ async function renderPanorama(){
 }
 function _panoRender(){
   const el=document.getElementById('pano-table'); if(!el) return;
-  const cd1=(document.getElementById('pano-cd1')||{}).value||'', cd2=(document.getElementById('pano-cd2')||{}).value||'';
-  const vd1=(document.getElementById('pano-vd1')||{}).value||'', vd2=(document.getElementById('pano-vd2')||{}).value||'';
+  const d1=(document.getElementById('pano-d1')||{}).value||'', d2=(document.getElementById('pano-d2')||{}).value||'';
+  const dcat=(document.getElementById('pano-dcat')||{}).value||'compra';
   const st=(document.getElementById('pano-st')||{}).value||'';
   const cli=(document.getElementById('pano-cli')||{}).value||'';
   let rows=(projects||[]).map(p=>{
@@ -15029,10 +15029,11 @@ function _panoRender(){
     };
   });
   rows=rows.filter(r=>{
-    if(cd1 && !(r.compra && r.compra>=cd1)) return false;
-    if(cd2 && !(r.compra && r.compra<=cd2)) return false;
-    if(vd1 && !(r.vendaData && r.vendaData>=vd1)) return false;
-    if(vd2 && !(r.vendaData && r.vendaData<=vd2)) return false;
+    if(d1||d2){ const campo = dcat==='venda' ? r.vendaData : r.compra;
+      if(!campo) return false;                 // sem a data escolhida → fora do período
+      if(d1 && !(campo>=d1)) return false;
+      if(d2 && !(campo<=d2)) return false;
+    }
     if(st && r.status!==st) return false;
     if(cli && r.cli!==cli) return false;
     return true;
