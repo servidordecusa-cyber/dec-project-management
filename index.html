@@ -5232,14 +5232,38 @@ function _rehabRowHTML(){
     <td colspan="2"></td>
   </tr>`;
 }
+// ═══ Desacoplamento Orçado × Realizado ═══════════════════════════════
+// Um item só aparece no Orçado se tem sinal de orçamento (valor/qtd/custo
+// unit./fornecedor/nota de estimativa); só aparece no Realizado se tem
+// sinal de custo real (valor/qtd/custo unit./fornecedor/nota/anexo).
+// Item recém-adicionado numa aba fica visível ali até recarregar a página.
+let _justAddedEst=new Set(), _justAddedAct=new Set();
+function _bmItem(gid,slug){ return ((budgetMap[CID]||{})[gid]||{})[slug]||{}; }
+function _hasEstData(gid,slug){
+  const d=_bmItem(gid,slug);
+  return (+d.est>0) || (+d.est_qty>0) || (+d.est_unit_cost>0)
+    || !!(d.est_supplier&&String(d.est_supplier).trim())
+    || !!(d.est_note&&String(d.est_note).trim())
+    || _justAddedEst.has(gid+'|'+slug);
+}
+function _hasActData(gid,slug){
+  const d=_bmItem(gid,slug);
+  const att=(((attachMap[CID]||{})[gid]||{})[slug])||[];
+  return (+d.actual>0) || (+d.actual_qty>0) || (+d.actual_unit_cost>0)
+    || !!(d.actual_supplier&&String(d.actual_supplier).trim())
+    || !!(d.actual_note&&String(d.actual_note).trim())
+    || att.length>0
+    || _justAddedAct.has(gid+'|'+slug);
+}
+
 function renderEstimateFlat(){
   const tb=document.getElementById('tb-est-all'); if(!tb) return;
   let html=_rehabRowHTML();
   GROUPS.forEach(g=>{
-    ((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ html+=rowHTML('est',g.id,it.name,it.slug); });
+    ((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ if(_hasEstData(g.id,it.slug)) html+=rowHTML('est',g.id,it.name,it.slug); });
   });
   tb.innerHTML = html;
-  GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>hydrateRow('est',g.id,it.slug)));
+  GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ if(_hasEstData(g.id,it.slug)) hydrateRow('est',g.id,it.slug); }));
   _updateEstGrandTotal();
 }
 
@@ -5275,9 +5299,9 @@ function _updateCatSummaries(){
 function renderActualFlat(){
   const tb=document.getElementById('tb-act-all'); if(!tb) return;
   const all=[];
-  GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>all.push({gid:g.id,it})));
+  GROUPS.forEach(g=>((itemsMap[CID]||{})[g.id]||[]).forEach(it=>{ if(_hasActData(g.id,it.slug)) all.push({gid:g.id,it}); }));
   if(all.length===0){
-    tb.innerHTML=`<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum item ainda — clique em "+ Adicionar item" abaixo</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--gray3);font-size:12px;font-style:italic">Nenhum custo real ainda — lançe uma nota ou clique em "+ Adicionar item" abaixo</td></tr>`;
     return;
   }
   const byCat={};
@@ -5625,7 +5649,9 @@ async function confirmAddItem(){
     itemsMap[CID][gid] = itemsMap[CID][gid].filter(x => x.slug !== islug);
     return;
   }
-  // Re-render BOTH tables (est + act) so item shows up in both
+  // Desacoplado: o item novo (vazio) só aparece na aba onde foi criado.
+  const _addType=(_addItemCtx&&_addItemCtx.type)||'est';
+  if(_addType==='act') _justAddedAct.add(gid+'|'+islug); else _justAddedEst.add(gid+'|'+islug);
   renderItems('est',gid);
   renderItems('act',gid);
   closeAddItemModal();
