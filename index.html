@@ -14834,7 +14834,7 @@ function renderPendingNotes(){
         </tr></thead><tbody>
         ${rows.map(({n,dupA,dupP})=>`<tr style="border-bottom:1px solid #F0EAE2${(dupA||dupP)?';background:#FFF1E0':''}">
           <td style="padding:8px 10px;white-space:nowrap">${(n.extracted_date||(n.created_at||'').slice(0,10)||'')}</td>
-          <td style="padding:8px 10px">${(n.extracted_vendor||'—').replace(/</g,'&lt;')}<div style="color:#9B7535;font-size:11px">${((n.target_type==='recurring_costs'?(n.recurring_item_name||'conta recorrente'):n.suggested_item_name)||'').replace(/</g,'&lt;')}</div>${n.target_type==='recurring_costs'?'<span style="display:inline-block;margin-top:2px;background:#EAF3E4;color:#5C7A3F;padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700">↻ recorrente (utilities)</span>':''}</td>
+          <td style="padding:8px 10px">${(n.extracted_vendor||'—').replace(/</g,'&lt;')}<div style="color:#9B7535;font-size:11px">${(((n.target_type==='recurring_costs'&&n.recurring_item_name)?n.recurring_item_name:n.suggested_item_name)||'').replace(/</g,'&lt;')}</div>${(n.target_type==='recurring_costs'&&n.recurring_item_name&&String(n.recurring_item_name).trim())?'<span style="display:inline-block;margin-top:2px;background:#EAF3E4;color:#5C7A3F;padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700">↻ recorrente (utilities)</span>':''}</td>
           <td style="padding:8px 10px;text-align:right;font-weight:700;white-space:nowrap">${fmtc(n.extracted_total)}${dupA?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor já nos Custos realizados</div>':''}${dupP?'<div style="font-size:9px;color:#C0392B;font-weight:700">⚠ valor repetido na fila</div>':''}</td>
           <td style="padding:8px 10px;text-align:center">${n.storage_path?`<a href="javascript:void(0)" onclick="_openVendorNotePath('${(n.storage_path||'').replace(/'/g,"\\'")}')" style="color:#9B7535;text-decoration:underline;font-size:11px">abrir</a>`:'<span style="color:#c9c0b3;font-size:11px">—</span>'}</td>
           <td style="padding:8px 10px;text-align:center;white-space:nowrap"><button onclick="reviewPendingNote('${n.id}')" style="background:#3D271A;color:#fff;border:0;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Revisar</button> <button onclick="discardPendingNote('${n.id}')" title="Descartar" style="background:transparent;border:1px solid var(--gray2);border-radius:5px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--p1)">🗑</button></td>
@@ -14847,9 +14847,11 @@ function renderPendingNotes(){
 }
 function reviewPendingNote(id){
   const n=pendingNotes.find(x=>x.id===id); if(!n){toast('Nota não encontrada',false);return;}
-  // Roteia por DESTINO: nota de utilities (recurring_costs) abre o fluxo de RECORRENTE,
-  // não o de custo de obra. Corrige o bug de utilities cair no Realizado.
-  if(n.target_type==='recurring_costs'){ return reviewPendingRecurringNote(n); }
+  // Roteia por DESTINO: só vai pro fluxo de RECORRENTE quando é utility de verdade —
+  // marcada recurring_costs E com item recorrente preenchido (Energy, Water...).
+  // Notas recurring_costs SEM item recorrente estão mal classificadas (são compra/serviço)
+  // e caem no custo de obra, como antes.
+  if(n.target_type==='recurring_costs' && n.recurring_item_name && String(n.recurring_item_name).trim()){ return reviewPendingRecurringNote(n); }
   _vnLines=[]; // fluxo de linha única
   _vnCurrent={
     note_id:n.id, original_filename:n.original_filename, file_size_bytes:n.file_size_bytes, storage_path:n.storage_path,
