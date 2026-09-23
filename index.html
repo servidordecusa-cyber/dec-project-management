@@ -5570,7 +5570,7 @@ function rowHTML(type,gid,item,islug){
       oninput="onBC('${type}','${gid}','${islug}',this)" placeholder="Notes..."></td>
     ${wcCell}
     ${attachCell}
-    <td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 6px;font-size:14px;color:var(--red)" title="Remove item" onclick="removeItem('${gid}','${islug}')">🗑</button></td>
+    <td style="text-align:center"><button class="btn btn-ghost" style="padding:4px 6px;font-size:14px;color:var(--red)" title="Remove item" onclick="removeItem('${gid}','${islug}','${type}')">🗑</button></td>
   </tr>`;
 }
 
@@ -7575,12 +7575,57 @@ function _scRenderResult(result) {
 }
 // ═══ END SUPPLY CHAIN ANALYSIS ════════════════════════════════════════
 
-async function removeItem(gid,islug){
+// Sinais de dados REAIS persistidos (ignora o flag "recém-adicionado")
+function _realEstData(gid,slug){
+  const d=((budgetMap[CID]||{})[gid]||{})[slug]||{};
+  return (+d.est>0)||(+d.est_qty>0)||(+d.est_unit_cost>0)
+    ||!!(d.est_supplier&&String(d.est_supplier).trim())
+    ||!!(d.est_note&&String(d.est_note).trim());
+}
+function _realActData(gid,slug){
+  const d=((budgetMap[CID]||{})[gid]||{})[slug]||{};
+  const att=(((attachMap[CID]||{})[gid]||{})[slug])||[];
+  return (+d.actual>0)||(+d.actual_qty>0)||(+d.actual_unit_cost>0)
+    ||!!(d.actual_supplier&&String(d.actual_supplier).trim())
+    ||!!(d.actual_note&&String(d.actual_note).trim())
+    ||att.length>0;
+}
+
+async function removeItem(gid,islug,fromType){
   // Look up current name from itemsMap (in case it was renamed)
   const entry=((itemsMap[CID]||{})[gid]||[]).find(x=>x.slug===islug);
   const item=entry?entry.name:islug;
-  if(!confirm('Remove "'+item+'" from this phase? All its data will be lost.')) return;
-  // Delete row
+
+  // ── Desacoplado: tirar do Orçado NÃO apaga o Realizado (e vice-versa) ──
+  // Se o item tem dados no OUTRO lado, só zera este lado e mantém a linha.
+  if(fromType==='est' && _realActData(gid,islug)){
+    if(!confirm('Tirar "'+item+'" do ORÇADO?\n\nO valor do Realizado desse item será mantido.')) return;
+    await sb.from('budget_items').update({est:0,est_qty:0,est_unit_cost:0,est_supplier:'',est_note:''})
+      .eq('project_id',CID).eq('room_id',gid).eq('item_slug',islug);
+    const d=((budgetMap[CID]||{})[gid]||{})[islug]; if(d){ d.est=0; d.est_qty=0; d.est_unit_cost=0; d.est_supplier=''; d.est_note=''; }
+    _justAddedEst.delete(gid+'|'+islug);
+    renderItems('est',gid); renderItems('act',gid);
+    updateGroupTotals(gid); renderDashboard(); showSaved();
+    return;
+  }
+  if(fromType==='act' && _realEstData(gid,islug)){
+    if(!confirm('Tirar "'+item+'" do REALIZADO?\n\nO valor do Orçado desse item será mantido. Os anexos/recibos deste item serão removidos.')) return;
+    await sb.from('budget_items').update({actual:0,actual_qty:0,actual_unit_cost:0,actual_supplier:'',actual_note:''})
+      .eq('project_id',CID).eq('room_id',gid).eq('item_slug',islug);
+    // remove anexos (pertencem ao lado realizado)
+    const atts=((attachMap[CID]||{})[gid]||{})[islug]||[];
+    for(const a of atts){ if(a.storage_path) await sb.storage.from('budget-attachments').remove([a.storage_path]); }
+    await sb.from('budget_attachments').delete().eq('project_id',CID).eq('room_id',gid).eq('item_slug',islug);
+    const d=((budgetMap[CID]||{})[gid]||{})[islug]; if(d){ d.actual=0; d.actual_qty=0; d.actual_unit_cost=0; d.actual_supplier=''; d.actual_note=''; }
+    if(attachMap[CID]&&attachMap[CID][gid]) delete attachMap[CID][gid][islug];
+    _justAddedAct.delete(gid+'|'+islug);
+    renderItems('est',gid); renderItems('act',gid);
+    updateGroupTotals(gid); renderDashboard(); showSaved();
+    return;
+  }
+
+  // ── Sem dados no outro lado: apaga a linha inteira (comportamento antigo) ──
+  if(!confirm('Remover "'+item+'" desta fase? Todos os dados dele serão perdidos.')) return;
   await sb.from('budget_items').delete()
     .eq('project_id',CID).eq('room_id',gid).eq('item_slug',islug);
   // Delete all attachments for this item
@@ -7594,6 +7639,7 @@ async function removeItem(gid,islug){
   if(itemsMap[CID]&&itemsMap[CID][gid]) itemsMap[CID][gid]=itemsMap[CID][gid].filter(x=>x.slug!==islug);
   if(budgetMap[CID]&&budgetMap[CID][gid]) delete budgetMap[CID][gid][islug];
   if(attachMap[CID]&&attachMap[CID][gid]) delete attachMap[CID][gid][islug];
+  _justAddedEst.delete(gid+'|'+islug); _justAddedAct.delete(gid+'|'+islug);
   renderItems('est',gid);
   renderItems('act',gid);
   updateGroupTotals(gid);
