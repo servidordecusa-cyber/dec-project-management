@@ -4384,13 +4384,46 @@ function goPortfolio(){goView('portfolio');}
 
 // ═══ LIXEIRA — itens de orçamento removidos (soft delete), recuperáveis ═══════
 function _lxEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function _lxBackupBanner(){
+  let lastTxt='ainda sem registro';
+  try{
+    const {data:meta}=await sb.from('db_backups_meta').select('created_at,kind').order('created_at',{ascending:false}).limit(1);
+    const last=(meta||[])[0];
+    if(last) lastTxt=new Date(last.created_at).toLocaleString('pt-BR')+' ('+last.kind+')';
+  }catch(e){}
+  return '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#ECEFE3;border:1px solid #D7E0C6;border-radius:10px;padding:12px 16px;margin-bottom:16px">'
+    +'<div style="font-size:13px;color:#3D4A2A"><strong>🛡 Backup automático diário ativo</strong><br><span style="color:#5C6B45">Último backup: '+_lxEsc(lastTxt)+'</span></div>'
+    +'<button class="btn btn-gold" style="margin-left:auto;padding:8px 14px;font-size:12px" onclick="doBackupNow(this)">💾 Fazer backup agora</button></div>';
+}
+async function doBackupNow(btn){
+  if(btn){ btn.disabled=true; btn.textContent='💾 Salvando…'; }
+  try{
+    const {data:rid,error:rerr}=await sb.rpc('make_db_backup',{p_kind:'manual'});
+    if(rerr) throw rerr;
+    const pull=async t=>((await sb.from(t).select('*').limit(100000)).data||[]);
+    const dump={when:new Date().toISOString(), source:'manual', backup_id:rid,
+      budget_items:await pull('budget_items'),
+      budget_attachments:await pull('budget_attachments'),
+      vendor_notes:await pull('vendor_notes'),
+      property_info:await pull('property_info'),
+      projects:await pull('projects'),
+      extra_costs:await pull('extra_costs')};
+    const blob=new Blob([JSON.stringify(dump)],{type:'application/json'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a');
+    a.href=url; a.download='dec_backup_FULL_'+dump.when.replace(/[:.]/g,'-').slice(0,19)+'.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast('💾 Backup salvo no servidor e baixado ('+dump.budget_items.length+' itens de orçamento)',true);
+  }catch(e){ toast('⚠ Erro no backup: '+((e&&e.message)||e),false); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='💾 Fazer backup agora'; } if(document.getElementById('view-lixeira')&&document.getElementById('view-lixeira').style.display!=='none') renderLixeira(); }
+}
 async function renderLixeira(){
   const root=document.getElementById('lixeira-root'); if(!root) return;
-  root.innerHTML='<div style="color:var(--gray3);padding:20px">🗑 Carregando itens da lixeira…</div>';
+  root.innerHTML='<div style="color:var(--gray3);padding:20px">🗑 Carregando…</div>';
+  const banner=await _lxBackupBanner();
   const {data,error}=await sb.from('budget_items').select('*').not('deleted_at','is',null).order('deleted_at',{ascending:false}).limit(2000);
-  if(error){ root.innerHTML='<div style="color:#B85450;padding:20px">Erro ao carregar a lixeira: '+_lxEsc(error.message)+'</div>'; return; }
+  if(error){ root.innerHTML=banner+'<div style="color:#B85450;padding:20px">Erro ao carregar a lixeira: '+_lxEsc(error.message)+'</div>'; return; }
   const rows=data||[];
-  if(!rows.length){ root.innerHTML='<div style="padding:40px;text-align:center;color:var(--gray3);font-style:italic;border:1px dashed var(--gray2);border-radius:10px">Lixeira vazia — nenhum item foi removido.</div>'; return; }
+  if(!rows.length){ root.innerHTML=banner+'<div style="padding:40px;text-align:center;color:var(--gray3);font-style:italic;border:1px dashed var(--gray2);border-radius:10px">Lixeira vazia — nenhum item foi removido.</div>'; return; }
   const pname=pid=>{ const p=projects.find(x=>x.id===pid); return p?(p.address||p.name||pid):'(projeto removido)'; };
   const phl=r=>{ const ph=PHASES.find(p=>p.id===r); return ph?ph.label:(r||'—'); };
   const totAct=rows.reduce((s,r)=>s+(+r.actual||0),0);
@@ -4413,7 +4446,7 @@ async function renderLixeira(){
       +'</td></tr>';
   });
   html+='</tbody></table></div>';
-  root.innerHTML=html;
+  root.innerHTML=banner+html;
 }
 async function restoreItem(id){
   const {error}=await sb.from('budget_items').update({deleted_at:null,deleted_by:null}).eq('id',id);
