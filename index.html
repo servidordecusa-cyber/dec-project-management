@@ -2770,155 +2770,105 @@ const INVESTOR_GROUPS=[
     label:'Investidor',
     // Prefixos do NOME do cliente no cadastro (Supabase). "JDI" = "J Duran Investments".
     members:['Urutu','Urutau','Avena','J Duran'],
-    // memberTokens:['<token Urutu>','<token Urutau>','<token Avena>','<token J Duran>'],
+    // Tokens exatos dos membros (ordem: Urutu, Urutau, Avena, J Duran).
+    // Caminho seguro: resolve tudo via RPC get_investor_portal, sem ler a tabela clients.
+    memberTokens:['252c5b5q513j3m64146v4z4o2h5n181j','1x0g2f1g48431h1f4w6m5e5o646f323b','5v33230g0c3q73502v0y2n084o225u31','5v5n6q0v47293z0h0e14650c5c3j3j5i'],
   },
 ];
 
 // Fetch the full data bundle for a single client (projects, invoices, items,
 // property, schedule, budgets, daily logs + photos, recurring totals).
 // Used by BOTH the single-client portal and the grouped portal.
+// Load a client's full portal bundle through the secure RPC get_investor_portal.
+// The RPC (SECURITY DEFINER) is scoped server-side to the token's client, so the
+// anon key can NOT read clients/invoices/etc. directly — no PII leak. Returns the
+// same map shapes the renderer expects, PLUS `client` (the client row).
+async function _portalBundleByToken(token){
+  if(!token) return null;
+  const {data:P,error}=await sb.rpc('get_investor_portal',{p_token:token});
+  if(error) throw error;
+  if(!P || P.ok!==true) return null;
+  const itemsByInvoice={};
+  (P.invoice_items||[]).forEach(it=>{ (itemsByInvoice[it.invoice_id]=itemsByInvoice[it.invoice_id]||[]).push(it); });
+  const propertyByProj={};
+  (P.property_info||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
+  const scheduleByProj={};
+  (P.schedule_tasks||[]).forEach(s=>{ (scheduleByProj[s.project_id]=scheduleByProj[s.project_id]||[]).push(s); });
+  const dailyLogsByProj={};
+  (P.daily_logs||[]).forEach(dl=>{ (dailyLogsByProj[dl.project_id]=dailyLogsByProj[dl.project_id]||[]).push(dl); });
+  const dlPhotosByLog={};
+  (P.daily_log_photos||[]).forEach(ph=>{ (dlPhotosByLog[ph.log_id]=dlPhotosByLog[ph.log_id]||[]).push(ph); });
+  const recurringByProj={}; const recurringDetailByProj={};
+  (P.recurring_detail_months||[]).forEach(r=>{
+    recurringByProj[r.project_id]=(recurringByProj[r.project_id]||0)+(+r.amount||0);
+    if((+r.amount||0)>0){ (recurringDetailByProj[r.project_id]=recurringDetailByProj[r.project_id]||[]).push(r); }
+  });
+  const extraCostsByProj={}; const extraCostsItemsByProj={};
+  (P.extra_costs||[]).forEach(e=>{
+    if(e && e.category==='dec_invoice'){
+      extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
+      if(!extraCostsItemsByProj[e.project_id]) extraCostsItemsByProj[e.project_id]=[];
+      extraCostsItemsByProj[e.project_id].push({name:e.name||'(sem nome)',amount:+e.amount||0});
+    }
+  });
+  const listingByProj={};
+  (P.listing_checklist||[]).forEach(l=>{ listingByProj[l.project_id]=l; });
+  return {
+    client:P.client||null,
+    projData:P.projects||[],
+    invData:P.invoices||[],
+    itemsByInvoice, propertyByProj, scheduleByProj,
+    budgetsData:P.budgets||[],
+    dailyLogsByProj, dlPhotosByLog,
+    recurringByProj, recurringDetailByProj,
+    extraCostsByProj, extraCostsItemsByProj, listingByProj
+  };
+}
+
+// Fetch the full data bundle for a single client via the secure RPC (by token).
+// Used by BOTH the grouped portal and the magic-link (login) portal.
 async function _fetchInvestorBundle(clientData){
-  // Projects of this client
-  const {data:projData,error:projErr}=await sb.from('projects')
-    .select('*').eq('customer',clientData.id).order('created_at',{ascending:false});
-  if(projErr) throw projErr;
-  // Visible budgets for this client (A Realizar)
-  let budgetsData=[];
-  try{
-    const {data:bData,error:bErr}=await sb.from('budgets')
-      .select('*')
-      .eq('client_id',clientData.id)
-      .eq('visible_to_client',true)
-      .is('converted_to_project_id',null)
-      .order('created_at',{ascending:false});
-    if(bErr){console.warn('budgets fetch (non-blocking):',bErr.message);}
-    else budgetsData=bData||[];
-  }catch(bErr){console.warn('budgets fetch failed:',bErr);}
-  const projIds=(projData||[]).map(p=>p.id);
-  let invData=[];
-  let itemsByInvoice={};
-  let propertyByProj={};
-  let scheduleByProj={};
-  let dailyLogsByProj={};
-  let dlPhotosByLog={};
-  let recurringByProj={};
-  let recurringDetailByProj={}; // lista das parcelas por projeto
-  let extraCostsByProj={}; // Property & Finance "Costs" (categoria dec_invoice = card "Costs" do P&F)
-  let extraCostsItemsByProj={}; // itens dec_invoice (só para tooltip de auditoria)
-  let listingByProj={}; // listing_checklist por projeto (status "À venda")
-  if(projIds.length>0){
-    const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes, lcRes] = await Promise.all([
-      fetchAllRows('invoices',{build:q=>q.eq('visible_to_investor',true).in('project_id',projIds),order:[{col:'date',asc:false}]}),
-      fetchAllRows('property_info',{build:q=>q.in('project_id',projIds)}),
-      fetchAllRows('recurring_detail_months',{build:q=>q.in('project_id',projIds)}),
-      fetchAllRows('schedule_tasks',{build:q=>q.in('project_id',projIds)}),
-      fetchAllRows('daily_logs',{build:q=>q.in('project_id',projIds),order:[{col:'log_date',asc:false},{col:'created_at',asc:false}]}),
-      fetchAllRows('extra_costs',{build:q=>q.in('project_id',projIds)}),
-      fetchAllRows('listing_checklist',{build:q=>q.in('project_id',projIds)}),
-    ]);
-    if(invRes.error) throw invRes.error;
-    invData=invRes.data||[];
-    if(lcRes && !lcRes.error){ (lcRes.data||[]).forEach(l=>{ listingByProj[l.project_id]=l; }); }
-    if(recurringRes && !recurringRes.error){
-      (recurringRes.data||[]).forEach(r=>{
-        recurringByProj[r.project_id]=(recurringByProj[r.project_id]||0)+(+r.amount||0);
-        if((+r.amount||0)>0){ (recurringDetailByProj[r.project_id]=recurringDetailByProj[r.project_id]||[]).push(r); }
-      });
-    }
-    // Costs do Property & Finance: soma categoria dec_invoice = card "Costs" do P&F por projeto
-    if(ecRes && !ecRes.error){
-      (ecRes.data||[]).forEach(e=>{
-        if(e && e.category==='dec_invoice'){
-          extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
-          if(!extraCostsItemsByProj[e.project_id]) extraCostsItemsByProj[e.project_id]=[];
-          extraCostsItemsByProj[e.project_id].push({name:e.name||'(sem nome)',amount:+e.amount||0});
-        }
-      });
-    } else if(ecRes && ecRes.error){
-      console.warn('extra_costs fetch failed (non-blocking):',ecRes.error.message);
-    }
-    const invIds=invData.map(i=>i.id);
-    if(invIds.length>0){
-      const {data:items,error:itemsErr}=await fetchAllRows('invoice_items',{build:q=>q.in('invoice_id',invIds),order:[{col:'position'}]});
-      if(itemsErr) console.warn('items fetch failed (non-blocking)',itemsErr);
-      (items||[]).forEach(it=>{
-        if(!itemsByInvoice[it.invoice_id]) itemsByInvoice[it.invoice_id]=[];
-        itemsByInvoice[it.invoice_id].push(it);
-      });
-    }
-    if(propRes && !propRes.error){
-      (propRes.data||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
-    } else if(propRes && propRes.error){
-      console.warn('property fetch failed (non-blocking):',propRes.error.message);
-    }
-    if(schedRes && !schedRes.error){
-      (schedRes.data||[]).forEach(s=>{
-        if(!scheduleByProj[s.project_id]) scheduleByProj[s.project_id]=[];
-        scheduleByProj[s.project_id].push(s);
-      });
-    } else if(schedRes && schedRes.error){
-      console.warn('schedule fetch failed (non-blocking):',schedRes.error.message);
-    }
-    if(dlRes && !dlRes.error){
-      (dlRes.data||[]).forEach(dl=>{
-        if(!dailyLogsByProj[dl.project_id]) dailyLogsByProj[dl.project_id]=[];
-        dailyLogsByProj[dl.project_id].push(dl);
-      });
-      const logIds=(dlRes.data||[]).map(d=>d.id);
-      if(logIds.length>0){
-        const {data:photos,error:phErr}=await fetchAllRows('daily_log_photos',{build:q=>q.in('log_id',logIds),order:[{col:'position'}]});
-        if(!phErr){
-          (photos||[]).forEach(ph=>{
-            if(!dlPhotosByLog[ph.log_id]) dlPhotosByLog[ph.log_id]=[];
-            dlPhotosByLog[ph.log_id].push(ph);
-          });
-        } else {
-          console.warn('daily_log_photos fetch failed (non-blocking):',phErr.message);
-        }
-      }
-    } else if(dlRes && dlRes.error){
-      console.warn('daily_logs fetch failed (non-blocking):',dlRes.error.message);
-    }
+  const b=await _portalBundleByToken(clientData && clientData.investor_token);
+  if(!b){
+    return {projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},recurringDetailByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
   }
-  return {projData:projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog,recurringByProj,recurringDetailByProj,extraCostsByProj,extraCostsItemsByProj,listingByProj};
+  return b;
 }
 
 // Grouped portal: load all member companies and render them together under one
 // combined dashboard, projects grouped company-by-company.
 async function _showInvestorGroupPortal(group){
   try{
-    // 1) Resolve member clients
-    let members=[];
+    // 1) Resolve members + their bundles via the secure RPC (by token).
+    //    memberTokens is the reliable, PII-safe path: never reads the clients table.
+    let members=[]; let bundles=[];
     if(group.memberTokens && group.memberTokens.length){
-      const {data,error}=await sb.from('clients').select('*').in('investor_token',group.memberTokens);
-      if(error) throw error;
-      members=data||[];
+      const results=await Promise.all(group.memberTokens.map(t=>
+        _portalBundleByToken(t).catch(e=>{console.warn('group member load failed:',e);return null;})
+      ));
+      results.forEach(r=>{ if(r && r.client){ members.push(r.client); bundles.push(r); } });
     } else {
+      // Fallback legado (name-match) — requer leitura de clients; mantido só por compatibilidade.
       const {data,error}=await fetchAllRows('clients');
       if(error) throw error;
       const pats=(group.members||[]).map(s=>(s||'').toLowerCase());
-      members=(data||[]).filter(c=>{
+      let ms=(data||[]).filter(c=>{
         const n=(c.name||'').toLowerCase();
         return pats.some(p=>p && n.startsWith(p));
       });
+      if(group.members && group.members.length){
+        const order=group.members.map(s=>(s||'').toLowerCase());
+        const rank=c=>{ const n=(c.name||'').toLowerCase(); const i=order.findIndex(p=>p && n.startsWith(p)); return i<0?99:i; };
+        ms.sort((a,b)=>rank(a)-rank(b));
+      }
+      members=ms;
+      bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
     }
     if(!members.length){
       setLoading(false);
       _renderInvestorError('Nenhuma empresa encontrada para este grupo. Entre em contato com a DEC Group USA.');
       return;
     }
-    // 2) Order members following the configured members list
-    if(group.members && group.members.length){
-      const order=group.members.map(s=>(s||'').toLowerCase());
-      const rank=c=>{
-        const n=(c.name||'').toLowerCase();
-        const i=order.findIndex(p=>p && n.startsWith(p));
-        return i<0?99:i;
-      };
-      members.sort((a,b)=>rank(a)-rank(b));
-    }
-    // 3) Fetch + merge every member bundle
-    const bundles=await Promise.all(members.map(m=>_fetchInvestorBundle(m)));
     const merged={projData:[],invData:[],itemsByInvoice:{},propertyByProj:{},scheduleByProj:{},budgetsData:[],dailyLogsByProj:{},dlPhotosByLog:{},recurringByProj:{},recurringDetailByProj:{},extraCostsByProj:{},extraCostsItemsByProj:{},listingByProj:{}};
     const companyOrder=[]; const nameById={};
     members.forEach((m,i)=>{
@@ -2984,132 +2934,21 @@ async function showInvestorPortal(token){
   window._listingByProj={};
 
   try{
-    // Fetch the client by token (anon RLS will return only this one)
-    const {data:clientData,error:clientErr}=await sb.from('clients')
-      .select('*').eq('investor_token',token).maybeSingle();
-    if(clientErr) throw clientErr;
-    if(!clientData){
+    // Todo o bundle vem da RPC segura get_investor_portal (escopo por token no servidor).
+    // A anon key NÃO lê clients/invoices/etc. diretamente — sem vazamento de PII.
+    const b=await _portalBundleByToken(token);
+    if(!b || !b.client){
+      setLoading(false);
       _renderInvestorError('Link inválido ou expirado. Entre em contato com a DEC Group USA.');
       return;
     }
-    // Fetch projects of this client
-    const {data:projData,error:projErr}=await sb.from('projects')
-      .select('*').eq('customer',clientData.id).order('created_at',{ascending:false});
-    if(projErr) throw projErr;
-    // Fetch visible budgets for this client (a realizar)
-    let budgetsData=[];
-    try{
-      const {data:bData,error:bErr}=await sb.from('budgets')
-        .select('*')
-        .eq('client_id',clientData.id)
-        .eq('visible_to_client',true)
-        .is('converted_to_project_id',null)
-        .order('created_at',{ascending:false});
-      if(bErr){console.warn('budgets fetch (non-blocking):',bErr.message);}
-      else budgetsData=bData||[];
-    }catch(bErr){console.warn('budgets fetch failed:',bErr);}
-    // Fetch visible invoices for these projects
-    const projIds=(projData||[]).map(p=>p.id);
-    let invData=[];
-    let itemsByInvoice={};
-    let propertyByProj={};
-    let scheduleByProj={};
-    let dailyLogsByProj={};
-    let dlPhotosByLog={};
-    if(projIds.length>0){
-      const [invRes, propRes, recurringRes, schedRes, dlRes, ecRes, lcRes] = await Promise.all([
-        fetchAllRows('invoices',{build:q=>q.eq('visible_to_investor',true).in('project_id',projIds),order:[{col:'date',asc:false}]}),
-        fetchAllRows('property_info',{build:q=>q.in('project_id',projIds)}),
-        fetchAllRows('recurring_detail_months',{build:q=>q.in('project_id',projIds)}),
-        fetchAllRows('schedule_tasks',{build:q=>q.in('project_id',projIds)}),
-        fetchAllRows('daily_logs',{build:q=>q.in('project_id',projIds),order:[{col:'log_date',asc:false},{col:'created_at',asc:false}]}),
-        fetchAllRows('extra_costs',{build:q=>q.in('project_id',projIds)}),
-        fetchAllRows('listing_checklist',{build:q=>q.in('project_id',projIds)}),
-      ]);
-      if(invRes.error) throw invRes.error;
-      invData=invRes.data||[];
-      // Listing checklist por projeto (status "À venda")
-      const listingByProj={};
-      if(lcRes && !lcRes.error){ (lcRes.data||[]).forEach(l=>{ listingByProj[l.project_id]=l; }); }
-      window._listingByProj = listingByProj;
-      // Index recurring_detail_months by project (sum amounts)
-      const recurringByProj={};
-      const recurringDetailByProj={};
-      if(recurringRes && !recurringRes.error){
-        (recurringRes.data||[]).forEach(r=>{
-          if(!recurringByProj[r.project_id]) recurringByProj[r.project_id]=0;
-          recurringByProj[r.project_id] += +r.amount || 0;
-          if((+r.amount||0)>0){ (recurringDetailByProj[r.project_id]=recurringDetailByProj[r.project_id]||[]).push(r); }
-        });
-        window._recurringByProj = recurringByProj;
-        window._recurringDetailByProj = recurringDetailByProj;
-      }
-      // Costs do Property & Finance: soma categoria dec_invoice = card "Costs" do P&F por projeto
-      const extraCostsByProj={};
-      const extraCostsItemsByProj={};
-      if(ecRes && !ecRes.error){
-        (ecRes.data||[]).forEach(e=>{
-          if(e && e.category==='dec_invoice'){
-            extraCostsByProj[e.project_id]=(extraCostsByProj[e.project_id]||0)+(+e.amount||0);
-            if(!extraCostsItemsByProj[e.project_id]) extraCostsItemsByProj[e.project_id]=[];
-            extraCostsItemsByProj[e.project_id].push({name:e.name||'(sem nome)',amount:+e.amount||0});
-          }
-        });
-      } else if(ecRes && ecRes.error){
-        console.warn('extra_costs fetch failed (non-blocking):',ecRes.error.message);
-      }
-      window._extraCostsByProj = extraCostsByProj;
-      window._extraCostsItemsByProj = extraCostsItemsByProj;
-      // Fetch items for those invoices
-      const invIds=invData.map(i=>i.id);
-      if(invIds.length>0){
-        const {data:items,error:itemsErr}=await fetchAllRows('invoice_items',{build:q=>q.in('invoice_id',invIds),order:[{col:'position'}]});
-        if(itemsErr) console.warn('items fetch failed (non-blocking)',itemsErr);
-        (items||[]).forEach(it=>{
-          if(!itemsByInvoice[it.invoice_id]) itemsByInvoice[it.invoice_id]=[];
-          itemsByInvoice[it.invoice_id].push(it);
-        });
-      }
-      // Index property by project (one record per project)
-      if(propRes && !propRes.error){
-        (propRes.data||[]).forEach(p=>{ propertyByProj[p.project_id]=p; });
-      } else if(propRes && propRes.error){
-        console.warn('property fetch failed (non-blocking):',propRes.error.message);
-      }
-      // Group schedule_tasks by project then by task_key
-      if(schedRes && !schedRes.error){
-        (schedRes.data||[]).forEach(s=>{
-          if(!scheduleByProj[s.project_id]) scheduleByProj[s.project_id]=[];
-          scheduleByProj[s.project_id].push(s);
-        });
-      } else if(schedRes && schedRes.error){
-        console.warn('schedule fetch failed (non-blocking):',schedRes.error.message);
-      }
-      // Group daily logs by project + fetch photos for each log
-      if(dlRes && !dlRes.error){
-        (dlRes.data||[]).forEach(dl=>{
-          if(!dailyLogsByProj[dl.project_id]) dailyLogsByProj[dl.project_id]=[];
-          dailyLogsByProj[dl.project_id].push(dl);
-        });
-        // Fetch photos for all logs
-        const logIds=(dlRes.data||[]).map(d=>d.id);
-        if(logIds.length>0){
-          const {data:photos,error:phErr}=await fetchAllRows('daily_log_photos',{build:q=>q.in('log_id',logIds),order:[{col:'position'}]});
-          if(!phErr){
-            (photos||[]).forEach(ph=>{
-              if(!dlPhotosByLog[ph.log_id]) dlPhotosByLog[ph.log_id]=[];
-              dlPhotosByLog[ph.log_id].push(ph);
-            });
-          } else {
-            console.warn('daily_log_photos fetch failed (non-blocking):',phErr.message);
-          }
-        }
-      } else if(dlRes && dlRes.error){
-        console.warn('daily_logs fetch failed (non-blocking):',dlRes.error.message);
-      }
-    }
+    window._recurringByProj = b.recurringByProj;
+    window._recurringDetailByProj = b.recurringDetailByProj;
+    window._extraCostsByProj = b.extraCostsByProj;
+    window._extraCostsItemsByProj = b.extraCostsItemsByProj;
+    window._listingByProj = b.listingByProj;
     setLoading(false);
-    _renderInvestorPortal(clientData,projData||[],invData,itemsByInvoice,propertyByProj,scheduleByProj,budgetsData,dailyLogsByProj,dlPhotosByLog);
+    _renderInvestorPortal(b.client,b.projData,b.invData,b.itemsByInvoice,b.propertyByProj,b.scheduleByProj,b.budgetsData,b.dailyLogsByProj,b.dlPhotosByLog);
   }catch(e){
     console.error('Investor portal error:',e);
     setLoading(false);
