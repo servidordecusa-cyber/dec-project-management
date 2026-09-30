@@ -2380,6 +2380,9 @@ const GROUPS=[
 const ROOMS=GROUPS;
 
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'_');}
+// Escape completo de HTML — use em QUALQUER texto de usuário inserido via innerHTML
+// (nome de item/fornecedor/cliente, endereço, nota, descrição, arquivo, etc.).
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){return '$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtc(n){return '$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function v(id){const el=document.getElementById(id);return el?el.value:'';}
@@ -4983,7 +4986,7 @@ function buildProjectCard(p,statusMeta){
   card.className='proj-card';
   card.innerHTML=`
     ${p.cover_photo?`<div class="pc-cover" data-cover-path="${p.cover_photo.replace(/"/g,'&quot;')}"></div>`:''}
-    <div class="pc-hdr"><div><div class="pc-name">${p.name}</div><div class="pc-sub">${customerName(p.customer)||'No client'}${p.address?' · '+p.address:''}</div></div>
+    <div class="pc-hdr"><div><div class="pc-name">${escHtml(p.name)}</div><div class="pc-sub">${escHtml(customerName(p.customer)||'No client')}${p.address?' · '+escHtml(p.address):''}</div></div>
       <span style="background:${statusMeta.bg};color:${statusMeta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${statusMeta.icon} ${statusMeta.label}</span></div>
     ${typeBadge?`<div style="padding:6px 14px 0">${typeBadge}</div>`:''}
     <div class="pc-body">
@@ -7626,7 +7629,7 @@ function renderPhaseTasks(phaseId){
     return `<div id="trow-${tid}" class="task-row">
       <div class="trh">
         <span style="font-size:11px;color:var(--gray3);min-width:26px">${ph.n}.${ti+1}</span>
-        <span class="tn" contenteditable="true" style="outline:none;border-bottom:1px dashed transparent" onblur="renameTask('${phaseId}','${tid}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${t.name}</span>
+        <span class="tn" contenteditable="true" style="outline:none;border-bottom:1px dashed transparent" onblur="renameTask('${phaseId}','${tid}',this)" onfocus="this.style.borderBottomColor='var(--navy)'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${escHtml(t.name)}</span>
         <span id="tbadge-${tid}" style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#E8E0D5;color:#655A4E">⏳ Not Started</span>
         <button class="btn btn-ghost" style="margin-left:auto;padding:3px 7px;font-size:13px;color:var(--red)" title="Remove task" onclick="removeTask('${phaseId}','${tid}')">🗑</button>
       </div>
@@ -8179,7 +8182,7 @@ function renderExtraCosts(category){
       }
       // Pre-defined items: name fixed (display-only)
       return `<div style="display:grid;grid-template-columns:1fr 170px 130px 30px;gap:10px;padding:8px 0;border-bottom:1px solid #F0EAE2;align-items:center">
-        <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${it.name}</span></div>
+        <div><span style="font-size:13px;font-weight:600;display:inline-block;padding:6px 0">${escHtml(it.name)}</span></div>
         <div>${supSel}</div>
         <div style="display:flex;align-items:center;gap:4px">
           <span style="font-size:13px;color:var(--gray3)">$</span>
@@ -9991,8 +9994,8 @@ function renderFinancial(){
     const profitColor=profit>=0?'var(--p3)':'var(--p1)';
     const hasAny=(op>0||roi>0||cost>0||oh>0);
     return `<tr style="border-bottom:1px solid #F0EAE2;cursor:pointer" onclick="openProject('${p.id}')">
-      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${p.name||''}</td>
-      <td style="padding:10px 12px;color:var(--text);font-size:11px">${customerName(p.customer)||'—'}</td>
+      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${escHtml(p.name||'')}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:11px">${escHtml(customerName(p.customer)||'—')}</td>
       <td style="padding:10px 12px;text-align:center"><span style="background:${meta.bg};color:${meta.color};padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700">${meta.icon} ${meta.label}</span></td>
       <td style="padding:10px 12px;text-align:right;font-weight:600">${op>0?fmt(op):'—'}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:600">${cost>0?fmt(cost):'—'}</td>
@@ -10298,7 +10301,7 @@ function renderHomeAlerts(){
       const days=exp.days;
       const color=days<0?'var(--p1)':'var(--p2)';
       const label=days<0?`expired ${Math.abs(days)}d`:`expires in ${days}d`;
-      alerts.push({color,html:`🛡️ <strong>${v.name}</strong> — insurance ${label}`});
+      alerts.push({color,html:`🛡️ <strong>${escHtml(v.name)}</strong> — insurance ${label}`});
     }
   });
   // 2) Overdue invoices (open & date > 30 days ago)
@@ -10308,7 +10311,7 @@ function renderHomeAlerts(){
     const days=Math.floor((now-new Date(inv.date+'T00:00:00'))/86400000);
     if(days>30){
       const client=_clientById(inv.client_id);
-      alerts.push({color:'var(--p1)',html:`<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoice #${inv.invoice_number} (${client?.name||'—'}) — pending há ${days}d`});
+      alerts.push({color:'var(--p1)',html:`<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoice #${inv.invoice_number} (${escHtml(client?.name||'—')}) — pending há ${days}d`});
     }
   });
   // 3) Late projects (end_date passed and not 100%)
@@ -10316,7 +10319,7 @@ function renderHomeAlerts(){
     if(!p.end_date) return;
     const days=Math.floor((now-new Date(p.end_date+'T00:00:00'))/86400000);
     if(days>0 && calcSched(p.id)<100 && projectStatus(p.id)==='in_progress'){
-      alerts.push({color:'var(--p2)',html:`📅 <strong>${p.name}</strong> — late ${days}d`});
+      alerts.push({color:'var(--p2)',html:`📅 <strong>${escHtml(p.name)}</strong> — late ${days}d`});
     }
   });
   if(alerts.length===0){
@@ -10496,9 +10499,9 @@ function renderFixedCosts(){
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${dateBR}</td>
       <td style="padding:10px 12px;text-align:center">${typeBadge}</td>
       <td style="padding:10px 12px"><span style="background:#FAF7F3;color:${meta.color};padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700">${meta.label}</span></td>
-      <td style="padding:10px 12px;color:var(--text);font-size:12px;font-weight:600">${(f.description||'').slice(0,80)}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px;font-weight:600">${escHtml((f.description||'').slice(0,80))}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--p1)">${fmt(f.amount||0)}</td>
-      <td style="padding:10px 12px;color:var(--gray3);font-size:11px">${(f.notes||'').slice(0,50)}</td>
+      <td style="padding:10px 12px;color:var(--gray3);font-size:11px">${escHtml((f.notes||'').slice(0,50))}</td>
       <td style="padding:10px 12px;text-align:center">
         <button onclick="openFixedCostModal('${f.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--blue);margin-right:4px">✏️</button>
         <button onclick="deleteFixedCost('${f.id}')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--gray2);border-radius:5px;cursor:pointer;color:var(--p1)">🗑️</button>
@@ -11618,7 +11621,7 @@ function generateListingPDF(){
   </div>
 
   <div class="summary">
-    <div><strong>Property:</strong> ${proj.name||'—'}</div>
+    <div><strong>Property:</strong> ${escHtml(proj.name||'—')}</div>
     <div><strong>Address:</strong> ${address}</div>
     ${(+lc.asking_price>0)?`<div><strong>Asking price:</strong> ${$$(lc.asking_price)}</div>`:''}
     ${lc.listing_date?`<div><strong>Listing date:</strong> ${fmtDate(lc.listing_date)}</div>`:''}
@@ -11777,7 +11780,7 @@ function _showInvoiceDoc(inv, client, items){
   <div class="top-grid">
     <div class="bill-to">
       <div class="lbl">BILL TO</div>
-      <div class="nm">${(client.name||'').toUpperCase()}</div>
+      <div class="nm">${escHtml((client.name||'').toUpperCase())}</div>
       <div class="ad">${(client.address||'').replace(/,\\s*/g,',\\n')}</div>
     </div>
     <div class="h-center">
@@ -12584,7 +12587,7 @@ function renderVendors(){
       insLabel=`<span style="color:var(--p3);font-weight:700">${cnt.insurances}</span> <span style="font-size:10px;color:var(--p3)">✓</span>`;
     }
     return `<tr style="border-bottom:1px solid #F0EAE2">
-      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${v.name||''}</td>
+      <td style="padding:10px 12px;font-weight:600;color:var(--navy)">${escHtml(v.name||'')}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.specialty||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 8px">${_vendorCategorySelect(v)}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${v.phone||'<span style="color:var(--gray3)">—</span>'}</td>
@@ -12780,7 +12783,7 @@ function renderVendorDocsList(vendorId,docType){
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid #F0EAE2">
       <div style="font-size:22px">${docType==='contract'?'📄':'🛡️'}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name||'document'}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name||'document')}</div>
         <div style="font-size:11px;color:var(--gray3)">${sizeKb} · ${new Date(d.created_at).toLocaleDateString('pt-BR')}</div>
         ${expWarn}
       </div>
@@ -12990,9 +12993,9 @@ function renderClients(){
     return `
     <tr style="border-bottom:1px solid #F0EAE2">
       <td style="padding:10px 12px;font-weight:600;color:var(--navy)">
-        <a onclick="openClientDetail('${c.id}')" style="color:#3D271A;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#9B7535;text-decoration-thickness:2px">${c.name||''}</a>
+        <a onclick="openClientDetail('${c.id}')" style="color:#3D271A;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#9B7535;text-decoration-thickness:2px">${escHtml(c.name||'')}</a>
       </td>
-      <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.address||'<span style="color:var(--gray3)">—</span>'}</td>
+      <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.address?escHtml(c.address):'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.email||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.phone||'<span style="color:var(--gray3)">—</span>'}</td>
       <td style="padding:10px 12px;color:var(--text);font-size:12px">${c.tax_id||'<span style="color:var(--gray3)">—</span>'}</td>
@@ -13763,7 +13766,7 @@ function renderRecurringDetail(){
       for(let m=1;m<=12;m++){ allYearsTotal+=+(months[_rcKey(y,m)])||0; }
     }
     return `<tr data-rc-item="${itemName.replace(/"/g,'&quot;')}">
-      <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #F0EAE2;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${itemName}</td>
+      <td style="padding:6px 6px;font-weight:600;border-bottom:1px solid #F0EAE2;position:sticky;left:0;background:#fff;z-index:1;font-size:12px">${escHtml(itemName)}</td>
       <td style="padding:4px 2px;border-bottom:1px solid #F0EAE2">
         <input type="text" value="${(row.account||'').replace(/"/g,'&quot;')}" placeholder="ex: 726388495"
           oninput="updateRCDMeta('${itemName.replace(/'/g,"\\'")}','account',this.value)"
@@ -14423,7 +14426,7 @@ function renderAttachList(){
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FAF7F3;border:1px solid #E1E8F0;border-radius:8px;margin-bottom:6px">
         <span style="font-size:18px">${fileIcon(a.name)}</span>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</div>
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(a.name)}</div>
           <div style="font-size:11px;color:var(--gray3)">${fmtSize(a.size)} · ${new Date(a.created_at).toLocaleDateString()}</div>
         </div>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="downloadAttach('${a.id}')">⬇ Open</button>
@@ -14700,7 +14703,7 @@ function renderComparison(){
     const rv=ra2-re2;
     const rs=ra2===0?'sc-mt':rv>0?'sc-ov':rv<0?'sc-un':'sc-eq';
     const rtx=ra2===0?'No data':rv>0?'Over':'Under';
-    html+=`<tr class="rrow"><td colspan="2" style="padding:9px 12px">${r.name}</td><td class="r" style="padding:9px 12px">${fmt(re2)}</td><td class="r" style="padding:9px 12px">${fmt(ra2)}</td><td class="r" style="padding:9px 12px;color:${rv>0?'#B85450':rv<0?'#5C7A3F':'#3D271A'}">${rv===0?'—':(rv>0?'+':'')+fmt(rv)}</td><td style="padding:9px 12px;text-align:center"><span class="sc ${rs}">${rtx}</span></td></tr>`;
+    html+=`<tr class="rrow"><td colspan="2" style="padding:9px 12px">${escHtml(r.name)}</td><td class="r" style="padding:9px 12px">${fmt(re2)}</td><td class="r" style="padding:9px 12px">${fmt(ra2)}</td><td class="r" style="padding:9px 12px;color:${rv>0?'#B85450':rv<0?'#5C7A3F':'#3D271A'}">${rv===0?'—':(rv>0?'+':'')+fmt(rv)}</td><td style="padding:9px 12px;text-align:center"><span class="sc ${rs}">${rtx}</span></td></tr>`;
     const bm=(budgetMap[CID]||{})[r.id]||{};
     const itemsForGroup=((itemsMap[CID]||{})[r.id])||[];
     itemsForGroup.forEach(it=>{
@@ -14709,7 +14712,7 @@ function renderComparison(){
       const iv=d.actual-d.est;
       const isc=!d.actual?'sc-mt':iv>0?'sc-ov':iv<0?'sc-un':'sc-eq';
       const itx=!d.actual?'—':iv>0?'⚠ Over':iv<0?'✅ Under':'✔ On budget';
-      html+=`<tr><td style="padding:7px 12px;font-size:11px;color:var(--gray3)"></td><td style="padding:7px 12px;font-size:13px">${it.name}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.est?fmt(d.est):'—'}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.actual?fmt(d.actual):'—'}</td><td class="r" style="padding:7px 12px;font-size:12px;color:${iv>0?'#B85450':iv<0?'#5C7A3F':'#655A4E'}">${iv===0||(!d.est&&!d.actual)?'—':(iv>0?'+':'')+fmt(iv)}</td><td style="padding:7px 12px;text-align:center"><span class="sc ${isc}" style="font-size:10px">${itx}</span></td></tr>`;
+      html+=`<tr><td style="padding:7px 12px;font-size:11px;color:var(--gray3)"></td><td style="padding:7px 12px;font-size:13px">${escHtml(it.name)}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.est?fmt(d.est):'—'}</td><td class="r" style="padding:7px 12px;font-size:13px">${d.actual?fmt(d.actual):'—'}</td><td class="r" style="padding:7px 12px;font-size:12px;color:${iv>0?'#B85450':iv<0?'#5C7A3F':'#655A4E'}">${iv===0||(!d.est&&!d.actual)?'—':(iv>0?'+':'')+fmt(iv)}</td><td style="padding:7px 12px;text-align:center"><span class="sc ${isc}" style="font-size:10px">${itx}</span></td></tr>`;
     });
   });
   html+=`<tr class="trow"><td colspan="2" style="padding:11px 12px">TOTAL</td><td class="r" style="padding:11px 12px">${fmt(ge)}</td><td class="r" style="padding:11px 12px">${fmt(ga)}</td><td class="r" style="padding:11px 12px;color:${ga-ge>0?'#D69D9A':ga-ge<0?'#A5D6A7':'#fff'}">${ga-ge===0?'—':(ga-ge>0?'+':'')+fmt(ga-ge)}</td><td style="padding:11px 12px;text-align:center;color:${ga-ge>0?'#D69D9A':ga-ge<0?'#A5D6A7':'#fff'};font-weight:700">${ga-ge>0?'⚠ Over budget':ga-ge<0?'✅ Under budget':'✔ On budget'}</td></tr>`;
@@ -14770,7 +14773,7 @@ function renderGantt(){
         const ov=hasRange && (bs<(w+1)*7) && ((bs+bl)>w*7);
         wc+=`<td style="background:${ov?ph.color+'22':'transparent'};border-right:1px solid #F0EAE2;height:33px"></td>`;
       }
-      html+=`<tr><td><div class="tic"><span style="font-size:10px;color:var(--gray3);min-width:24px">${ph.n}.${ti+1}</span><span style="font-size:12px;font-weight:600">${tobj.name}</span></div></td><td style="padding:6px 10px;font-size:11px;color:var(--gray3)">${t.owner||'—'}</td><td style="padding:6px 10px;font-size:11px;color:var(--gray3);white-space:nowrap">${t.start_date?t.start_date.slice(5):'—'}${t.end_date?' →'+t.end_date.slice(5):''}</td><td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:7px;background:var(--gray2);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${ph.color};width:${pct}%"></div></div><span style="font-size:11px;font-weight:700;color:${ph.color};min-width:28px">${pct}%</span></div></td>${wc}</tr>`;
+      html+=`<tr><td><div class="tic"><span style="font-size:10px;color:var(--gray3);min-width:24px">${ph.n}.${ti+1}</span><span style="font-size:12px;font-weight:600">${escHtml(tobj.name)}</span></div></td><td style="padding:6px 10px;font-size:11px;color:var(--gray3)">${t.owner||'—'}</td><td style="padding:6px 10px;font-size:11px;color:var(--gray3);white-space:nowrap">${t.start_date?t.start_date.slice(5):'—'}${t.end_date?' →'+t.end_date.slice(5):''}</td><td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:7px;background:var(--gray2);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${ph.color};width:${pct}%"></div></div><span style="font-size:11px;font-weight:700;color:${ph.color};min-width:28px">${pct}%</span></div></td>${wc}</tr>`;
     });
   });
   document.getElementById('gantt-tbl').innerHTML=html+'</tbody>';
@@ -16342,7 +16345,7 @@ function renderBudgetEditorModal(){
       <td style="padding:6px 8px;font-size:12px">
         ${isExtra
           ? `<input type="text" value="${(line.name||'').replace(/"/g,'&quot;')}" oninput="updateBudgetLine(${idx},'name',this.value)" style="width:100%;padding:5px 7px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;outline:none;font-family:inherit">`
-          : `<strong>${line.name}</strong>`}
+          : `<strong>${escHtml(line.name)}</strong>`}
         ${kindBadge}
       </td>
       <td style="padding:6px 4px;text-align:right">
@@ -16872,7 +16875,7 @@ function generateBudgetPDF(){
   const hmPct=+b.hm_pct||0;
   const hmLoan = calc.hm_loan;   // fonte única (mesma da tela) — corrige divergência do PDF
   const lineRows=calc.lineValues.map(lv=>`<tr>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee">${lv.name}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${escHtml(lv.name)}</td>
       <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999;font-size:10px">${lv.kind==='closing'?'Closing':lv.kind==='info'?'Info':'Custo'}</td>
       <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(lv.valCash)}</td>
       <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(lv.valHm)}</td>
