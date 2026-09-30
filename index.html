@@ -4541,7 +4541,7 @@ function _finPickAccount(id){ _finLedgerAcc=(id===_finLedgerAcc?'':id); _finLedg
 // Índice dos custos reais (actual costs) por VALOR — pra sinalizar possível duplicidade na importação
 let _finActuals=[], _finActualAmt={};
 async function loadFinActuals(){
-  try{ const {data}=await fetchAllRows('budget_items',{build:q=>q.gt('actual',0)}); _finActuals=data||[]; }
+  try{ const {data}=await fetchAllRows('budget_items',{build:q=>q.gt('actual',0).is('deleted_at',null)}); _finActuals=data||[]; }
   catch(e){ console.warn('loadFinActuals',e); _finActuals=[]; }
   _finActualAmt={};
   _finActuals.forEach(r=>{ const k=(Math.round((+r.actual||0)*100)/100).toFixed(2); (_finActualAmt[k]=_finActualAmt[k]||[]).push(r); });
@@ -9526,7 +9526,7 @@ async function renderWorkingCapitalCashFlow(){
   // 1. Budget items (Actual Costs) flagged paid_from_wc
   let outflows=[];
   try{
-    const {data:bi}=await fetchAllRows('budget_items',{build:q=>q.eq('paid_from_wc',true).gt('actual',0)});
+    const {data:bi}=await fetchAllRows('budget_items',{build:q=>q.eq('paid_from_wc',true).gt('actual',0).is('deleted_at',null)});
     (bi||[]).forEach(it=>{
       const proj=projects.find(p=>p.id===it.project_id);
       outflows.push({
@@ -9709,7 +9709,7 @@ async function generateWorkingCapitalPDF(){
 
   let outflows=[];
   try{
-    const {data:bi}=await fetchAllRows('budget_items',{build:q=>q.eq('paid_from_wc',true).gt('actual',0)});
+    const {data:bi}=await fetchAllRows('budget_items',{build:q=>q.eq('paid_from_wc',true).gt('actual',0).is('deleted_at',null)});
     (bi||[]).forEach(it=>{
       const proj=projects.find(p=>p.id===it.project_id);
       outflows.push({source:'actual',date:null,amount:+it.actual||0,project:proj?(proj.name||proj.address||'?'):'?',description:(it.item_name||it.item_slug||'')+(it.actual_supplier?' · '+(vendorName(it.actual_supplier)||it.actual_supplier):''),category:it.category||''});
@@ -15787,7 +15787,7 @@ async function renderProjectSupplierSummary(){
   if(!CID){ el.innerHTML=''; return; }
   const pid=CID;
   // Lista PLANA: 1 nota = 1 linha (Data · Fornecedor · Item · Valor · Arquivo) — sem agrupar por fornecedor
-  const bi=await sb.from('budget_items').select('item_slug,room_id,item_name,actual,actual_supplier,updated_at').eq('project_id',pid);
+  const bi=await sb.from('budget_items').select('item_slug,room_id,item_name,actual,actual_supplier,updated_at').eq('project_id',pid).is('deleted_at',null);
   if(bi.error){ el.innerHTML=''; return; }
   const items=(bi.data||[]).filter(x=>(+x.actual||0)>0 || (x.actual_supplier||'').trim());
   if(!items.length){ el.innerHTML=''; return; }
