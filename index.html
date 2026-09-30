@@ -6249,8 +6249,9 @@ async function approveVendorNote() {
       est_unit_cost: total, actual_unit_cost: total,
       category: category || '',
       paid_from_wc: paidFromWC,
-    });
+    }).select('id').single();
     if (upRes.error) throw new Error('Failed to save item: ' + upRes.error.message);
+    const _approvedItemId = (upRes.data && upRes.data.id) || null; // vínculo nota↔item
 
     // Anexa a nota ao lançamento (funciona tanto no upload novo quanto na
     // aprovação de uma pendente — nesse caso baixa do bucket vendor-notes).
@@ -6286,10 +6287,11 @@ async function approveVendorNote() {
       console.warn('Attachment copy error (non-blocking):', e);
     }
 
-    // Mark vendor_note as approved
+    // Mark vendor_note as approved (grava o vínculo nota↔item)
     await sb.from('vendor_notes').update({
       status: 'approved',
       approved_at: new Date().toISOString(),
+      approved_budget_item_id: _approvedItemId,
     }).eq('id', _vnCurrent.note_id);
 
     // Refresh UI
@@ -6361,8 +6363,11 @@ async function approveVendorNoteItemized(){
     } catch(e){ console.warn('nota upload err', e); attPath = null; }
 
     const affected = new Set();
+    let _firstItemId = null; // vínculo nota↔item (nota itemizada: aponta p/ o 1º item criado)
     for (const l of lines) {
-      const islug = await _vnUpsertLineItem(l.gid, l.category, l.itemName, l.amount, l.notes, vendorId, paidFromWC);
+      const _r = await _vnUpsertLineItem(l.gid, l.category, l.itemName, l.amount, l.notes, vendorId, paidFromWC);
+      const islug = _r.islug;
+      if (!_firstItemId) _firstItemId = _r.id;
       affected.add(l.gid);
       if (attPath && islug) {
         const attIns = await sb.from('budget_attachments').insert({
@@ -6381,7 +6386,7 @@ async function approveVendorNoteItemized(){
       }
     }
 
-    await sb.from('vendor_notes').update({ status:'approved', approved_at:new Date().toISOString() }).eq('id', _vnCurrent.note_id);
+    await sb.from('vendor_notes').update({ status:'approved', approved_at:new Date().toISOString(), approved_budget_item_id: _firstItemId }).eq('id', _vnCurrent.note_id);
 
     affected.forEach(gid => { renderItems('est', gid); renderItems('act', gid); updateGroupTotals(gid); });
     renderProjectSupplierSummary();
@@ -6423,9 +6428,9 @@ async function _vnUpsertLineItem(gid, category, itemName, amount, notes, vendorN
     est_supplier: '', actual_supplier: vendorName,
     est_qty: 0, actual_qty: 1, est_unit_cost: amount, actual_unit_cost: amount,
     category: category || '', paid_from_wc: paidFromWC,
-  });
+  }).select('id').single();
   if (up.error) throw new Error('Falha ao salvar item: ' + up.error.message);
-  return islug;
+  return { islug, id: (up.data && up.data.id) || null };
 }
 // ═══ END VENDOR NOTES ASSISTANT ═══════════════════════════════════════
 
