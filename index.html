@@ -8993,7 +8993,20 @@ function calcProjectInvoices(pid,kind){
     .filter(i=>i.project_id===pid && i.status!=='cancelled' && (kind==='all'||((i.kind||'operational')===kind)))
     .reduce((s,i)=>s+(+i.amount||0),0);
 }
-function calcProjectInvoicesOperational(pid){return calcProjectInvoices(pid,'operational');}
+function calcProjectInvoicesOperational(pid){
+  // "Operational" aqui = o que o card "Operational Invoices" mostra: faturas
+  // operacionais (kind 'operational'/null) E as de 'third_party_asset_manager'
+  // (também contam como investido). Mantém Total Investido == card. Exclui 'final_roi'.
+  if(!pid) return 0;
+  return invoices
+    .filter(i=>{
+      if(i.project_id!==pid) return false;
+      if(i.status==='cancelled') return false;
+      const k=i.kind||'operational';
+      return k==='operational'||k==='third_party_asset_manager';
+    })
+    .reduce((s,i)=>s+(+i.amount||0),0);
+}
 
 // ═══ PROPERTY RESEARCH BUTTONS ════════════════════════════════════════
 // Generates a row of buttons that open the property in real estate websites
