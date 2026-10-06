@@ -16345,7 +16345,7 @@ function renderBudgetEditorModal(){
       <td style="padding:6px 8px;font-size:12px">
         ${isExtra
           ? `<input type="text" value="${(line.name||'').replace(/"/g,'&quot;')}" oninput="updateBudgetLine(${idx},'name',this.value)" style="width:100%;padding:5px 7px;font-size:12px;border:1.5px solid var(--gray2);border-radius:4px;outline:none;font-family:inherit">`
-          : `<strong>${escHtml(line.name)}</strong>`}
+          : `<strong>${line.name}</strong>`}
         ${kindBadge}
       </td>
       <td style="padding:6px 4px;text-align:right">
@@ -16875,7 +16875,7 @@ function generateBudgetPDF(){
   const hmPct=+b.hm_pct||0;
   const hmLoan = calc.hm_loan;   // fonte única (mesma da tela) — corrige divergência do PDF
   const lineRows=calc.lineValues.map(lv=>`<tr>
-      <td style="padding:6px 10px;border-bottom:1px solid #eee">${escHtml(lv.name)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #eee">${lv.name}</td>
       <td style="padding:6px 10px;text-align:center;border-bottom:1px solid #eee;color:#999;font-size:10px">${lv.kind==='closing'?'Closing':lv.kind==='info'?'Info':'Custo'}</td>
       <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(lv.valCash)}</td>
       <td style="padding:6px 10px;text-align:right;border-bottom:1px solid #eee">${$$(lv.valHm)}</td>
