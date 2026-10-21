@@ -686,6 +686,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
               <input type="file" id="alta-buy-file" accept="application/pdf,image/*" style="display:none" onchange="readAltaCompra(this.files[0]);this.value=''">
             </span>
           </div>
+          <div id="alta-buy-attached" style="font-size:12px;margin:-4px 0 12px;color:var(--gray3)"></div>
+          <input type="file" id="alta-buy-attach-file" accept="application/pdf,image/*" style="display:none" onchange="_altaAttachUpload(this.files[0]);this.value=''">
 
           <!-- Preço de compra (auto-calc) — EMD + Cash + Hard Money -->
           <div style="margin-bottom:18px">
@@ -832,7 +834,8 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
               <input id="pi-dec-invoice" type="text" placeholder="INV-2025-001" oninput="debouncePI()" style="padding:6px 10px;font-size:13px;border:1.5px solid var(--gray2);border-radius:6px;outline:none;width:180px">
               <span style="color:var(--gray3);font-size:11px;font-style:italic">— número da invoice emitida (faturada separadamente)</span>
             </div>
-            <div style="margin-top:24px;padding-top:18px;border-top:2px solid #F0EAE2;display:flex;justify-content:flex-end;gap:10px">
+            <div style="margin-top:24px;padding-top:18px;border-top:2px solid #F0EAE2;display:flex;justify-content:flex-end;align-items:center;gap:10px">
+              <label id="rep-alta-wrap" style="display:none;font-size:12px;color:var(--gray2,#555);cursor:pointer;align-items:center;gap:6px"><input type="checkbox" id="rep-incl-alta" checked> Incluir ALTA de compra</label>
               <button class="btn btn-primary" style="padding:10px 18px;font-size:13px" onclick="generateReport()"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Gerar relatório (PDF)</button>
             </div>
           </div>
@@ -8024,6 +8027,7 @@ function loadPropertyForm(){
   renderOperationalInvoicesView();
   recalcAcquisition();
   recalcProfit();
+  _altaRenderAttached();
 }
 
 async function ensureExtraCostsDefaults(){
@@ -8397,7 +8401,7 @@ const ALTA_BUY_FIELDS=[
   {k:'other_costs',id:'pi-other-costs',label:'Other costs (assignment fee)'},
   {k:'purchase_date',id:'pi-purch-date',label:'Purchase date',date:true},
 ];
-let _altaBuy=null;
+let _altaBuy=null, _altaBuyFile=null;
 function _altaBuyStatus(msg,err){const el=document.getElementById('alta-buy-status');if(el){el.textContent=msg;el.style.color=err?'#B85450':'var(--gray3)';}}
 function _altaEsc(x){return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function _altaMoney(x){return (x==null||x==='')?'—':'$'+(+x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -8415,7 +8419,7 @@ async function readAltaCompra(file){
       body:JSON.stringify({file_base64:b64,file_type:file.type||'application/pdf',project:{address:proj.address||proj.name||'',client:customerName(proj.customer)||''}})});
     const out=await resp.json();
     if(!resp.ok||!out.success) throw new Error(out.message||out.error||('HTTP '+resp.status));
-    _altaBuy=out.data||{};
+    _altaBuy=out.data||{}; _altaBuyFile=file;
     _altaBuyStatus('✅ ALTA lido · revise e aprove.');
     _altaBuyReview(file.name);
   }catch(e){ console.error('read-alta-compra',e); _altaBuyStatus('⚠ Erro ao ler o ALTA: '+e.message,true); }
@@ -8454,23 +8458,99 @@ function _altaBuyReview(fname){
     ${(d.alerts||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:10px"><strong>⚠ Alertas</strong><ul style="margin:4px 0 0 18px">${li(d.alerts)}</ul></div>`:''}
     ${(d.needs_confirm||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:8px"><strong>❓ Precisa confirmar</strong><ul style="margin:4px 0 0 18px">${li(d.needs_confirm)}</ul></div>`:''}
     ${d.executive_summary?`<div style="font-size:12px;margin-top:8px;color:#555"><strong>Resumo:</strong> ${_altaEsc(d.executive_summary)}</div>`:''}
-    <div style="font-size:11px;color:#999;margin-top:8px">Campos marcados substituem o valor atual. As contas são feitas pelo sistema, não pela IA.</div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:10px;cursor:pointer"><input type="checkbox" id="alta-buy-keep" checked> 📎 Anexar este ALTA ao projeto (para imprimir junto com o relatório)</label>
+    <div style="font-size:11px;color:#999;margin-top:6px">Campos marcados substituem o valor atual. As contas são feitas pelo sistema, não pela IA.</div>
     <div class="mactions"><button class="btn btn-ghost" onclick="document.getElementById('modal-alta-buy').classList.remove('open')">Cancelar</button><button class="btn btn-primary" onclick="_altaBuyApply()">✅ Aplicar selecionados</button></div>
   </div>`;
   ov.classList.add('open');
 }
 async function _altaBuyApply(){
   const F=(_altaBuy&&_altaBuy.fields)||{}; let n=0;
+  const keep=document.getElementById('alta-buy-keep')?.checked && _altaBuyFile;
   document.querySelectorAll('#modal-alta-buy .alta-buy-chk:checked').forEach(chk=>{
     const f=ALTA_BUY_FIELDS.find(x=>x.k===chk.dataset.k); const val=(F[f.k]||{}).value;
     const el=document.getElementById(f.id); if(!el||val==null) return;
     el.value=f.date?_isoToBR(val):val; n++;
   });
   document.getElementById('modal-alta-buy').classList.remove('open');
-  if(!n){toast('Nenhum campo aplicado');return;}
+  if(keep) await _altaAttachUpload(_altaBuyFile);
+  if(!n){toast(keep?'ALTA anexado · nenhum campo aplicado':'Nenhum campo aplicado');return;}
   recalcAcquisition(); recalcProfit();
   try{ await savePI(); toast(`✅ ${n} campo(s) da compra preenchido(s) pelo ALTA`); _altaBuyStatus(`✅ ${n} campo(s) aplicado(s) e salvo(s).`); }
   catch(e){ toast('Erro ao salvar: '+e.message,false); }
+}
+// ═══ ALTA ANEXADO AO PROJETO (bucket budget-attachments · alta/<projeto>/) ═══
+const ALTA_BUCKET='budget-attachments';
+function _altaRenderAttached(){
+  const el=document.getElementById('alta-buy-attached'); if(!el) return;
+  const p=propertyMap[CID]||{};
+  const wrap=document.getElementById('rep-alta-wrap'); if(wrap) wrap.style.display=p.alta_purchase_path?'inline-flex':'none';
+  if(p.alta_purchase_path){
+    el.innerHTML=`📎 <strong>ALTA de compra:</strong> ${_altaEsc(p.alta_purchase_name||'ALTA.pdf')} · <a href="#" onclick="_altaAttachView();return false">ver</a> · <a href="#" onclick="document.getElementById('alta-buy-attach-file').click();return false">trocar</a> · <a href="#" style="color:#B85450" onclick="_altaAttachRemove();return false">remover</a>`;
+  } else {
+    el.innerHTML=`📎 Nenhum ALTA anexado · <a href="#" onclick="document.getElementById('alta-buy-attach-file').click();return false">anexar PDF</a>`;
+  }
+}
+async function _altaAttachUpload(file){
+  if(!file||!CID) return;
+  if(file.size>15*1024*1024){toast('Arquivo maior que 15MB',false);return;}
+  const ext=(file.name.split('.').pop()||'pdf').toLowerCase().replace(/[^a-z0-9]/g,'')||'pdf';
+  const path=`alta/${CID}/compra-${Date.now()}.${ext}`;
+  const old=(propertyMap[CID]||{}).alta_purchase_path;
+  const up=await sb.storage.from(ALTA_BUCKET).upload(path,file,{contentType:file.type||'application/pdf',upsert:false});
+  if(up.error){toast('Erro ao anexar ALTA: '+up.error.message,false);return;}
+  const row={alta_purchase_path:path,alta_purchase_name:file.name};
+  const {error}=await sb.from('property_info').update(row).eq('project_id',CID);
+  if(error){toast('Erro ao salvar anexo: '+error.message,false);try{await sb.storage.from(ALTA_BUCKET).remove([path]);}catch(e){};return;}
+  propertyMap[CID]={...(propertyMap[CID]||{}),...row};
+  if(old&&old!==path){try{await sb.storage.from(ALTA_BUCKET).remove([old]);}catch(e){}}
+  _altaRenderAttached(); toast('📎 ALTA anexado ao projeto');
+}
+async function _altaAttachView(){
+  const path=(propertyMap[CID]||{}).alta_purchase_path; if(!path) return;
+  const w=window.open('','_blank');
+  const {data,error}=await sb.storage.from(ALTA_BUCKET).createSignedUrl(path,600);
+  if(error||!data){ if(w) w.close(); toast('Erro ao abrir: '+(error&&error.message),false); return; }
+  if(w) w.location.href=data.signedUrl;
+}
+async function _altaAttachRemove(){
+  const p=propertyMap[CID]||{}; if(!p.alta_purchase_path) return;
+  if(!confirm('Remover o ALTA anexado deste projeto? Os valores da Acquisition não mudam.')) return;
+  const {error}=await sb.from('property_info').update({alta_purchase_path:null,alta_purchase_name:null}).eq('project_id',CID);
+  if(error){toast('Erro: '+error.message,false);return;}
+  try{await sb.storage.from(ALTA_BUCKET).remove([p.alta_purchase_path]);}catch(e){}
+  propertyMap[CID]={...p,alta_purchase_path:null,alta_purchase_name:null};
+  _altaRenderAttached(); toast('ALTA removido');
+}
+// Acrescenta as páginas do ALTA ao final da janela do relatório e imprime
+async function _altaAppendToReport(w,path){
+  const d=w.document;
+  const note=d.createElement('div'); note.className='no-print'; note.style.cssText='font:13px sans-serif;color:#7A5A28;padding:10px;text-align:center';
+  note.textContent='📎 Carregando o ALTA anexado...'; d.body.appendChild(note);
+  try{
+    const st=d.createElement('style');
+    st.textContent='.alta-page{page-break-before:always;break-before:page;text-align:center;margin-top:16px}.alta-page img{width:100%;max-width:100%;height:auto}@media print{.no-print{display:none!important}}';
+    d.head.appendChild(st);
+    const dl=await sb.storage.from(ALTA_BUCKET).download(path);
+    if(dl.error) throw dl.error;
+    const blob=dl.data; const imgs=[];
+    if((blob.type||'').startsWith('image/')||/\.(png|jpe?g|webp)$/i.test(path)){
+      imgs.push(await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);}));
+    } else {
+      if(typeof pdfjsLib==='undefined') throw new Error('leitor de PDF não carregou');
+      const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await blob.arrayBuffer())}).promise;
+      for(let i=1;i<=pdf.numPages;i++){
+        const pg=await pdf.getPage(i); const vp=pg.getViewport({scale:1.6});
+        const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+        await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+        imgs.push(c.toDataURL('image/jpeg',0.85));
+      }
+    }
+    for(const src of imgs){ const div=d.createElement('div'); div.className='alta-page'; const im=d.createElement('img'); im.src=src; div.appendChild(im); d.body.appendChild(div); }
+    await Promise.all([...d.querySelectorAll('.alta-page img')].map(im=>im.complete?1:new Promise(r=>{im.onload=im.onerror=r;})));
+    note.remove();
+  }catch(e){ console.error('ALTA no relatório',e); note.textContent='⚠ Não foi possível incluir o ALTA: '+(e.message||e)+' — o relatório será impresso sem ele.'; }
+  setTimeout(()=>{ try{w.focus();w.print();}catch(e){} },300);
 }
 function recalcSaleCosts(){
   const n=id=>parseFloat(v(id))||0;
@@ -8594,6 +8674,8 @@ const DEC_LOGO_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAFtCAYA
 
 function generateReport(){
   if(!CID||!isCEO()){toast('Apenas CEO pode gerar relatório',false);return;}
+  const _altaPath=(propertyMap[CID]||{}).alta_purchase_path;
+  const _repInclAlta=!!(_altaPath && document.getElementById('rep-incl-alta')?.checked);
   const proj=projects.find(x=>x.id===CID);
   if(!proj){toast('Projeto não encontrado',false);return;}
   const p=propertyMap[CID]||{};
@@ -8842,9 +8924,9 @@ function generateReport(){
     <strong>DEC GROUP</strong> · Document automatically generated on ${today} · ${address||projName}
   </div>
 
-  <script>
+  ${_repInclAlta?'':`<script>
     window.onload=function(){setTimeout(function(){window.print();},300);};
-  <\/script>
+  <\/script>`}
 </body>
 </html>`;
 
@@ -8853,6 +8935,7 @@ function generateReport(){
   if(!w){toast('Permita pop-ups pra gerar o relatório',false);return;}
   w.document.write(reportHTML);
   w.document.close();
+  if(_repInclAlta) _altaAppendToReport(w,_altaPath);
 }
 
 // ═══ DRE (CEO ONLY) ════════════════════════════════════════════════════
