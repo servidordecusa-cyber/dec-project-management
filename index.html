@@ -715,20 +715,29 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
         <!-- Card 4: Sale & Profit -->
         <div class="card" style="margin-top:16px">
           <div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dec-gold)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>Venda &amp; Lucro</div>
+          <!-- Total custos de venda (auto-calc) -->
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Total custos de venda <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— Custos de venda + Seller credit + Holding + Custos do credor</span></div>
+                <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-sale-costs-total">$0</div>
+              </div>
+            </div>
+          </div>
           <div class="fgrid">
             <div class="fg"><label>After Repair Value ($) <span style="font-size:10px;color:var(--gray3)">— ARV</span></label><input id="pi-arv" type="number" min="0" step="0.01" placeholder="e.g. 320000.00" oninput="debouncePI()"></div>
             <div class="fg"><label>Preço final de venda ($)</label><input id="pi-sale" type="number" min="0" step="0.01" placeholder="fill when sold" oninput="debouncePI()"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Sale date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-sale-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="_maskDate(this)" onchange="savePI()"></div>
-            <div class="fg"><label>Custos de venda ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Custos de venda ($) <span style="font-size:10px;color:var(--gray3)">— commission, taxes</span></label><input id="pi-selling" type="number" min="0" step="0.01" placeholder="e.g. 19200.00" oninput="recalcSaleCosts();debouncePI()"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="debouncePI()"></div>
-            <div class="fg"><label>Custos do credor ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Holding costs ($) <span style="font-size:10px;color:var(--gray3)">— utilities, HOA during reno</span></label><input id="pi-holding" type="number" min="0" step="0.01" placeholder="e.g. 1800.00" oninput="recalcSaleCosts();debouncePI()"></div>
+            <div class="fg"><label>Custos do credor ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="recalcSaleCosts();debouncePI()"></div>
           </div>
           <div class="fgrid">
-            <div class="fg"><label>Seller credit ($) <span style="font-size:10px;color:var(--gray3)">— concessão ao comprador · subtrai do lucro</span></label><input id="pi-seller-credit" type="number" min="0" step="0.01" placeholder="e.g. 10000.00" oninput="debouncePI()"></div>
+            <div class="fg"><label>Seller credit ($) <span style="font-size:10px;color:var(--gray3)">— concessão ao comprador · subtrai do lucro</span></label><input id="pi-seller-credit" type="number" min="0" step="0.01" placeholder="e.g. 10000.00" oninput="recalcSaleCosts();debouncePI()"></div>
             <div class="fg"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
@@ -793,9 +802,9 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Resumo de lucro</div>
             <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px">
-              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Lucro estimado</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Wholesaler − Sales total − Estimated − Seller credit</div></div>
-              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Lucro bruto</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Seller credit − Lender(sale)</div></div>
-              <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Lucro real</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total investido − Selling − Seller credit − Lender(sale)</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Lucro estimado</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Wholesaler − Sales total − Estimated − Seller credit − Holding</div></div>
+              <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Lucro bruto</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Seller credit − Holding − Lender(sale)</div></div>
+              <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Lucro real</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total investido − Selling − Seller credit − Holding − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total investido × 100</div></div>
             </div>
           </div>
@@ -3174,7 +3183,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       const refund=refundTotal(p.id);
       const netInvested=purchase+paidInv-refund;
       const arv=+pr.arv||0;
-      const sellingCosts=((+pr.selling_costs||0)+(+pr.seller_credit||0));
+      const sellingCosts=((+pr.selling_costs||0)+(+pr.seller_credit||0)+(+pr.holding_costs||0));
       const lenderSale=+pr.lender_costs_sale||0;
       const estimatedProfit=arv-netInvested-sellingCosts-lenderSale;
       if(estimatedProfit>0) totalEstimatedProfit+=estimatedProfit;
@@ -3425,7 +3434,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     // For non-sold: only the simple invested summary is shown.
     // For SOLD: a full breakdown including Gross Profit, Net Profit, ROI, Client/DEC splits.
     const projectSale=+pr.final_sale_price||0;
-    const sellingCosts=((+pr.selling_costs||0)+(+pr.seller_credit||0));
+    const sellingCosts=((+pr.selling_costs||0)+(+pr.seller_credit||0)+(+pr.holding_costs||0));
     const lenderSale=+pr.lender_costs_sale||0;
     const pctClient=+pr.pct_client||0;
     const pctDec=+pr.pct_dec||0;
@@ -3733,7 +3742,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           const isSold = status==='sold' && finalSalePrice>0;
           // Projeção usa o Final Sale; quando não há Final Sale, cai no ARV (igual ao Lucro Previsto do dashboard)
           const saleForCalc = finalSalePrice > 0 ? finalSalePrice : arv;
-          const sellingCosts = ((+pr.selling_costs||0)+(+pr.seller_credit||0));
+          const sellingCosts = ((+pr.selling_costs||0)+(+pr.seller_credit||0)+(+pr.holding_costs||0));
           const lenderCostsSale = +pr.lender_costs_sale || 0;
           const grossProfit = saleForCalc - sellingCosts - lenderCostsSale;
           let vendaHTML;
@@ -8375,8 +8384,15 @@ function onPctChange(which){
   _debPct=setTimeout(savePI,600);
 }
 
+function recalcSaleCosts(){
+  const n=id=>parseFloat(v(id))||0;
+  const t=Math.round((n('pi-selling')+n('pi-seller-credit')+n('pi-holding')+n('pi-lender-sale'))*100)/100;
+  const el=document.getElementById('pi-sale-costs-total'); if(el) el.textContent=fmt(t);
+  return t;
+}
 function recalcProfit(){
   if(!CID) return;
+  recalcSaleCosts();
   const p=propertyMap[CID]||{};
   // Renovation card — pulled from budgetMap (Dashboard só — cliente não vê isso na Property & Finance)
   const totEst=calcRoomTotal(CID,'est');
@@ -8409,7 +8425,7 @@ function recalcProfit(){
   // Read sale data
   const arv=+p.arv||0;
   const sale=+p.final_sale_price||0;
-  const selling=((+p.selling_costs||0)+(+p.seller_credit||0));
+  const selling=((+p.selling_costs||0)+(+p.seller_credit||0)+(+p.holding_costs||0));
   const holding=+p.holding_costs||0;
   const lenderSale=+p.lender_costs_sale||0;
   // Refund agora é auto-calculado das invoices tipo "refund" (apenas as pagas)
@@ -8558,7 +8574,7 @@ function generateReport(){
   // Final calculations
   const sale=+p.final_sale_price||0;
   const refund=calcProjectInvoicesRefund(CID);
-  const sellingCosts=((+p.selling_costs||0)+(+p.seller_credit||0));
+  const sellingCosts=((+p.selling_costs||0)+(+p.seller_credit||0)+(+p.holding_costs||0));
   // Total investido = EMD + Cash + Other Costs + Commission + Operational Invoices + Costs (DEC Invoice) + Recurring + Documents + High End
   // (same formula used on screen — uses client-paid invoices, not Actual Spent)
   const invoicesOp=calcProjectInvoicesOperational(CID);
@@ -9384,7 +9400,7 @@ function calcProjectFinancials(pid){
   const closingAcq=+prop.acq_closing_costs||0;
   const commission=+prop.commission||0;
   const sale=+prop.final_sale_price||0;
-  const selling=((+prop.selling_costs||0)+(+prop.seller_credit||0));
+  const selling=((+prop.selling_costs||0)+(+prop.seller_credit||0)+(+prop.holding_costs||0));
   const lenderSale=+prop.lender_costs_sale||0;
   // Total investido (client's perspective): EMD + Cash + Other Costs + Commission + Invoices Op + Costs + Recurring + Docs + High End
   const totalInvested=emd+cash+otherAcq+closingAcq+commission+invoicesOp+dec+doc+he+rec;
@@ -15054,7 +15070,7 @@ async function renderPiso(){
     const compraCash=(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.other_costs||0)+(+prop.acq_closing_costs||0)+(+prop.commission||0); // aquisição em cash (o loan é quitado na venda, não é dinheiro do cliente)
     const quitacao=(+prop.lender_costs_sale||+prop.hard_money||0);   // quitação do hard money na venda (conta 1x)
     const custos=Math.max(0,(+f.totalInvested||0)-compraCash);       // obra + projeto
-    const custosVenda=(((+prop.selling_costs||0)+(+prop.seller_credit||0)));                      // comissão + taxas
+    const custosVenda=(((+prop.selling_costs||0)+(+prop.seller_credit||0)+(+prop.holding_costs||0)));                      // comissão + taxas
     const piso=compraCash+custos+quitacao+custosVenda;   // zero-a-zero (recupera tudo)
     const investido=+f.totalInvested||0;                 // dinheiro real colocado (sem o loan)
     const pisoMin=piso+(lucroPct/100)*investido;         // preço que garante X% de ROI sobre o investido do negócio
