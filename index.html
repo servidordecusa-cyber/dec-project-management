@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=91ac3053-21dc-41a5-bb7a-176efea71587
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>DEC Group USA · System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -679,7 +682,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div style="margin-bottom:18px">
             <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Preço do atacadista <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Commission</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Preço do atacadista <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Closing costs + Commission</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
@@ -695,6 +698,9 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
           <div class="fgrid">
             <div class="fg"><label>Other costs ($)</label><input id="pi-other-costs" type="number" min="0" step="0.01" placeholder="e.g. 800.00" oninput="onAcqInput()"></div>
+            <div class="fg"><label>Closing costs ($) <span style="font-size:10px;color:var(--gray3)">— purchase closing</span></label><input id="pi-closing-costs" type="number" min="0" step="0.01" placeholder="e.g. 5000.00" oninput="onAcqInput()"></div>
+          </div>
+          <div class="fgrid">
             <div class="fg"><label>Commission ($) <span style="font-size:10px;color:var(--gray3)">— broker/agent commission</span></label><input id="pi-commission" type="number" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onAcqInput()"></div>
           </div>
           <div class="fgrid">
@@ -719,7 +725,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
             <div class="fg"><label>Custos do credor ($) <span style="font-size:10px;color:var(--gray3)">— at sale (interest, fees)</span></label><input id="pi-lender-sale" type="number" min="0" step="0.01" placeholder="e.g. 3500.00" oninput="debouncePI()"></div>
           </div>
           <div style="margin-top:14px;padding:14px 16px;background:#ECEFE3;border-left:4px solid var(--p3);border-radius:6px">
-            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Total investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
+            <div style="font-size:12px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Total investido <span style="font-weight:500;text-transform:none;font-size:10px;color:var(--gray3)">— EMD + Cash + Other Costs + Closing Costs + Commission + Operational Invoices + Costs + Recurring + Documents + High End</span></div>
             <div id="pi-total-invested" style="font-size:24px;font-weight:700;color:var(--p3)">$0</div>
           </div>
         </div>
@@ -3025,10 +3031,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   });
 
   // ─── Helper: compute purchase total for a project (read from property_info)
-  // Purchase = EMD + Cash + Other Costs + Commission (matches CEO Property & Finance)
+  // Purchase = EMD + Cash + Other Costs + Closing Costs + Commission (matches CEO Property & Finance)
   const purchaseFor=(pid)=>{
     const pr=propertyByProj[pid]||{};
-    return (+pr.emd_cash||0)+(+pr.cash||0)+(+pr.other_costs||0)+(+pr.commission||0);
+    return (+pr.emd_cash||0)+(+pr.cash||0)+(+pr.other_costs||0)+(+pr.acq_closing_costs||0)+(+pr.commission||0);
   };
 
   // ─── Helper: filter invoices that should count toward investment ──
@@ -3699,10 +3705,11 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           // HARD MONEY = financiamento separado (não soma no investido do cliente)
           const hardMoney = +pr.hard_money || 0;
           // Auditoria CASH (display only): mostra os 4 componentes do property_info
-          const _cashTitle = (`CASH = EMD + Cash + Other costs + Commission\n`+
+          const _cashTitle = (`CASH = EMD + Cash + Other costs + Closing costs + Commission\n`+
             `• EMD: ${$fmtProj(+pr.emd_cash||0)}\n`+
             `• Cash: ${$fmtProj(+pr.cash||0)}\n`+
             `• Other costs: ${$fmtProj(+pr.other_costs||0)}\n`+
+            `• Closing costs: ${$fmtProj(+pr.acq_closing_costs||0)}\n`+
             `• Commission: ${$fmtProj(+pr.commission||0)}\n`+
             `= ${$fmtProj(purchase)}`).replace(/"/g,"'");
           const cashHTML = purchase > 0
@@ -7969,6 +7976,7 @@ function loadPropertyForm(){
     ['pi-cash','cash'],
     ['pi-hard-money','hard_money'],
     ['pi-other-costs','other_costs'],
+    ['pi-closing-costs','acq_closing_costs'],
     ['pi-commission','commission'],
     ['pi-purch-date','purchase_date'],
     ['pi-arv','arv'],
@@ -8084,6 +8092,7 @@ async function savePI(){
     cash:num('pi-cash'),
     hard_money:num('pi-hard-money'),
     other_costs:num('pi-other-costs'),
+    acq_closing_costs:num('pi-closing-costs'),
     commission:num('pi-commission'),
     purchase_date:_brToIso(v('pi-purch-date')),
     // Sale
@@ -8108,13 +8117,14 @@ async function savePI(){
 }
 
 function recalcAcquisition(){
-  // Preço do atacadista = EMD + Cash + Hard money + Other costs + Commission
+  // Preço do atacadista = EMD + Cash + Hard money + Other costs + Closing costs + Commission
   const emd=parseFloat(v('pi-emd-cash'))||0;
   const cash=parseFloat(v('pi-cash'))||0;
   const hard=parseFloat(v('pi-hard-money'))||0;
   const other=parseFloat(v('pi-other-costs'))||0;
+  const closingAcq=parseFloat(v('pi-closing-costs'))||0;
   const commission=parseFloat(v('pi-commission'))||0;
-  const wholesaler=Math.round((emd+cash+hard+other+commission)*100)/100;
+  const wholesaler=Math.round((emd+cash+hard+other+closingAcq+commission)*100)/100;
   document.getElementById('pi-wholesaler-total').textContent=fmt(wholesaler);
   return {wholesaler};
 }
@@ -8409,9 +8419,10 @@ function recalcProfit(){
   const emd=+p.emd_cash||0;
   const cash=+p.cash||0;
   const otherAcq=+p.other_costs||0;
+  const closingAcq=+p.acq_closing_costs||0;
   const commission=+p.commission||0;
   const invoicesOp=calcProjectInvoicesOperational(CID);
-  const totalInvested=emd+cash+otherAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
+  const totalInvested=emd+cash+otherAcq+closingAcq+commission+invoicesOp+decTotal+recTotal+docTotal+heTotal;
   const tiEl=document.getElementById('pi-total-invested');
   if(tiEl) tiEl.textContent=fmt(totalInvested);
   // Estimated profit:
@@ -8485,8 +8496,9 @@ function generateReport(){
   const cash=+p.cash||0;
   const hardMoney=+p.hard_money||0;
   const otherAcq=+p.other_costs||0;
+  const closingAcq=+p.acq_closing_costs||0;
   const commission=+p.commission||0;
-  const total1=emd+cash+hardMoney+otherAcq+commission;
+  const total1=emd+cash+hardMoney+otherAcq+closingAcq+commission;
 
   // Project costs (Total 2)
   const lenderSale=+p.lender_costs_sale||0; // Juros Hard Money (at sale) — ainda lido para Gross Profit
@@ -8541,7 +8553,7 @@ function generateReport(){
   // Total investido = EMD + Cash + Other Costs + Commission + Operational Invoices + Costs (DEC Invoice) + Recurring + Documents + High End
   // (same formula used on screen — uses client-paid invoices, not Actual Spent)
   const invoicesOp=calcProjectInvoicesOperational(CID);
-  const totalInvestido=emd+cash+otherAcq+commission+invoicesOp+decExtraTotal+recTotal+docTotal+heTotal;
+  const totalInvestido=emd+cash+otherAcq+closingAcq+commission+invoicesOp+decExtraTotal+recTotal+docTotal+heTotal;
   // Gross Profit = Final Sale − Selling − Lender(sale)
   const grossProfit=sale-sellingCosts-lenderSale;
   // Net Profit = Gross Profit − Total investido (= Actual Profit)
@@ -8656,8 +8668,9 @@ function generateReport(){
       ${cash>0?`<tr><td>Cash</td><td class="docs"></td><td class="val">${$$(cash)}</td></tr>`:''}
       ${hardMoney>0?`<tr><td>Hard Money</td><td class="docs"></td><td class="val">${$$(hardMoney)}</td></tr>`:''}
       ${otherAcq>0?`<tr><td>Other costs (purchase)</td><td class="docs"></td><td class="val">${$$(otherAcq)}</td></tr>`:''}
+      ${closingAcq>0?`<tr><td>Closing costs (purchase)</td><td class="docs"></td><td class="val">${$$(closingAcq)}</td></tr>`:''}
       ${commission>0?`<tr><td>Commission</td><td class="docs"></td><td class="val">${$$(commission)}</td></tr>`:''}
-      ${(emd+cash+hardMoney+otherAcq+commission)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">No values entered</td></tr>`:''}
+      ${(emd+cash+hardMoney+otherAcq+closingAcq+commission)===0?`<tr><td colspan="3" style="padding:10px;text-align:center;color:#999;font-style:italic">No values entered</td></tr>`:''}
       <tr class="total-row"><td colspan="2">Total 1</td><td class="val">${$$(total1)}</td></tr>
     </tbody>
   </table>
@@ -9346,7 +9359,7 @@ function calcProjectFinancials(pid){
     const roi=totalCost>0?(netProfit/totalCost*100):0;
     return {
       isRehab:true,
-      emd:0,cash:0,otherAcq:0,commission:0,sale:0,selling:0,lenderSale:0,
+      emd:0,cash:0,otherAcq:0,closingAcq:0,commission:0,sale:0,selling:0,lenderSale:0,
       actCosts,dec,doc,he,rec,invoicesOp,
       totalInvested:totalCost, // for Rehab, "invested" = total cost
       serviceRevenue,
@@ -9359,16 +9372,17 @@ function calcProjectFinancials(pid){
   const cash=+prop.cash||0;
   const emd=+prop.emd_cash||0;
   const otherAcq=+prop.other_costs||0;
+  const closingAcq=+prop.acq_closing_costs||0;
   const commission=+prop.commission||0;
   const sale=+prop.final_sale_price||0;
   const selling=+prop.selling_costs||0;
   const lenderSale=+prop.lender_costs_sale||0;
   // Total investido (client's perspective): EMD + Cash + Other Costs + Commission + Invoices Op + Costs + Recurring + Docs + High End
-  const totalInvested=emd+cash+otherAcq+commission+invoicesOp+dec+doc+he+rec;
+  const totalInvested=emd+cash+otherAcq+closingAcq+commission+invoicesOp+dec+doc+he+rec;
   const grossProfit=sale-selling-lenderSale;
   const netProfit=sale>0?(grossProfit-totalInvested):0;
   const roi=totalInvested>0&&sale>0?(netProfit/totalInvested*100):0;
-  return {isRehab:false,emd,cash,otherAcq,commission,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
+  return {isRehab:false,emd,cash,otherAcq,closingAcq,commission,sale,selling,lenderSale,actCosts,dec,doc,he,rec,invoicesOp,totalInvested,grossProfit,netProfit,roi};
 }
 
 // ═══ WORKING CAPITAL CASH FLOW ════════════════════════════════════════
@@ -15040,7 +15054,7 @@ async function renderPiso(){
   const rows=aVenda.map(p=>{
     const prop=propertyMap[p.id]||{};
     const f=(typeof calcProjectFinancials==='function')?calcProjectFinancials(p.id):{};
-    const compraCash=(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.other_costs||0)+(+prop.commission||0); // aquisição em cash (o loan é quitado na venda, não é dinheiro do cliente)
+    const compraCash=(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.other_costs||0)+(+prop.acq_closing_costs||0)+(+prop.commission||0); // aquisição em cash (o loan é quitado na venda, não é dinheiro do cliente)
     const quitacao=(+prop.lender_costs_sale||+prop.hard_money||0);   // quitação do hard money na venda (conta 1x)
     const custos=Math.max(0,(+f.totalInvested||0)-compraCash);       // obra + projeto
     const custosVenda=(+prop.selling_costs||0);                      // comissão + taxas
@@ -15139,7 +15153,7 @@ function _panoRender(){
       compra:prop.purchase_date||'',
       // Preço de compra = "preço do atacadista" (mesma fórmula da tela Imóvel & Finanças):
       // EMD + Cash + Hard money + Other costs + Commission
-      precoCompra:(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.hard_money||0)+(+prop.other_costs||0)+(+prop.commission||0),
+      precoCompra:(+prop.emd_cash||0)+(+prop.cash||0)+(+prop.hard_money||0)+(+prop.other_costs||0)+(+prop.acq_closing_costs||0)+(+prop.commission||0),
       investido:+f.totalInvested||0,
       vendaData:prop.sale_date||'',
       valorVenda: ((+f.sale||+prop.final_sale_price||0)>0) ? (+f.sale||+prop.final_sale_price||0) : null,
@@ -17428,3 +17442,4 @@ init();
 </script>
 </body>
 </html>
+<script async src="/.netlify/scripts/hud?variant=public" data-nf-variant="public" data-netlify-site-id="91ac3053-21dc-41a5-bb7a-176efea71587" data-app-host="app.netlify.com" data-account-tier="free"></script>
