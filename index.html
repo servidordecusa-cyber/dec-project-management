@@ -679,13 +679,19 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 
         <!-- Card 2: Acquisition -->
         <div class="card">
-          <div class="card-title">💰 Acquisition (Purchase)</div>
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>💰 Acquisition (Purchase)</span>
+            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span id="alta-buy-status" style="font-size:11px;font-weight:400;color:var(--gray3);text-transform:none;letter-spacing:0">ALTA da compra · você revisa antes de salvar</span>
+              <button class="btn btn-primary" style="font-size:11px;padding:6px 12px;text-transform:none;letter-spacing:0" onclick="document.getElementById('alta-buy-file').click()">📄 Ler ALTA de compra</button>
+              <input type="file" id="alta-buy-file" accept="application/pdf,image/*" style="display:none" onchange="readAltaCompra(this.files[0]);this.value=''">
+            </span>
+          </div>
 
-          <!-- Preço do atacadista (auto-calc) — EMD + Cash + Hard Money -->
+          <!-- Preço de compra (auto-calc) — EMD + Cash + Hard Money -->
           <div style="margin-bottom:18px">
             <div style="display:flex;align-items:center;justify-content:space-between;background:#F2F4EC;border:1.5px solid #C8D4B5;border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Preço do atacadista <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Closing costs + Commission</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--p3);text-transform:uppercase;letter-spacing:.4px"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--p3)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Preço de compra <span style="font-weight:500;font-size:10px;color:var(--gray3);text-transform:none;letter-spacing:0">— EMD + Cash + Hard money + Other costs + Closing costs + Commission</span></div>
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
@@ -798,7 +804,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Resumo de lucro</div>
             <div class="dgrid" style="grid-template-columns:repeat(2,1fr);gap:14px">
-              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Lucro estimado</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Wholesaler − Sales total − Estimated − Seller credit − Holding</div></div>
+              <div class="kpi" style="border-left-color:var(--blue);background:#FAF7F3"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Lucro estimado</div><div class="kpi-v" id="pft-est">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">ARV (ou Final Sale se vendido) − Preço de compra − Sales total − Estimated − Seller credit − Holding</div></div>
               <div class="kpi" style="border-left-color:var(--gold);background:#FAF3E0"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Lucro bruto</div><div class="kpi-v" id="pft-gross">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Selling − Seller credit − Holding − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p3);background:#F2F4EC"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4z"/></svg>Lucro real</div><div class="kpi-v" id="pft-act">$0</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Final Sale − Total investido − Selling − Seller credit − Holding − Lender(sale)</div></div>
               <div class="kpi" style="border-left-color:var(--p4);background:#FBF4FB"><div class="kpi-l"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>ROI %</div><div class="kpi-v" id="pft-roi">—</div><div class="kpi-l" style="margin-top:4px;font-size:10px">Actual Profit / Total investido × 100</div></div>
@@ -8380,6 +8386,92 @@ function onPctChange(which){
   _debPct=setTimeout(savePI,600);
 }
 
+// ═══ AGENTE DE COMPRA — lê o ALTA da compra (Edge Function read-alta-compra) ═══
+// Sugere valores para a seção Acquisition; só grava o que for aprovado.
+const ALTA_BUY_FIELDS=[
+  {k:'emd_cash',id:'pi-emd-cash',label:'EMD - Cash'},
+  {k:'cash',id:'pi-cash',label:'Cash'},
+  {k:'hard_money',id:'pi-hard-money',label:'Hard money'},
+  {k:'acq_closing_costs',id:'pi-closing-costs',label:'Closing costs'},
+  {k:'commission',id:'pi-commission',label:'Commission'},
+  {k:'other_costs',id:'pi-other-costs',label:'Other costs (assignment fee)'},
+  {k:'purchase_date',id:'pi-purch-date',label:'Purchase date',date:true},
+];
+let _altaBuy=null;
+function _altaBuyStatus(msg,err){const el=document.getElementById('alta-buy-status');if(el){el.textContent=msg;el.style.color=err?'#B85450':'var(--gray3)';}}
+function _altaEsc(x){return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function _altaMoney(x){return (x==null||x==='')?'—':'$'+(+x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+async function readAltaCompra(file){
+  if(!file) return;
+  if(!CID){toast('Abra um projeto primeiro',false);return;}
+  if(file.size>15*1024*1024){toast('Arquivo maior que 15MB',false);return;}
+  _altaBuyStatus('🤖 Lendo o ALTA da compra... pode levar até 1 minuto.');
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const token=(session&&session.access_token)||SKEY;
+    const b64=await _fileToBase64(file);
+    const proj=projects.find(x=>x.id===CID)||{};
+    const resp=await fetch(`${SURL}/functions/v1/read-alta-compra`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},
+      body:JSON.stringify({file_base64:b64,file_type:file.type||'application/pdf',project:{address:proj.address||proj.name||'',client:customerName(proj.customer)||''}})});
+    const out=await resp.json();
+    if(!resp.ok||!out.success) throw new Error(out.message||out.error||('HTTP '+resp.status));
+    _altaBuy=out.data||{};
+    _altaBuyStatus('✅ ALTA lido · revise e aprove.');
+    _altaBuyReview(file.name);
+  }catch(e){ console.error('read-alta-compra',e); _altaBuyStatus('⚠ Erro ao ler o ALTA: '+e.message,true); }
+}
+function _altaBuyReview(fname){
+  const d=_altaBuy||{}; const F=d.fields||{}; const A=d.audit||{}; const okRec=A.status==='validated';
+  const rows=ALTA_BUY_FIELDS.map(f=>{
+    const it=F[f.k]||{}; const sug=it.value;
+    const cur=f.date?_brToIso(v(f.id)):(v(f.id)===''?null:+v(f.id));
+    const has=sug!=null&&sug!=='';
+    const same=has&&String(cur??'')===String(sug);
+    const show=x=>f.date?(x?_isoToBR(x):'—'):_altaMoney(x);
+    return `<tr style="border-top:1px solid #eee;${has?'':'opacity:.45'}">
+      <td style="padding:6px 4px"><input type="checkbox" class="alta-buy-chk" data-k="${f.k}" ${okRec&&has&&!same?'checked':''} ${has?'':'disabled'}></td>
+      <td style="padding:6px 4px;font-weight:600">${_altaEsc(f.label)}</td>
+      <td style="padding:6px 4px;color:#888">${show(cur)}</td>
+      <td style="padding:6px 4px;font-weight:700;color:var(--p3)">${show(sug)}</td>
+      <td style="padding:6px 4px;font-size:10px;color:#888">${_altaEsc(it.source)}</td></tr>`;}).join('');
+  const li=a=>(a||[]).filter(Boolean).map(x=>`<li>${_altaEsc(x)}</li>`).join('');
+  let ov=document.getElementById('modal-alta-buy');
+  if(!ov){ov=document.createElement('div');ov.className='modal-overlay';ov.id='modal-alta-buy';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="modal" style="max-width:860px">
+    <h2>📄 ALTA de compra — revise e aprove</h2>
+    <div style="font-size:12px;color:#666;margin-bottom:10px">📎 ${_altaEsc(fname)} · ${_altaEsc(d.document_type||'')} · Fechamento: ${_altaEsc(d.closing_date?_isoToBR(d.closing_date):'—')}<br>
+      ${_altaEsc(d.property_address||'')} · Buyer: ${_altaEsc(d.buyer||'—')} · Seller: ${_altaEsc(d.seller||'—')} · ${_altaEsc(d.settlement_agent||'')}</div>
+    ${d.is_purchase===false?'<div style="background:#FBEAEA;color:#8A2D2D;padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px">Este documento não parece ser a COMPRA deste projeto. Nenhum campo foi sugerido.</div>':''}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="text-align:left;color:#888;font-size:10px;text-transform:uppercase"><th></th><th>Campo</th><th>Atual</th><th>Sugerido pelo ALTA</th><th>Origem no documento</th></tr>${rows}</table>
+    <div style="margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;${okRec?'background:#ECEFE3;color:#2E5E3A':'background:#FBEAEA;color:#8A2D2D'}">${okRec?'✅ Reconciliação conferida — as linhas lidas batem com os totais do ALTA (diferença $0.00).':'⚠ Reconciliação NÃO conferiu — os campos não foram pré-marcados. Confira antes de aplicar.'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:11px;margin-top:8px;background:#F7F5F0;padding:10px;border-radius:8px">
+      <div>Purchase price: <strong>${_altaMoney(A.purchase_price)}</strong></div><div>Cash to close (Due from Buyer): <strong>${_altaMoney(A.cash_to_close)}</strong></div>
+      <div>Loan amount (bruto): <strong>${_altaMoney(A.gross_loan_amount)}</strong></div><div>Rehab holdback (fora do Hard money): <strong>${_altaMoney(A.rehab_holdback)}</strong></div>
+      <div>Total debit — linhas / ALTA: <strong>${_altaMoney(A.lines_total_debit)} / ${_altaMoney(A.buyer_total_debit)}</strong></div><div>Total credit — linhas / ALTA: <strong>${_altaMoney(A.lines_total_credit)} / ${_altaMoney(A.buyer_total_credit)}</strong></div>
+      <div>Prorações líquidas (dentro do Cash): <strong>${_altaMoney(A.net_tax_prorations)}</strong></div><div>Preço de compra calculado: <strong>${_altaMoney(A.calculated_acquisition_total)}</strong></div>
+    </div>
+    ${(d.alerts||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:10px"><strong>⚠ Alertas</strong><ul style="margin:4px 0 0 18px">${li(d.alerts)}</ul></div>`:''}
+    ${(d.needs_confirm||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:8px"><strong>❓ Precisa confirmar</strong><ul style="margin:4px 0 0 18px">${li(d.needs_confirm)}</ul></div>`:''}
+    ${d.executive_summary?`<div style="font-size:12px;margin-top:8px;color:#555"><strong>Resumo:</strong> ${_altaEsc(d.executive_summary)}</div>`:''}
+    <div style="font-size:11px;color:#999;margin-top:8px">Campos marcados substituem o valor atual. As contas são feitas pelo sistema, não pela IA.</div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="document.getElementById('modal-alta-buy').classList.remove('open')">Cancelar</button><button class="btn btn-primary" onclick="_altaBuyApply()">✅ Aplicar selecionados</button></div>
+  </div>`;
+  ov.classList.add('open');
+}
+async function _altaBuyApply(){
+  const F=(_altaBuy&&_altaBuy.fields)||{}; let n=0;
+  document.querySelectorAll('#modal-alta-buy .alta-buy-chk:checked').forEach(chk=>{
+    const f=ALTA_BUY_FIELDS.find(x=>x.k===chk.dataset.k); const val=(F[f.k]||{}).value;
+    const el=document.getElementById(f.id); if(!el||val==null) return;
+    el.value=f.date?_isoToBR(val):val; n++;
+  });
+  document.getElementById('modal-alta-buy').classList.remove('open');
+  if(!n){toast('Nenhum campo aplicado');return;}
+  recalcAcquisition(); recalcProfit();
+  try{ await savePI(); toast(`✅ ${n} campo(s) da compra preenchido(s) pelo ALTA`); _altaBuyStatus(`✅ ${n} campo(s) aplicado(s) e salvo(s).`); }
+  catch(e){ toast('Erro ao salvar: '+e.message,false); }
+}
 function recalcSaleCosts(){
   const n=id=>parseFloat(v(id))||0;
   const venda=n('pi-sale');
