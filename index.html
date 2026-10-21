@@ -689,22 +689,18 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
                 <div style="font-size:22px;font-weight:800;color:var(--p3);margin-top:2px" id="pi-wholesaler-total">$0</div>
               </div>
             </div>
-            <div class="fgrid">
-              <div class="fg"><label>EMD - Cash ($)</label><input id="pi-emd-cash" type="number" min="0" step="0.01" placeholder="e.g. 5000.00" oninput="onAcqInput()"></div>
-              <div class="fg"><label>Cash ($)</label><input id="pi-cash" type="number" min="0" step="0.01" placeholder="e.g. 50000.00" oninput="onAcqInput()"></div>
-            </div>
-            <div class="fgrid">
-              <div class="fg"><label>Hard money ($)</label><input id="pi-hard-money" type="number" min="0" step="0.01" placeholder="e.g. 130000.00" oninput="onAcqInput()"></div>
-              <div class="fg"></div>
-            </div>
           </div>
-
+          <div class="fgrid">
+            <div class="fg"><label>EMD - Cash ($)</label><input id="pi-emd-cash" type="number" min="0" step="0.01" placeholder="e.g. 5000.00" oninput="onAcqInput()"></div>
+            <div class="fg"><label>Cash ($)</label><input id="pi-cash" type="number" min="0" step="0.01" placeholder="e.g. 50000.00" oninput="onAcqInput()"></div>
+          </div>
+          <div class="fgrid">
+            <div class="fg"><label>Hard money ($)</label><input id="pi-hard-money" type="number" min="0" step="0.01" placeholder="e.g. 130000.00" oninput="onAcqInput()"></div>
+            <div class="fg"><label>Commission ($) <span style="font-size:10px;color:var(--gray3)">— broker/agent commission</span></label><input id="pi-commission" type="number" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onAcqInput()"></div>
+          </div>
           <div class="fgrid">
             <div class="fg"><label>Other costs ($)</label><input id="pi-other-costs" type="number" min="0" step="0.01" placeholder="e.g. 800.00" oninput="onAcqInput()"></div>
             <div class="fg"><label>Closing costs ($) <span style="font-size:10px;color:var(--gray3)">— purchase closing</span></label><input id="pi-closing-costs" type="number" min="0" step="0.01" placeholder="e.g. 5000.00" oninput="onAcqInput()"></div>
-          </div>
-          <div class="fgrid">
-            <div class="fg"><label>Commission ($) <span style="font-size:10px;color:var(--gray3)">— broker/agent commission</span></label><input id="pi-commission" type="number" min="0" step="0.01" placeholder="e.g. 3000.00" oninput="onAcqInput()"></div>
           </div>
           <div class="fgrid">
             <div class="fg"><label>Purchase date <span style="font-size:10px;color:var(--gray3)">— dd/mm/aaaa</span></label><input id="pi-purch-date" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="_maskDate(this)" onchange="savePI()"></div>
