@@ -10072,24 +10072,12 @@ function renderHome(){
   const totalPaid=paidInv.reduce((s,i)=>s+(+i.amount||0),0);
   // Consolidated profit (sum of Actual Profit from sold projects)
   let totalProfit=0,totalInvested=0;
+  // Lucro consolidado = soma, obra a obra, do Lucro real e do Total investido
+  // calculados por calcProjectFinancials (mesma fórmula da tela Imóvel & Finanças).
   groups.sold.forEach(p=>{
-    const prop=propertyMap[p.id]||{};
-    const sale=+prop.final_sale_price||0;
-    const selling=((+prop.selling_costs||0)+(+prop.seller_credit||0));
-    const lenderSale=+prop.lender_costs_sale||0;
-    const cash=+prop.cash||0;
-    const emd=+prop.emd_cash||0;
-    const commission=+prop.commission||0;
-    const actCosts=calcRoomTotal(p.id,'actual');
-    // Extra costs subtotals
-    const dec=(extraCostsMap[p.id]?.dec_invoice||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    const doc=(extraCostsMap[p.id]?.documents||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    const he=(extraCostsMap[p.id]?.high_end||[]).reduce((s,e)=>s+(+e.amount||0),0);
-    const rec=calcRCDTotal(p.id);
-    const invested=emd+cash+commission+actCosts+dec+doc+he+rec;
-    const grossProfit=sale-selling-lenderSale;
-    totalInvested+=invested;
-    totalProfit+=(grossProfit-invested);
+    const f=calcProjectFinancials(p.id)||{};
+    totalInvested+=(+f.totalInvested||0);
+    totalProfit+=(+f.netProfit||0);
   });
   // Render KPI cards
   const kpisEl=document.getElementById('home-kpis');
