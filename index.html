@@ -335,6 +335,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <div class="login-fg"><label>Email</label><input id="li-email" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="login-fg"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div style="text-align:center;margin-top:12px"><a href="#" onclick="doForgotPassword();return false" style="font-size:12px;color:#9B7535">Esqueci minha senha</a></div>
     <div class="login-err" id="login-err">Invalid email or password. Please try again.</div>
     <div class="login-loading" id="login-load">Signing in...</div>
   </div>
@@ -362,6 +363,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
     <button class="btn btn-red btn-sm no-print" id="del-btn" style="display:none" onclick="deleteProject()">🗑</button>
     <button class="btn btn-gold btn-sm no-print" onclick="openNewModal()">+ Novo projeto</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨</button>
+    <button class="btn btn-ghost btn-sm no-print" onclick="openPwModal(false)" title="Trocar minha senha">🔑 Senha</button>
     <button class="btn btn-ghost btn-sm no-print" onclick="doLogout()">Sign Out</button>
   </div>
 </div>
@@ -2374,6 +2376,7 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
 // ═══ SUPABASE ═════════════════════════════════════════════════════════
 const SURL = 'https://rwbxxbrkoeuerstqhvvf.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3Ynh4YnJrb2V1ZXJzdHFodnZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjQzMzUsImV4cCI6MjA5MTg0MDMzNX0.WzG4lNvcSsAhXd5s1vRH8K5CX_TBF1Qk_gTe9zLvtAI';
+const _PW_RECOVERY_URL = /type=recovery/.test(window.location.hash||'');
 const sb = supabase.createClient(SURL, SKEY);
 
 // ═══ PDF.JS WORKER CONFIG ═════════════════════════════════════════════
@@ -2557,6 +2560,52 @@ async function doLogin(){
   showApp();
 }
 
+// ═══ SENHA: trocar (logado) e "esqueci minha senha" ═══════════════════════
+// A senha vai direto para o Supabase Auth (guardada embaralhada). O sistema não guarda nada.
+sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ window.__pwRecovery=true; if(document.getElementById('app').style.display==='block') openPwModal(true); } });
+function openPwModal(fromRecovery){
+  let ov=document.getElementById('modal-pw');
+  if(!ov){ ov=document.createElement('div'); ov.className='modal-overlay'; ov.id='modal-pw'; document.body.appendChild(ov); }
+  ov.innerHTML=`<div class="modal" style="max-width:420px">
+    <h2>🔑 ${fromRecovery?'Crie sua nova senha':'Trocar minha senha'}</h2>
+    <p style="font-size:12px;color:#666;margin:0 0 14px">Mínimo de 8 caracteres. Só você vai saber esta senha.</p>
+    <div class="fg"><label>Nova senha</label><input id="pw-new1" type="password" autocomplete="new-password"></div>
+    <div class="fg" style="margin-top:10px"><label>Repita a nova senha</label><input id="pw-new2" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')savePw()"></div>
+    <div id="pw-msg" style="font-size:12px;margin-top:10px;min-height:16px"></div>
+    <div class="mactions">${fromRecovery?'':'<button class="btn btn-ghost" onclick="document.getElementById(\'modal-pw\').classList.remove(\'open\')">Cancelar</button>'}<button class="btn btn-primary" id="pw-save" onclick="savePw()">Salvar senha</button></div>
+  </div>`;
+  ov.classList.add('open');
+  setTimeout(()=>{const i=document.getElementById('pw-new1'); if(i) i.focus();},50);
+}
+async function savePw(){
+  const a=v('pw-new1'), b=v('pw-new2'), msg=document.getElementById('pw-msg');
+  const err=t=>{ msg.style.color='#B85450'; msg.textContent=t; };
+  if(a.length<8) return err('A senha precisa ter pelo menos 8 caracteres.');
+  if(a!==b) return err('As duas senhas não são iguais.');
+  const btn=document.getElementById('pw-save'); btn.disabled=true; btn.textContent='Salvando…';
+  const {error}=await sb.auth.updateUser({password:a});
+  btn.disabled=false; btn.textContent='Salvar senha';
+  if(error){
+    const m=(error.message||'').toLowerCase();
+    if(m.includes('different from the old')) return err('A senha nova precisa ser diferente da atual.');
+    if(m.includes('weak')||m.includes('pwned')) return err('Senha fraca. Use letras, números e símbolos.');
+    if(m.includes('reauthentication')||m.includes('session')) return err('Por segurança, saia (Sign Out), entre de novo e tente outra vez.');
+    return err('Não foi possível salvar: '+error.message);
+  }
+  window.__pwRecovery=false;
+  try{ history.replaceState(null,'',window.location.pathname+window.location.search); }catch(e){}
+  document.getElementById('modal-pw').classList.remove('open');
+  toast('🔑 Senha alterada com sucesso');
+}
+async function doForgotPassword(){
+  const email=v('li-email').trim();
+  if(!email){ showLoginErr('Digite seu e-mail no campo acima e clique de novo em "Esqueci minha senha".'); return; }
+  document.getElementById('login-err').style.display='none';
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error && !/rate|seconds/i.test(error.message||'')){ showLoginErr('Não foi possível enviar: '+error.message); return; }
+  if(error){ showLoginErr('Aguarde alguns segundos e tente de novo.'); return; }
+  toast('📧 Se o e-mail estiver cadastrado, enviamos um link para criar uma senha nova.');
+}
 async function doLogout(){
   await sb.auth.signOut();
   projects=[];schedMap={};budgetMap={};CID=null;
@@ -2575,6 +2624,7 @@ function showLoginErr(msg){
 }
 function showApp(){
   setLoading(false);
+  if(_PW_RECOVERY_URL||window.__pwRecovery) setTimeout(()=>openPwModal(true),300);
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   // Restaura a última tela (refresh volta pra onde você estava)
