@@ -8530,10 +8530,11 @@ async function _altaBuyApply(){
 const ALTA_SELL_FIELDS=[
   {k:'final_sale_price',id:'pi-sale',label:'Preço final de venda'},
   {k:'sale_date',id:'pi-sale-date',label:'Sale date',date:true},
-  {k:'selling_costs',id:'pi-selling',label:'Custos de venda (closing costs do vendedor)'},
+  {k:'selling_costs',id:'pi-selling',label:'Custos de venda (líquidos)'},
   {k:'seller_credit',id:'pi-seller-credit',label:'Seller credit'},
-  {k:'holding_costs',id:'pi-holding',label:'Holding costs (prorações, HOA, holdback)'},
-  {k:'lender_costs_sale',id:'pi-lender-sale',label:'Custos do credor (payoff)'},
+  {k:'holding_costs',id:'pi-holding',label:'Holding costs (ajustados no closing)',review:true},
+  {k:'lender_costs_sale',id:'pi-lender-sale',label:'Custos do credor (payoff total)'},
+  {k:'retention_refund',id:'pi-retention',label:'Retenções e devoluções'},
 ];
 let _altaSell=null;
 function _altaSellStatus(msg,err){const el=document.getElementById('alta-sell-status');if(el){el.textContent=msg;el.style.color=err?'#B85450':'var(--gray3)';}}
@@ -8541,7 +8542,7 @@ async function readAltaVenda(file){
   if(!file) return;
   if(!CID){toast('Abra um projeto primeiro',false);return;}
   if(file.size>15*1024*1024){toast('Arquivo maior que 15MB',false);return;}
-  _altaSellStatus('🤖 Lendo o ALTA da venda... pode levar até 1 minuto.');
+  _altaSellStatus('🤖 Lendo o ALTA da venda... pode levar até 2 minutos.');
   try{
     const {data:{session}}=await sb.auth.getSession();
     const token=(session&&session.access_token)||SKEY;
@@ -8552,49 +8553,77 @@ async function readAltaVenda(file){
     const out=await resp.json();
     if(!resp.ok||!out.success) throw new Error(out.message||out.error||('HTTP '+resp.status));
     _altaSell=out.data||{};
-    _altaSellStatus('✅ ALTA lido · revise e aprove.');
+    _altaSellStatus(_altaSell.audit&&_altaSell.audit.status==='validated'?'✅ ALTA lido e conferido · revise e aplique.':'⚠ ALTA lido · REVISÃO NECESSÁRIA.');
     _altaSellReview(file.name);
   }catch(e){ console.error('read-alta-venda',e); _altaSellStatus('⚠ Erro ao ler o ALTA: '+e.message,true); }
 }
+function _altaSellAction(f,cur,sug){
+  const has=sug!=null&&sug!=='';
+  if(!has) return {a:'Não preencher',chk:false};
+  const empty=cur==null||cur===''||(!f.date&&+cur===0);
+  if(!empty&&String(cur)===String(sug)) return {a:'Manter',chk:false};
+  if(empty) return {a:'Preencher',chk:true};
+  if(f.review) return {a:'Revisar',chk:false,note:'Já existe valor — pode incluir holding de antes do closing. Marque só se quiser substituir.'};
+  return {a:'Substituir',chk:true};
+}
 function _altaSellReview(fname){
-  const d=_altaSell||{}; const F=d.fields||{}; const A=d.audit||{}; const okRec=A.status==='validated';
+  const d=_altaSell||{}; const F=d.fields||{}; const A=d.audit||{}; const B=d.breakdown||{}; const okRec=A.status==='validated';
+  const M=_altaMoney, E=_altaEsc;
   const rows=ALTA_SELL_FIELDS.map(f=>{
     const it=F[f.k]||{}; const sug=it.value;
     const cur=f.date?_brToIso(v(f.id)):(v(f.id)===''?null:+v(f.id));
-    const has=sug!=null&&sug!=='';
-    const same=has&&String(cur??'')===String(sug);
-    const show=x=>f.date?(x?_isoToBR(x):'—'):_altaMoney(x);
-    return `<tr style="border-top:1px solid #eee;${has?'':'opacity:.45'}">
-      <td style="padding:6px 4px"><input type="checkbox" class="alta-sell-chk" data-k="${f.k}" ${okRec&&has&&!same?'checked':''} ${has?'':'disabled'}></td>
-      <td style="padding:6px 4px;font-weight:600">${_altaEsc(f.label)}</td>
+    const act=_altaSellAction(f,cur,sug); const has=sug!=null&&sug!=='';
+    const show=x=>f.date?(x?_isoToBR(x):'—'):M(x);
+    const col={'Preencher':'#2E5E3A','Substituir':'#9B7535','Revisar':'#B85450','Manter':'#888','Não preencher':'#aaa'}[act.a];
+    return `<tr style="border-top:1px solid #eee;${has?'':'opacity:.5'}">
+      <td style="padding:6px 4px"><input type="checkbox" class="alta-sell-chk" data-k="${f.k}" ${okRec&&act.chk?'checked':''} ${okRec&&has&&act.a!=='Manter'?'':'disabled'}></td>
+      <td style="padding:6px 4px;font-weight:600">${E(f.label)}</td>
       <td style="padding:6px 4px;color:#888">${show(cur)}</td>
       <td style="padding:6px 4px;font-weight:700;color:var(--p3)">${show(sug)}</td>
-      <td style="padding:6px 4px;font-size:10px;color:#888">${_altaEsc(it.source)}</td></tr>`;}).join('');
-  const li=a=>(a||[]).filter(Boolean).map(x=>`<li>${_altaEsc(x)}</li>`).join('');
+      <td style="padding:6px 4px;font-weight:700;color:${col}">${act.a}${act.note?`<div style="font-weight:400;font-size:10px">${E(act.note)}</div>`:''}</td>
+      <td style="padding:6px 4px;font-size:10px;color:#888">${E(it.source)}</td></tr>`;}).join('');
+  const CAT={sales_price:'Preço de venda',selling_cost:'Custos de venda',seller_credit:'Seller credit',holding:'Holding',payoff:'Payoff',retention:'Retenção',retention_release:'Liberação de retenção',deposit:'Depósito',other_debit:'Outros (débito)',other_credit:'Outros (crédito)',poc:'POC (fora do closing)'};
+  const order=Object.keys(CAT);
+  const lines=(d.lines||[]).slice().sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category));
+  const det=lines.map(l=>`<tr style="border-top:1px solid #f0f0f0${l.ambiguity?';background:#FFF6E5':''}"><td style="padding:3px 4px">${E(CAT[l.category]||l.category)}</td><td style="padding:3px 4px;color:#999">${E(String(l.page??''))}${l.line?' · '+E(l.line):''}</td><td style="padding:3px 4px">${E(l.description)}</td><td style="padding:3px 4px;text-align:right">${l.side==='debit'?M(l.amount):''}</td><td style="padding:3px 4px;text-align:right">${l.side==='credit'?M(l.amount):''}</td></tr>`).join('');
+  const sub=(t,x)=>x?`<div>${t}: débitos <strong>${M(x.debit)}</strong> − créditos <strong>${M(x.credit)}</strong> = <strong>${M(x.net)}</strong></div>`:'';
+  const ret=(B.retentions||[]).map(r=>{const dd=r.detail||{};return `<tr style="border-top:1px solid #f0f0f0"><td style="padding:3px 4px">${r.kind==='liberada'?'🔓 Liberada':'🔒 Retida'} · ${E(r.description)}</td><td style="padding:3px 4px;text-align:right">${M(r.amount)}</td><td style="padding:3px 4px">${E(dd.holder||'não informado')}</td><td style="padding:3px 4px">${E([dd.release_condition,dd.deadline].filter(Boolean).join(' · ')||'não informado')}</td><td style="padding:3px 4px;color:#999">p.${E(String(r.page??'?'))}</td></tr>`;}).join('');
+  const pay=(B.payoffs||[]).map(p=>{const dd=p.detail||{};const parts=[['Principal',dd.principal],['Juros',dd.interest],['Taxas',dd.fees]].map(([t,x])=>`${t}: ${x==null?'não informado':M(x)}`).join(' · ');return `<div>💳 ${E(dd.lender||p.description)} — <strong>${M(p.amount)}</strong> <span style="color:#888">(${parts})</span></div>`;}).join('');
+  const li=a=>(a||[]).filter(Boolean).map(x=>`<li>${E(x)}</li>`).join('');
   let ov=document.getElementById('modal-alta-sell');
   if(!ov){ov=document.createElement('div');ov.className='modal-overlay';ov.id='modal-alta-sell';document.body.appendChild(ov);}
-  ov.innerHTML=`<div class="modal" style="max-width:860px">
-    <h2>📄 ALTA de venda — revise e aprove</h2>
-    <div style="font-size:12px;color:#666;margin-bottom:10px">📎 ${_altaEsc(fname)} · ${_altaEsc(d.document_type||'')} · Fechamento: ${_altaEsc(d.closing_date?_isoToBR(d.closing_date):'—')}<br>
-      ${_altaEsc(d.property_address||'')} · Seller: ${_altaEsc(d.seller||'—')} · Buyer: ${_altaEsc(d.buyer||'—')} · ${_altaEsc(d.settlement_agent||'')}</div>
-    ${d.is_sale===false?'<div style="background:#FBEAEA;color:#8A2D2D;padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px">Este documento não parece ser a VENDA deste projeto. Nenhum campo foi sugerido.</div>':''}
+  ov.innerHTML=`<div class="modal" style="max-width:920px;max-height:90vh;overflow:auto">
+    <h2>📄 ALTA de venda — prévia</h2>
+    <div style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.6">📎 ${E(fname)} · ${E(d.document_type||'')} · Arquivo: ${E(d.file_number||'—')}<br>
+      🏠 ${E(d.property_address||'—')} ${A.property_ok===false?'<strong style="color:#B85450">· NÃO corresponde à obra</strong>':''}<br>
+      Vendedor: ${E(d.seller||'—')} · Comprador: ${E(d.buyer||'—')} · ${E(d.settlement_agent||'')}<br>
+      Closing: <strong>${E(d.closing_date?_isoToBR(d.closing_date):'—')}</strong> · Disbursement: ${E(d.disbursement_date?_isoToBR(d.disbursement_date):'—')}</div>
+    <div style="padding:10px 12px;border-radius:8px;font-size:13px;font-weight:700;margin-bottom:10px;${okRec?'background:#ECEFE3;color:#2E5E3A':'background:#FBEAEA;color:#8A2D2D'}">${okRec?'✅ CONFERIDA — colunas, categorias e líquido batem com o ALTA (diferença $0.00).':'⚠ REVISÃO NECESSÁRIA — aplicação bloqueada. Veja as pendências abaixo.'}</div>
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin:6px 0">Valores propostos para o sistema</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <tr style="text-align:left;color:#888;font-size:10px;text-transform:uppercase"><th></th><th>Campo</th><th>Atual</th><th>Sugerido pelo ALTA</th><th>Origem no documento</th></tr>${rows}</table>
-    <div style="margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;${okRec?'background:#ECEFE3;color:#2E5E3A':'background:#FBEAEA;color:#8A2D2D'}">${okRec?'✅ Conferido — o Líquido de venda é igual ao Due To Seller do ALTA (diferença $0.00).':'⚠ A conta NÃO fechou com o ALTA — os campos não foram pré-marcados. Confira antes de aplicar.'}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:11px;margin-top:8px;background:#F7F5F0;padding:10px;border-radius:8px">
-      <div>Due To Seller (ALTA): <strong>${_altaMoney(A.due_to_seller)}</strong></div><div>Líquido de venda calculado: <strong>${_altaMoney(A.calculated_liquido_venda)}</strong></div>
-      <div>Total debit — linhas / ALTA: <strong>${_altaMoney(A.lines_total_debit)} / ${_altaMoney(A.seller_total_debit)}</strong></div><div>Total credit — linhas / ALTA: <strong>${_altaMoney(A.lines_total_credit)} / ${_altaMoney(A.seller_total_credit)}</strong></div>
-      <div>Prorações (no Holding): <strong>${_altaMoney(A.prorations_net)}</strong></div><div>HOA + Holdback (no Holding): <strong>${_altaMoney((+A.hoa_dues||0)+(+A.escrow_holdback||0))}</strong></div>
+      <tr style="text-align:left;color:#888;font-size:10px;text-transform:uppercase"><th></th><th>Campo</th><th>Atual</th><th>Proposto</th><th>Ação</th><th>Origem</th></tr>${rows}</table>
+    <div style="font-size:11px;color:#7A5A28;margin-top:6px">Ao aplicar a Sale date, a obra passa a aparecer como <strong>Vendida</strong>.</div>
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin:14px 0 6px">Conferência</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12px;background:#F7F5F0;padding:10px;border-radius:8px">
+      <div>Créditos do vendedor (linhas / ALTA): <strong>${M(A.seller_credit_total_lines)} / ${M(A.seller_credit_total_doc)}</strong></div>
+      <div>Débitos do vendedor (linhas / ALTA): <strong>${M(A.seller_debit_total_lines)} / ${M(A.seller_debit_total_doc)}</strong></div>
+      <div>Líquido pelas colunas: <strong>${M(A.liquid_by_columns)}</strong></div><div>Líquido pelas categorias: <strong>${M(A.liquid_by_categories)}</strong></div>
+      <div>Líquido informado no ALTA: <strong>${M(A.liquid_doc)}</strong></div><div>Diferença: <strong>${M(A.difference)}</strong></div>
     </div>
-    ${(d.alerts||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:10px"><strong>⚠ Alertas</strong><ul style="margin:4px 0 0 18px">${li(d.alerts)}</ul></div>`:''}
-    ${(d.needs_confirm||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:8px"><strong>❓ Precisa confirmar</strong><ul style="margin:4px 0 0 18px">${li(d.needs_confirm)}</ul></div>`:''}
-    <div style="font-size:11px;color:#999;margin-top:8px">Campos marcados substituem o valor atual. As contas são feitas pelo sistema, não pela IA.</div>
-    <div class="mactions"><button class="btn btn-ghost" onclick="document.getElementById('modal-alta-sell').classList.remove('open')">Cancelar</button><button class="btn btn-primary" onclick="_altaSellApply()">✅ Aplicar selecionados</button></div>
+    <div style="font-size:12px;margin-top:8px;line-height:1.6">${sub('Custos de venda',B.selling)}${sub('Seller credit',B.seller_credit)}${sub('Holding',B.holding)}${pay}</div>
+    ${ret?`<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin:14px 0 6px">Retenções</div><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="text-align:left;color:#888;font-size:10px"><th>Descrição</th><th style="text-align:right">Valor</th><th>Responsável</th><th>Condição / prazo</th><th>Origem</th></tr>${ret}</table>`:''}
+    ${(d.pending||[]).length?`<div style="font-size:12px;margin-top:12px;background:#FBEAEA;padding:8px 10px;border-radius:8px;color:#8A2D2D"><strong>❓ Pendências</strong><ul style="margin:4px 0 0 18px">${li(d.pending)}</ul></div>`:''}
+    ${(d.alerts||[]).filter(Boolean).length?`<div style="font-size:12px;margin-top:8px"><strong>⚠ Observações da leitura</strong><ul style="margin:4px 0 0 18px">${li(d.alerts)}</ul></div>`:''}
+    <details style="margin-top:12px;font-size:11px"><summary style="cursor:pointer;font-weight:700;color:#7A5A28">Detalhamento — ${lines.length} lançamento(s) do vendedor</summary>
+      <table style="width:100%;border-collapse:collapse;margin-top:6px"><tr style="text-align:left;color:#888;font-size:10px"><th>Categoria</th><th>Pág.</th><th>Descrição original</th><th style="text-align:right">Débito</th><th style="text-align:right">Crédito</th></tr>${det}</table></details>
+    <div style="font-size:11px;color:#999;margin-top:8px">Campos marcados substituem o valor atual (reaplicar o mesmo ALTA não duplica). As contas são feitas pelo sistema, não pela IA.</div>
+    <div class="mactions"><button class="btn btn-ghost" onclick="document.getElementById('modal-alta-sell').classList.remove('open')">Fechar</button>${okRec?'<button class="btn btn-primary" onclick="_altaSellApply()">✅ Aplicar selecionados</button>':'<button class="btn btn-primary" disabled style="opacity:.4;cursor:not-allowed" title="Revisão necessária">🔒 Aplicação bloqueada</button>'}</div>
   </div>`;
   ov.classList.add('open');
 }
 async function _altaSellApply(){
-  const F=(_altaSell&&_altaSell.fields)||{}; let n=0;
+  if(!_altaSell||!_altaSell.audit||_altaSell.audit.status!=='validated'){toast('Revisão necessária — aplicação bloqueada',false);return;}
+  const F=_altaSell.fields||{}; let n=0;
   document.querySelectorAll('#modal-alta-sell .alta-sell-chk:checked').forEach(chk=>{
     const f=ALTA_SELL_FIELDS.find(x=>x.k===chk.dataset.k); const val=(F[f.k]||{}).value;
     const el=document.getElementById(f.id); if(!el||val==null) return;
