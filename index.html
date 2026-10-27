@@ -8553,7 +8553,8 @@ async function readAltaVenda(file){
     const out=await resp.json();
     if(!resp.ok||!out.success) throw new Error(out.message||out.error||('HTTP '+resp.status));
     _altaSell=out.data||{};
-    _altaSellStatus(_altaSell.audit&&_altaSell.audit.status==='validated'?'✅ ALTA lido e conferido · revise e aplique.':'⚠ ALTA lido · REVISÃO NECESSÁRIA.');
+    const _mdl=((out.meta||{}).model||'').replace('claude-','');
+    _altaSellStatus((_altaSell.audit&&_altaSell.audit.status==='validated'?'✅ ALTA lido e conferido · revise e aplique.':'⚠ ALTA lido · REVISÃO NECESSÁRIA.')+(_mdl?' · IA: '+_mdl:''));
     _altaSellReview(file.name);
   }catch(e){ console.error('read-alta-venda',e); _altaSellStatus('⚠ Erro ao ler o ALTA: '+e.message,true); }
 }
