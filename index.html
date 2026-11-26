@@ -319,7 +319,21 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
   body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   table{break-inside:auto}tr{break-inside:avoid}
+  /* Portal do investidor */
+  #investor-portal{background:#fff!important;min-height:0!important}
+  #investor-portal button,#investor-portal .no-print,#pp-modal{display:none!important}
+  #investor-portal .portal-print-only{display:block!important}
+  #investor-portal [style*="box-shadow"]{box-shadow:none!important}
+  #investor-portal details,#investor-portal [style*="border-radius:14px"]{break-inside:avoid-page}
+  #investor-portal summary{list-style:none}
+  #investor-portal table{width:100%!important;min-width:0!important}
+  #investor-portal th,#investor-portal td{padding:6px 4px!important;font-size:10px!important;white-space:normal!important}
+  #investor-portal [style*="overflow"]{overflow:visible!important}
+  #investor-portal tr{break-inside:avoid}
+  body.pp-no-logs #portal-daily-logs,body.pp-no-logs .pp-logs-head{display:none!important}
+  body.pp-no-budgets #portal-budgets-cards,body.pp-no-budgets #portal-budgets-table,body.pp-no-budgets .pp-budgets-head{display:none!important}
 }
+.portal-print-only{display:none}
 </style>
 </head>
 <body>
@@ -3994,6 +4008,10 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
           <div style="font-size:11px;font-weight:700;color:#9B7535;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Bem-vindo ao Portal do Investidor</div>
           <h1 style="font-size:26px;color:#3D271A;font-weight:800;margin:0">👋 Olá, ${(client.name||'Investidor').replace(/</g,'&lt;')}</h1>
           <p style="color:#655A4E;font-size:13px;margin-top:6px">Acompanhe seu portfólio e seus projetos abaixo</p>
+          <div class="portal-print-only" style="font-size:11px;color:#655A4E;margin-top:6px">Emitido em ${new Date().toLocaleDateString('pt-BR')}</div>
+        </div>
+        <div class="no-print" style="flex:0 0 auto">
+          <button onclick="portalPrintOpen()" style="padding:10px 18px;background:#3D271A;color:#fff;border:0;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">🖨 Imprimir / PDF</button>
         </div>
       </div>
 
@@ -4002,7 +4020,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       ${(!_isDetail && projects.length>0)?dashboardHTML:''}
 
       <!-- SEÇÃO 1: REALIZADO / DETALHE -->
-      ${_isDetail?`<div style="margin:6px 0 16px"><a href="${_portalBackUrl()}" style="font-size:13px;color:#9B7535;font-weight:700;text-decoration:none">← Voltar ao portfólio</a></div>`:''}
+      ${_isDetail?`<div class="no-print" style="margin:6px 0 16px"><a href="${_portalBackUrl()}" style="font-size:13px;color:#9B7535;font-weight:700;text-decoration:none">← Voltar ao portfólio</a></div>`:''}
       <div style="margin-top:30px;margin-bottom:14px;display:${_isDetail?'none':'flex'};align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#3D271A;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C7A3F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Realizado</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#D5C9BC,transparent)"></div>
@@ -4010,12 +4028,12 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
       </div>
       ${_isDetail
         ? `<div id="portal-projects-cards">${projectsHTML}${noProjectsHTML}</div>`
-        : `<div style="font-size:12px;color:#9B7535;margin-bottom:12px">👆 Clique no endereço de um projeto para abrir o card completo, com diário de obra e documentos.</div>
+        : `<div class="no-print" style="font-size:12px;color:#9B7535;margin-bottom:12px">👆 Clique no endereço de um projeto para abrir o card completo, com diário de obra e documentos.</div>
            ${projectsTableHTML}`}
 
       ${_isDetail?`
       <!-- SEÇÃO: DIÁRIO DE OBRA (detalhe) -->
-      <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="pp-logs-head" style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Diário de Obra</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${totalDailyEntries} ${totalDailyEntries===1?'entrada':'entradas'}</div>
@@ -4025,7 +4043,7 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
 
       ${budgetsData.length>0?`
       <!-- SEÇÃO 2: A REALIZAR (detalhe: mesmo endereço · lista: propostas sem projeto) -->
-      <div style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="pp-budgets-head" style="margin-top:36px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:800;color:#9B7535;letter-spacing:2px;text-transform:uppercase;padding:4px 0"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9B7535" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>A Realizar</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,#E6D599,transparent)"></div>
         <div style="font-size:11px;color:#999;font-weight:600">${budgetsData.length} ${budgetsData.length===1?'proposta':'propostas'}</div>
@@ -4046,6 +4064,59 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
     </div>`;
   // Hidrata as miniaturas de fachada (links temporários assinados)
   hydrateCoverPhotos(portalEl);
+}
+
+// ═══ Impressão do Portal do Investidor ═══
+function portalPrintOpen(){
+  const root=document.getElementById('investor-portal'); if(!root) return;
+  const hasLogs=!!document.getElementById('portal-daily-logs');
+  const hasBud=!!document.getElementById('portal-budgets-cards');
+  let m=document.getElementById('pp-modal');
+  if(!m){ m=document.createElement('div'); m.id='pp-modal'; document.body.appendChild(m); }
+  m.style.cssText='position:fixed;inset:0;background:rgba(21,18,14,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
+  m.innerHTML=`<div style="background:#fff;border-radius:14px;padding:22px 24px;max-width:380px;width:100%;font-family:inherit;color:#3D271A">
+    <div style="font-size:17px;font-weight:800;margin-bottom:4px">🖨 Imprimir / salvar PDF</div>
+    <div style="font-size:12px;color:#655A4E;margin-bottom:14px">Imprime o que está na tela agora. Para salvar em PDF, escolha "Salvar como PDF" no destino da impressora.</div>
+    ${hasBud?`<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:8px;cursor:pointer"><input type="checkbox" id="pp-bud" checked style="width:16px;height:16px;accent-color:#3D271A"> Incluir orçamentos (abertos, com detalhes)</label>`:''}
+    ${hasLogs?`<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:8px;cursor:pointer"><input type="checkbox" id="pp-logs" style="width:16px;height:16px;accent-color:#3D271A"> Incluir diário de obra com fotos <span style="font-size:11px;color:#999">(mais páginas)</span></label>`:''}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button onclick="document.getElementById('pp-modal').remove()" style="padding:9px 14px;background:#fff;color:#3D271A;border:1px solid #D5C9BC;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>
+      <button id="pp-go" onclick="portalPrintGo()" style="padding:9px 16px;background:#3D271A;color:#fff;border:0;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Imprimir</button>
+    </div></div>`;
+  m.onclick=e=>{ if(e.target===m) m.remove(); };
+}
+async function portalPrintGo(){
+  const root=document.getElementById('investor-portal'); if(!root) return;
+  const bud=document.getElementById('pp-bud'), logs=document.getElementById('pp-logs');
+  const incBud=bud?bud.checked:false, incLogs=logs?logs.checked:false;
+  const go=document.getElementById('pp-go'); if(go){ go.disabled=true; go.textContent='Preparando...'; }
+  document.body.classList.toggle('pp-no-budgets',!incBud);
+  document.body.classList.toggle('pp-no-logs',!incLogs);
+  // abre as seções que vão sair no papel (e guarda o estado para restaurar depois)
+  const opened=[];
+  root.querySelectorAll('details').forEach(d=>{
+    const inLogs=!!d.closest('#portal-daily-logs'), inBud=!!d.closest('#portal-budgets-cards,#portal-budgets-table');
+    const want=inLogs?incLogs:inBud?incBud:true;
+    if(want && !d.open){ d.open=true; opened.push(d); }
+  });
+  // espera as fotos carregarem (no máx. 10 s) para não sair página em branco
+  const urls=new Set();
+  root.querySelectorAll('[style*="url("]').forEach(el=>{
+    if(el.closest('#portal-daily-logs') && !incLogs) return;
+    const mm=(el.getAttribute('style')||'').match(/url\(['"]?([^'")]+)['"]?\)/); if(mm) urls.add(mm[1]);
+  });
+  root.querySelectorAll('img').forEach(i=>{ i.loading='eager'; if(i.src) urls.add(i.src); });
+  await Promise.race([
+    Promise.all([...urls].map(u=>new Promise(r=>{ const im=new Image(); im.onload=im.onerror=r; im.src=u; }))),
+    new Promise(r=>setTimeout(r,10000))
+  ]);
+  const m=document.getElementById('pp-modal'); if(m) m.remove();
+  // página deitada só para esta impressão (a tabela de projetos é larga)
+  let pg=document.getElementById('pp-page'); if(!pg){ pg=document.createElement('style'); pg.id='pp-page'; document.head.appendChild(pg); }
+  pg.textContent='@page{size:letter landscape;margin:10mm}';
+  const restore=()=>{ pg.remove(); opened.forEach(d=>d.open=false); document.body.classList.remove('pp-no-budgets','pp-no-logs'); window.removeEventListener('afterprint',restore); };
+  window.addEventListener('afterprint',restore);
+  setTimeout(()=>window.print(),150);
 }
 
 // Monta a URL de detalhe de um projeto, preservando o token/portal atual
