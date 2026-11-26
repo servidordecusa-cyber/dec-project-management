@@ -330,6 +330,14 @@ h1{font-weight:300}  /* Light 300 = títulos principais (igual manual) */
   #investor-portal th,#investor-portal td{padding:6px 4px!important;font-size:10px!important;white-space:normal!important}
   #investor-portal [style*="overflow"]{overflow:visible!important}
   #investor-portal tr{break-inside:avoid}
+  /* Visão geral em versão clara (economiza tinta) */
+  #investor-portal .pp-dash{background:#fff!important;color:#3D271A!important;border:1px solid #D5C9BC!important}
+  #investor-portal .pp-tile{background:#FAF7F3!important;border:1px solid #EFE6D8}
+  #investor-portal .pp-v-gold{color:#9B7535!important}
+  #investor-portal .pp-v-pos{color:#2E6B3A!important}
+  #investor-portal .pp-v-neg{color:#B85450!important}
+  #investor-portal .pp-v-est{color:#7A5A28!important}
+  #investor-portal .pp-sep{border-top-color:#E8DDC9!important}
   body.pp-no-logs #portal-daily-logs,body.pp-no-logs .pp-logs-head{display:none!important}
   body.pp-no-budgets #portal-budgets-cards,body.pp-no-budgets #portal-budgets-table,body.pp-no-budgets .pp-budgets-head{display:none!important}
 }
@@ -3272,35 +3280,35 @@ function _renderInvestorPortal(client,projects,invoices,itemsByInvoice,propertyB
   }).join('');
 
   const dashboardHTML=`
-    <div style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden;color:#fff">
+    <div class="pp-dash" style="background:linear-gradient(135deg,#3D271A,#655A4E);border-radius:14px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden;color:#fff">
       <div style="padding:22px 24px 12px">
         <div style="font-size:11px;font-weight:700;letter-spacing:.5px;opacity:.7;text-transform:uppercase;margin-bottom:6px">📊 Visão Geral</div>
         <div style="font-size:22px;font-weight:800">Seu portfólio</div>
       </div>
       <div style="padding:0 24px 22px">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
-          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+          <div class="pp-tile" style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">🏘️ Total de imóveis</div>
             <div style="font-size:28px;font-weight:800;margin-top:4px">${projects.length}</div>
           </div>
-          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+          <div class="pp-tile" style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">💰 Total investido</div>
-            <div style="font-size:24px;font-weight:800;margin-top:4px;color:#E8C57F">${_fmtMoney(totalInvested)}</div>
-            <div style="font-size:11px;opacity:.8;margin-top:4px;color:#E8C57F">100%</div>
+            <div class="pp-v-gold" style="font-size:24px;font-weight:800;margin-top:4px;color:#E8C57F">${_fmtMoney(totalInvested)}</div>
+            <div class="pp-v-gold" style="font-size:11px;opacity:.8;margin-top:4px;color:#E8C57F">100%</div>
           </div>
-          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+          <div class="pp-tile" style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">📈 Lucro realizado</div>
-            <div style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
-            <div style="font-size:11px;opacity:.8;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${profitPct}%</div>
+            <div class="${totalProfit>=0?'pp-v-pos':'pp-v-neg'}" style="font-size:24px;font-weight:800;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${_fmtMoney(totalProfit)}</div>
+            <div class="${totalProfit>=0?'pp-v-pos':'pp-v-neg'}" style="font-size:11px;opacity:.8;margin-top:4px;color:${totalProfit>=0?'#B5E3B5':'#FFB5B5'}">${totalProfit>=0?'+':''}${profitPct}%</div>
           </div>
-          <div style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
+          <div class="pp-tile" style="background:rgba(255,255,255,0.1);padding:14px;border-radius:10px">
             <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase">🎯 Lucro previsto</div>
-            <div style="font-size:20px;font-weight:800;margin-top:4px;color:#F0D4A8;word-break:break-word;line-height:1.2">${totalEstimatedProfit>0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
-            <div style="font-size:11px;opacity:.8;margin-top:4px;color:#F0D4A8">${totalEstimatedProfit>0?'+':''}${estimatedProfitPct}%</div>
+            <div class="pp-v-est" style="font-size:20px;font-weight:800;margin-top:4px;color:#F0D4A8;word-break:break-word;line-height:1.2">${totalEstimatedProfit>0?'+':''}${_fmtMoney(totalEstimatedProfit)}</div>
+            <div class="pp-v-est" style="font-size:11px;opacity:.8;margin-top:4px;color:#F0D4A8">${totalEstimatedProfit>0?'+':''}${estimatedProfitPct}%</div>
             <div style="font-size:10px;opacity:.7;margin-top:2px">em andamento</div>
           </div>
         </div>
-        ${typeChips?`<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
+        ${typeChips?`<div class="pp-sep" style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.15)">
           <div style="font-size:10px;font-weight:700;opacity:.7;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px">Por tipo de imóvel</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">${typeChips}</div>
         </div>`:''}
